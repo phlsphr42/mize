@@ -457,6 +457,30 @@
     font-size: 10px;
     color: var(--warning);
   }
+  /* Add to your style section */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.archetype-option {
+  transition: all 0.15s ease;
+}
+
+.archetype-option:hover {
+  background: var(--surface2);
+  transform: translateX(4px);
+}
+
+.selected-match {
+  animation: pulse 0.5s ease;
+}
+
+@keyframes pulse {
+  0% { border-color: var(--accent); box-shadow: 0 0 0 0 rgba(200,168,75,0.4); }
+  70% { box-shadow: 0 0 0 5px rgba(200,168,75,0); }
+  100% { border-color: var(--accent); box-shadow: 0 0 0 0 rgba(200,168,75,0); }
+}
 </style>
 </head>
 <body>
@@ -1056,6 +1080,49 @@ function showScreen(id) {
   }
 }
 
+  // Add this near the top of your script with other utilities
+function fuzzyMatch(str, pattern) {
+  str = str.toLowerCase();
+  pattern = pattern.toLowerCase();
+  
+  let strIdx = 0;
+  let patternIdx = 0;
+  let matches = [];
+  
+  while (strIdx < str.length && patternIdx < pattern.length) {
+    if (str[strIdx] === pattern[patternIdx]) {
+      matches.push(strIdx);
+      patternIdx++;
+    }
+    strIdx++;
+  }
+  
+  if (patternIdx === pattern.length) {
+    // Calculate match score based on proximity and coverage
+    let score = 1;
+    for (let i = 1; i < matches.length; i++) {
+      const gap = matches[i] - matches[i-1] - 1;
+      score -= gap * 0.05;
+    }
+    return Math.max(0, Math.min(1, score));
+  }
+  return 0;
+}
+
+function getFuzzyMatches(query, candidates, threshold = 0.3) {
+  if (!query || query.length < 2) return [];
+  
+  const matches = candidates.map(candidate => ({
+    name: candidate,
+    score: fuzzyMatch(candidate, query)
+  }));
+  
+  return matches
+    .filter(m => m.score >= threshold)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+}
+
 function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1334,6 +1401,21 @@ async function onSignedIn(user) {
     showError('login', 'No pilot found for this account.');
     return;
   }
+  
+  state.pilot = pilots[0];
+  document.getElementById('home-pilot-name').textContent = state.pilot.pilot_name;
+  
+  // Load data in parallel
+  const [arcRes, refRes] = await Promise.all([
+    loadArchetypes(), // Changed this line - now calls loadArchetypes() instead of direct query
+    db.from('reference_decks').select('archetype_name,card_name,quantity').eq('main_side', 'Main')
+  ]);
+  
+  buildReferenceIndex(refRes.data || []);
+  await loadAllDecks();
+  populateAnalysisFilters();
+  showScreen('screen-home');
+}
   
   state.pilot = pilots[0];
   document.getElementById('home-pilot-name').textContent = state.pilot.pilot_name;
@@ -1935,6 +2017,41 @@ function buildReferenceIndex(refCards) {
   state.totalArchetypes = Object.keys(state.referenceDecks).length;
 }
 
+  async function loadArchetypes() {
+  const { data: existingArchetypes, error } = await db.from('opponent_archetypes')
+    .select('canonical_name')
+    .order('canonical_name');
+  
+  if (error) {
+    console.error('Error loading archetypes:', error);
+    state.archetypes = [];
+    return;
+  }
+  
+  if (existingArchetypes && existingArchetypes.length > 0) {
+    state.archetypes = existingArchetypes.map(a => a.canonical_name);
+  } else {
+    // Seed with common Modern archetypes
+    const defaultArchetypes = [
+      "Grixis Reanimator", "Murktide", "Hammer Time", "Amulet Titan",
+      "Living End", "Tron", "Burn", "Scam", "Yawgmoth", "UW Control",
+      "Temur Rhinos", "4c Omnath", "Jund", "Merfolk", "Dredge",
+      "Mill", "Infect", "Storm", "Belcher", "Hardened Scales",
+      "Affinity", "Death's Shadow", "Elementals", "Coffers", "Prowess"
+    ];
+    
+    // Insert defaults
+    for (const arch of defaultArchetypes) {
+      await db.from('opponent_archetypes').insert({ 
+        canonical_name: arch,
+        created_by: 'system'
+      }).catch(e => console.error('Failed to insert archetype:', e));
+    }
+    
+    state.archetypes = defaultArchetypes;
+  }
+}
+
 function suggestArchetypes() {
   const mainCards = state.newDeckCards.filter(c => c.main_side === 'Main');
   const pilotCards = {};
@@ -2196,35 +2313,214 @@ async function selectMatchDeck(deckId) {
 
 function filterArchetypes(query) {
   const list = document.getElementById('archetype-list');
-  const q = query.toLowerCase();
-  const matches = state.archetypes.filter(a => a.toLowerCase().includes(q)).slice(0, 10);
+  const q = query.trim();
   
-  list.innerHTML = matches.map(a => `
-    <div class="archetype-option" data-archetype="${escapeHtml(a)}"
-         style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">
-      ${escapeHtml(a)}
-    </div>
-  `).join('');
+  if (!q) {
+    list.innerHTML = '';
+    return;
+  }
   
+  // Get fuzzy matches
+  const fuzzyMatches = getFuzzyMatches(q, state.archetypes, 0.2);
+  const exactMatch = state.archetypes.find(a => a.toLowerCase() === q.toLowerCase());
+  
+  let html = '';
+  
+  // Show exact match if found
+  if (exactMatch) {
+    html += `
+      <div class="archetype-match-section">
+        <div style="font-size:11px;color:var(--accent);margin:8px 0 4px;">✓ EXACT MATCH FOUND</div>
+        <div class="archetype-option selected-match" data-archetype="${escapeHtml(exactMatch)}"
+             style="padding:12px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;border:1px solid var(--accent);">
+          <div style="font-weight:600;">${escapeHtml(exactMatch)}</div>
+          <div style="font-size:11px;color:var(--text2);">Click to select</div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Show fuzzy matches
+  if (fuzzyMatches.length > 0) {
+    html += `
+      <div style="font-size:11px;color:var(--text2);margin:8px 0 4px;">🔍 SUGGESTED MATCHES</div>
+      ${fuzzyMatches.map(m => `
+        <div class="archetype-option" data-archetype="${escapeHtml(m.name)}"
+             data-score="${m.score}"
+             style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span>${escapeHtml(m.name)}</span>
+            <span style="font-size:10px;color:var(--text2);background:var(--surface2);padding:2px 6px;border-radius:10px;">
+              ${Math.round(m.score * 100)}% match
+            </span>
+          </div>
+        </div>
+      `).join('')}
+    `;
+  }
+  
+  // Show option to create new archetype (always available for queries > 2 chars)
+  if (q.length >= 2) {
+    const isDuplicate = exactMatch || fuzzyMatches.some(m => m.name.toLowerCase() === q.toLowerCase());
+    if (!isDuplicate) {
+      html += `
+        <div style="margin-top:12px;padding-top:8px;border-top:1px dashed var(--border);">
+          <div class="archetype-option create-new" data-archetype="${escapeHtml(q)}"
+               style="padding:12px;cursor:pointer;text-align:center;color:var(--accent);border:1px dashed var(--accent);border-radius:var(--radius-sm);">
+            ✨ Create new archetype: "${escapeHtml(q)}"
+          </div>
+        </div>
+      `;
+    }
+  }
+  
+  // Show "no results" message if nothing found
+  if (!html) {
+    html = `
+      <div style="padding:20px;text-align:center;color:var(--text2);">
+        No archetypes found. Type at least 2 characters to search or create a new one.
+      </div>
+    `;
+  }
+  
+  list.innerHTML = html;
+  
+  // Add click handlers
   list.querySelectorAll('.archetype-option').forEach(opt => {
-    opt.addEventListener('click', () => selectArchetype(opt.dataset.archetype));
+    opt.addEventListener('click', () => {
+      const archetypeName = opt.dataset.archetype;
+      const isNew = opt.classList.contains('create-new');
+      
+      if (isNew) {
+        showArchetypeCreationDialog(archetypeName);
+      } else {
+        selectArchetype(archetypeName);
+      }
+    });
   });
 }
 
-function selectArchetype(name) {
+  function showArchetypeCreationDialog(suggestedName) {
+  // Create modal overlay
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  `;
+  
+  modal.innerHTML = `
+    <div style="background: var(--surface); border-radius: var(--radius); padding: 24px; max-width: 90%; width: 320px; border: 1px solid var(--border);">
+      <h3 style="margin-bottom: 16px;">Create New Archetype</h3>
+      <label class="label">Archetype name</label>
+      <input type="text" id="new-archetype-name" value="${escapeHtml(suggestedName)}" 
+             style="margin-bottom: 16px;" autocomplete="off">
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-primary" id="confirm-create-archetype" style="margin-bottom: 0;">Create</button>
+        <button class="btn btn-secondary" id="cancel-create-archetype" style="margin-bottom: 0;">Cancel</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  const nameInput = modal.querySelector('#new-archetype-name');
+  nameInput.focus();
+  nameInput.select();
+  
+  modal.querySelector('#confirm-create-archetype').addEventListener('click', async () => {
+    const newName = nameInput.value.trim();
+    if (!newName) {
+      showToast('Please enter an archetype name', 'error');
+      return;
+    }
+    
+    await createCustomArchetype(newName);
+    modal.remove();
+    selectArchetype(newName);
+  });
+  
+  modal.querySelector('#cancel-create-archetype').addEventListener('click', () => {
+    modal.remove();
+  });
+  
+  // Close on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+}
+
+async function createCustomArchetype(name) {
+  // Normalize name (capitalize first letter of each word)
+  const normalizedName = name.split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  
+  // Check if it already exists
+  if (!state.archetypes.includes(normalizedName)) {
+    state.archetypes.push(normalizedName);
+    
+    // Save to database
+    const { error } = await db.from('opponent_archetypes').insert({ 
+      canonical_name: normalizedName,
+      created_by: state.pilot?.pilot_name || 'system',
+      created_at: new Date().toISOString()
+    });
+    
+    if (error) {
+      console.error('Failed to save archetype:', error);
+      showToast('Archetype created locally but not saved to database', 'warning');
+    } else {
+      showToast(`Created new archetype: ${normalizedName}`, 'success');
+    }
+  }
+  
+  return normalizedName;
+}
+
+function selectArchetype(name, isExactMatch = false) {
   state.opponent = name;
   document.getElementById('opponent-name').textContent = name;
   document.getElementById('opponent-selected').style.display = 'block';
   document.getElementById('archetype-list').innerHTML = '';
   document.getElementById('opponent-search').value = name;
   document.getElementById('btn-confirm-opponent').disabled = false;
+  
+  // Add visual feedback
+  const selectedDiv = document.getElementById('opponent-selected');
+  selectedDiv.style.animation = 'none';
+  setTimeout(() => {
+    selectedDiv.style.animation = 'fadeIn 0.3s ease';
+  }, 10);
+  
+  // Show success message
+  if (isExactMatch) {
+    showToast(`Selected: ${name}`, 'success');
+  }
 }
 
 function confirmOpponent() {
-  if (!state.opponent) {
-    showToast('Please select an opponent deck', 'error');
+  const selectedOpponent = state.opponent;
+  
+  if (!selectedOpponent) {
+    // Check if there's text in the search box that wasn't selected
+    const searchValue = document.getElementById('opponent-search').value.trim();
+    if (searchValue) {
+      // Offer to create it
+      showArchetypeCreationDialog(searchValue);
+      return;
+    }
+    showToast('Please select an opponent deck from the suggestions', 'error');
     return;
   }
+  
   state.matchId = `${state.pilot.pilot_name}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
   state.gameNumber = 1;
   setupGameScreen();
