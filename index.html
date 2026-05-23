@@ -980,7 +980,7 @@ async function signInWithGoogle() {
   const { error } = await db.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.href
+      redirectTo: 'https://phlsphr42.github.io/mize'
     }
   });
   if (error) showToast('Google sign in error: ' + error.message, 'error');
@@ -2106,11 +2106,22 @@ function toggleRestMatchups(el) {
 async function init() {
   try {
     const { data: { session } } = await db.auth.getSession();
-    if (session) await onSignedIn(session.user);
-    else showScreen('screen-auth');
+    if (session) {
+      await onSignedIn(session.user);
+    } else {
+      showScreen('screen-auth');
+    }
   } catch(e) {
     showScreen('screen-auth');
   }
+
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      await onSignedIn(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      showScreen('screen-auth');
+    }
+  });
 }
 
 init();
