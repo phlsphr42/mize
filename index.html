@@ -759,6 +759,7 @@ function showScreen(id) {
   if (id === 'screen-analysis') onShowAnalysis();
   if (id === 'screen-matchup') onShowMatchup();
   if (id === 'screen-change-art') populateArtCardSelect();
+  if (id === 'screen-home') loadRecentMatches();
   if (id === 'screen-edit-deck-notes') {
     document.getElementById('deck-notes-input').value = state.currentDeck?.deck_notes || '';
   }
@@ -912,6 +913,9 @@ async function onSignedIn(user) {
     }
     await loadAllDecks();
     populateAnalysisFilters();
+    await loadAllDecks();
+    populateAnalysisFilters();
+    await loadRecentMatches();
     showScreen('screen-home');
   } catch(e) {
     showToast('Sign in error: ' + e.message, 'error');
@@ -954,6 +958,41 @@ async function loadAllDecks() {
   const count = state.allDecks.length;
   document.getElementById('home-deck-count').textContent =
     count === 0 ? 'No decks registered' : count === 1 ? '1 deck registered' : count + ' decks registered';
+}
+
+async function loadRecentMatches() {
+  const el = document.getElementById('recent-matches');
+  try {
+    const { data, error } = await db.from('raw_game_log')
+      .select('id,timestamp,deck_archetype,opponent_archetype,game_result,match_result,game_number')
+      .eq('pilot_name', state.pilot.pilot_name)
+      .order('timestamp', { ascending: false })
+      .limit(10);
+    if (error) throw error;
+    if (!data || !data.length) {
+      el.innerHTML = '<div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div>';
+      return;
+    }
+    el.innerHTML = data.map(g => {
+      const date = g.timestamp ? new Date(g.timestamp).toLocaleDateString() : '';
+      const resultColor = g.game_result === 'Win' ? 'var(--success)' : 'var(--danger)';
+      const matchBadge = g.match_result
+        ? '<span style="font-size:11px;margin-left:6px;padding:2px 6px;border-radius:10px;background:' +
+          (g.match_result === 'Win' ? '#1a3a1a;color:#4caf50' : '#3a1a1a;color:#f44336') +
+          ';">Match ' + g.match_result + '</span>'
+        : '';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+        '<div style="flex:1;">' +
+        '<div style="font-size:13px;font-weight:600;">' + (g.deck_archetype || 'Unknown') + ' vs ' + (g.opponent_archetype || 'Unknown') + '</div>' +
+        '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + (g.game_number || '') + ' · ' + date + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+        '<span style="font-size:13px;font-weight:700;color:' + resultColor + ';">' + (g.game_result || '') + '</span>' +
+        matchBadge + '</div></div>';
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:14px;">Could not load recent matches.</div>';
+  }
 }
 
 function renderMyDecks() {
