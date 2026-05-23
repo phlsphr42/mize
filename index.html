@@ -1058,12 +1058,16 @@ async function onSignedIn(user) {
   if (!pilots || !pilots.length) { showError('login', 'No pilot found for this account.'); return; }
   state.pilot = pilots[0];
   document.getElementById('home-pilot-name').textContent = state.pilot.pilot_name;
-  const [arcRes, refRes] = await Promise.all([
+const [arcRes, refRes] = await Promise.all([
     db.from('opponent_archetypes').select('canonical_name').order('canonical_name'),
     db.from('reference_decks').select('archetype_name,card_name,quantity').eq('main_side', 'Main')
   ]);
   state.archetypes = (arcRes.data || []).map(a => a.canonical_name);
-  buildReferenceIndex(refRes.data || []);
+  const refData = refRes.data || [];
+  if (refData.length === 0) {
+    showToast('Warning: reference deck data not loaded (' + (refRes.error ? refRes.error.message : 'empty result') + ')', 'error');
+  }
+  buildReferenceIndex(refData);
   await loadAllDecks();
   populateAnalysisFilters();
   showScreen('screen-home');
