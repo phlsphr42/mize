@@ -1538,13 +1538,70 @@ function populateAnalysisFilters() {
 }
 
 async function fetchSummaryData(scope, filter, deck) {
-  let query = db.from('card_hand_summary').select('card_name,filter,copy_count,wins,total,win_rate').eq('filter', filter);
-  if (deck) query = query.eq('deck_archetype', deck);
+  let query = db.from('raw_game_log')
+    .select('pilot_name,deck_archetype,game_number,pre_post,opponent_archetype,card1,card2,card3,card4,card5,card6,card7,game_result')
+    .not('game_result', 'is', null);
+
   if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
-  else query = query.is('pilot_name', null);
-  const { data, error } = await query.limit(5000);
+  if (deck) query = query.eq('deck_archetype', deck);
+
+  if (filter === 'G1') query = query.eq('game_number', 'G1');
+  else if (filter === 'G23') query = query.eq('game_number', 'G23');
+  else if (filter === 'Pre') query = query.eq('pre_post', 'Pre');
+  else if (filter === 'Post') query = query.eq('pre_post', 'Post');
+  else if (filter === 'Pre_G1') query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
+  else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
+
+  const { data, error } = await query.limit(50000);
   if (error) throw error;
-  return data || [];
+  const games = data || [];
+
+  const cardCounts = {};
+  const allCards = new Set();
+
+  for (const g of games) {
+    const isWin = g.game_result === 'Win';
+    const hand = [g.card1,g.card2,g.card3,g.card4,g.card5,g.card6,g.card7]
+      .filter(c => c && c.trim());
+    const counts = {};
+    for (const card of hand) {
+      counts[card] = (counts[card] || 0) + 1;
+      allCards.add(card);
+    }
+    for (const [card, count] of Object.entries(counts)) {
+      if (!cardCounts[card]) cardCounts[card] = {};
+      if (!cardCounts[card][count]) cardCounts[card][count] = { wins: 0, total: 0 };
+      cardCounts[card][count].wins += isWin ? 1 : 0;
+      cardCounts[card][count].total += 1;
+    }
+  }
+
+  for (const g of games) {
+    const isWin = g.game_result === 'Win';
+    const hand = new Set([g.card1,g.card2,g.card3,g.card4,g.card5,g.card6,g.card7].filter(c => c && c.trim()));
+    for (const card of allCards) {
+      if (!hand.has(card)) {
+        if (!cardCounts[card]) cardCounts[card] = {};
+        if (!cardCounts[card][0]) cardCounts[card][0] = { wins: 0, total: 0 };
+        cardCounts[card][0].wins += isWin ? 1 : 0;
+        cardCounts[card][0].total += 1;
+      }
+    }
+  }
+
+  const rows = [];
+  for (const [card, copies] of Object.entries(cardCounts)) {
+    for (const [copyCount, stats] of Object.entries(copies)) {
+      rows.push({
+        card_name: card,
+        copy_count: parseInt(copyCount),
+        wins: stats.wins,
+        total: stats.total,
+        win_rate: stats.total > 0 ? stats.wins / stats.total : 0
+      });
+    }
+  }
+  return rows;
 }
 
 async function calcBayesian() {
