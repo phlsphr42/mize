@@ -1054,24 +1054,37 @@ async function signUp() {
 }
 
 async function onSignedIn(user) {
-  state.user = user;
-  const { data: pilots } = await db.from('pilots').select('pilot_name,pilot_email').eq('auth_id', user.id).limit(1);
-  if (!pilots || !pilots.length) { showError('login', 'No pilot found for this account.'); return; }
-  state.pilot = pilots[0];
-  document.getElementById('home-pilot-name').textContent = state.pilot.pilot_name;
-const [arcRes, refRes] = await Promise.all([
-    db.from('opponent_archetypes').select('canonical_name').order('canonical_name'),
-    db.from('reference_decks').select('archetype_name,card_name,quantity').eq('main_side', 'Main')
-  ]);
-  state.archetypes = (arcRes.data || []).map(a => a.canonical_name);
-  const refData = refRes.data || [];
-  if (refData.length === 0) {
-    showToast('Warning: reference deck data not loaded (' + (refRes.error ? refRes.error.message : 'empty result') + ')', 'error');
+  try {
+    state.user = user;
+    const { data: pilots } = await db.from('pilots')
+      .select('pilot_name,pilot_email')
+      .eq('auth_id', user.id)
+      .limit(1);
+    if (!pilots || !pilots.length) {
+      showError('login', 'No pilot found for this account.');
+      showScreen('screen-auth');
+      return;
+    }
+    state.pilot = pilots[0];
+    document.getElementById('home-pilot-name').textContent = state.pilot.pilot_name;
+    try {
+      const [arcRes, refRes] = await Promise.all([
+        db.from('opponent_archetypes').select('canonical_name').order('canonical_name'),
+        db.from('reference_decks').select('archetype_name,card_name,quantity').eq('main_side', 'Main')
+      ]);
+      state.archetypes = (arcRes.data || []).map(a => a.canonical_name);
+      buildReferenceIndex(refRes.data || []);
+    } catch(e) {
+      showToast('Warning: reference data could not load', 'warning');
+      state.archetypes = [];
+    }
+    await loadAllDecks();
+    populateAnalysisFilters();
+    showScreen('screen-home');
+  } catch(e) {
+    showToast('Sign in error: ' + e.message, 'error');
+    showScreen('screen-auth');
   }
-  buildReferenceIndex(refData);
-  await loadAllDecks();
-  populateAnalysisFilters();
-  showScreen('screen-home');
 }
 
 async function signOut() {
@@ -2043,9 +2056,16 @@ function renderChiResults(result, fromCache) {
 // ── INIT ───────────────────────────────────────────────────────────
 
 async function init() {
-  const { data: { session } } = await db.auth.getSession();
-  if (session) await onSignedIn(session.user);
-  else showScreen('screen-auth');
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+      await onSignedIn(session.user);
+    } else {
+      showScreen('screen-auth');
+    }
+  } catch(e) {
+    showScreen('screen-auth');
+  }
 }
 
 init();
