@@ -483,6 +483,7 @@
   <button class="btn btn-primary" onclick="startNewMatch()">+ New match</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-my-decks')">My decks</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-analysis')">Analysis</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-matchup')">Matchup matrix</button>
   <hr class="divider">
   <div class="card-title">Recent matches</div>
   <div id="recent-matches"><div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div></div>
@@ -935,6 +936,7 @@ function showScreen(id) {
   window.scrollTo(0, 0);
   if (id === 'screen-my-decks') renderMyDecks();
   if (id === 'screen-analysis') onShowAnalysis();
+  if (id === 'screen-matchup') onShowMatchup();
   if (id === 'screen-change-art') populateArtCardSelect();
   if (id === 'screen-edit-deck-notes') {
     document.getElementById('deck-notes-input').value =
@@ -1740,6 +1742,18 @@ function onShowAnalysis() {
   if (isCacheValid('c')) { renderChiResults(state.cache.c.data, true); }
 }
 
+  function onShowMatchup() {
+  const sel = document.getElementById('m-deck');
+  sel.innerHTML = '<option value="">All decks</option>' +
+    state.allDecks.map(d =>
+      `<option value="${d.archetype_name}">${d.archetype_name}</option>`
+    ).join('');
+  if (matchupCache && (Date.now() - matchupCache.timestamp < CACHE_TTL_MS)) {
+    renderMatchupResults(matchupCache.data, '');
+    setCacheInfo('m', true);
+  }
+}
+
 function populateAnalysisFilters() {
   const deckOpts = '<option value="">All decks</option>' +
     state.allDecks.map(d => `<option value="${d.archetype_name}">${d.archetype_name}</option>`).join('');
@@ -2030,6 +2044,289 @@ async function init() {
 }
 
 init();
+  <!-- MATCHUP MATRIX -->
+<div id="screen-matchup" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Matchup matrix</h2>
+  </div>
+  <div class="card">
+    <div class="row">
+      <div>
+        <label class="label">Your deck</label>
+        <select id="m-deck">
+          <option value="">All decks</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Data scope</label>
+        <select id="m-scope">
+          <option value="all">All data</option>
+          <option value="mine">My data</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label class="label">Game filter</label>
+        <select id="m-filter">
+          <option value="Overall">Overall</option>
+          <option value="G1">Game 1</option>
+          <option value="G23">Games 2 & 3</option>
+          <option value="Pre">Preboard</option>
+          <option value="Post">Postboard</option>
+          <option value="Pre_G1">Preboard G1</option>
+          <option value="Post_G23">Postboard G2/3</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Metagame basis</label>
+        <select id="m-meta">
+          <option value="recorded">Recorded games</option>
+          <option value="goldfish">MTGGoldfish</option>
+        </select>
+      </div>
+    </div>
+    <input type="text" id="m-search" placeholder="Search opponent archetype..."
+           oninput="filterMatchupResults(this.value)" style="margin-bottom:8px;">
+    <div class="throttle-msg" id="throttle-m"></div>
+    <div class="progress-bar-wrap" id="progress-m">
+      <div class="progress-bar-fill" id="progress-m-fill" style="width:0%"></div>
+    </div>
+    <button class="btn btn-primary" id="btn-calc-m"
+            onclick="calcMatchups()" style="margin-bottom:0;">
+      Load matchups
+    </button>
+    <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;"
+         id="m-cache-info"></div>
+  </div>
+  <div id="m-results"></div>
+</div>
+  // ── MATCHUP MATRIX ─────────────────────────────────────────────────
+
+function wilsonInterval(wins, total, z = 1.96) {
+  if (total === 0) return { low: 0, mid: 0, high: 0 };
+  const p = wins / total;
+  const z2 = z * z;
+  const mid = (p + z2 / (2 * total)) / (1 + z2 / total);
+  const margin = (z / (1 + z2 / total)) *
+    Math.sqrt(p * (1 - p) / total + z2 / (4 * total * total));
+  return {
+    low: Math.max(0, Math.round((mid - margin) * 1000) / 10),
+    mid: Math.round(p * 1000) / 10,
+    high: Math.min(100, Math.round((mid + margin) * 1000) / 10)
+  };
+}
+
+let matchupCache = null;
+let matchupLastCalc = 0;
+let matchupRawData = [];
+
+async function calcMatchups() {
+  const now = Date.now();
+  if (now - matchupLastCalc < THROTTLE_MS) {
+    const secs = Math.ceil((THROTTLE_MS - (now - matchupLastCalc)) / 1000);
+    const el = document.getElementById('throttle-m');
+    el.textContent = `Please wait ${secs}s before recalculating.`;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', THROTTLE_MS - (now - matchupLastCalc));
+    return;
+  }
+
+  const deck = document.getElementById('m-deck').value;
+  const scope = document.getElementById('m-scope').value;
+  const filter = document.getElementById('m-filter').value;
+  const meta = document.getElementById('m-meta').value;
+
+  setProgress('m', 10);
+  document.getElementById('btn-calc-m').disabled = true;
+
+  try {
+    let query = db.from('matchup_summary')
+      .select('pilot_deck,opponent_archetype,filter,pilot_name,game_wins,game_losses,match_wins,match_losses')
+      .eq('filter', filter);
+
+    if (deck) query = query.eq('pilot_deck', deck);
+    else query = query.is('pilot_deck', null);
+
+    if (scope === 'mine') {
+      query = query.eq('pilot_name', state.pilot.pilot_name);
+    } else {
+      query = query.is('pilot_name', null);
+    }
+
+    setProgress('m', 40);
+    const { data: matchups, error } = await query;
+    if (error) throw error;
+
+    setProgress('m', 60);
+
+    let topArchetypes = new Set();
+
+    if (meta === 'goldfish') {
+      const { data: goldfishData } = await db.from('metagame_share')
+        .select('archetype_name,share_percent,cumulative_share')
+        .order('share_percent', { ascending: false });
+      if (goldfishData && goldfishData.length) {
+        let cumulative = 0;
+        for (const row of goldfishData) {
+          topArchetypes.add(row.archetype_name);
+          cumulative += row.share_percent || 0;
+          if (cumulative >= 75) break;
+        }
+      }
+    } else {
+      const totalGames = (matchups || []).reduce((s, r) => s + r.game_wins + r.game_losses, 0);
+      const byOpponent = {};
+      (matchups || []).forEach(r => {
+        const opp = r.opponent_archetype;
+        if (!byOpponent[opp]) byOpponent[opp] = 0;
+        byOpponent[opp] += r.game_wins + r.game_losses;
+      });
+      const sorted = Object.entries(byOpponent).sort((a, b) => b[1] - a[1]);
+      let cumulative = 0;
+      for (const [opp, count] of sorted) {
+        topArchetypes.add(opp);
+        cumulative += count;
+        if (totalGames > 0 && cumulative / totalGames >= 0.75) break;
+      }
+    }
+
+    setProgress('m', 80);
+
+    const byOpponent = {};
+    (matchups || []).forEach(r => {
+      const opp = r.opponent_archetype;
+      if (!byOpponent[opp]) {
+        byOpponent[opp] = { game_wins: 0, game_losses: 0, match_wins: 0, match_losses: 0 };
+      }
+      byOpponent[opp].game_wins += r.game_wins;
+      byOpponent[opp].game_losses += r.game_losses;
+      byOpponent[opp].match_wins += r.match_wins;
+      byOpponent[opp].match_losses += r.match_losses;
+    });
+
+    matchupRawData = Object.entries(byOpponent).map(([opp, stats]) => {
+      const gTotal = stats.game_wins + stats.game_losses;
+      const mTotal = stats.match_wins + stats.match_losses;
+      const gInterval = wilsonInterval(stats.game_wins, gTotal);
+      const mInterval = wilsonInterval(stats.match_wins, mTotal);
+      return {
+        opponent: opp,
+        inTop75: topArchetypes.has(opp) || topArchetypes.size === 0,
+        gameWins: stats.game_wins,
+        gameLosses: stats.game_losses,
+        gameTotal: gTotal,
+        gameMid: gInterval.mid,
+        gameLow: gInterval.low,
+        gameHigh: gInterval.high,
+        matchWins: stats.match_wins,
+        matchLosses: stats.match_losses,
+        matchTotal: mTotal,
+        matchMid: mInterval.mid,
+        matchLow: mInterval.low,
+        matchHigh: mInterval.high,
+        lowSample: gTotal < 10
+      };
+    }).sort((a, b) => {
+      if (a.inTop75 && !b.inTop75) return -1;
+      if (!a.inTop75 && b.inTop75) return 1;
+      return b.gameMid - a.gameMid;
+    });
+
+    matchupCache = { data: matchupRawData, timestamp: Date.now() };
+    matchupLastCalc = Date.now();
+    setProgress('m', 100);
+    renderMatchupResults(matchupRawData, '');
+    setCacheInfo('m', false);
+
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    setProgress('m', 0);
+    document.getElementById('btn-calc-m').disabled = false;
+  }
+}
+
+function filterMatchupResults(query) {
+  if (!matchupRawData.length) return;
+  renderMatchupResults(matchupRawData, query);
+}
+
+function renderMatchupResults(data, searchQuery) {
+  const el = document.getElementById('m-results');
+  const q = (searchQuery || '').toLowerCase();
+
+  let filtered = q
+    ? data.filter(r => r.opponent.toLowerCase().includes(q))
+    : data.filter(r => r.inTop75);
+
+  if (q && !filtered.length) {
+    filtered = data.filter(r => r.opponent.toLowerCase().includes(q));
+  }
+
+  if (!filtered.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:14px;padding:8px 0;">No matchup data available. Run the calculation notebook first, then load matchups.</div>';
+    return;
+  }
+
+  const top75 = filtered.filter(r => r.inTop75);
+  const rest = filtered.filter(r => !r.inTop75);
+
+  const renderRow = r => {
+    const gColor = r.gameMid >= 55 ? 'var(--success)' : r.gameMid <= 45 ? 'var(--danger)' : 'var(--text)';
+    const mColor = r.matchMid >= 55 ? 'var(--success)' : r.matchMid <= 45 ? 'var(--danger)' : 'var(--text)';
+    const opacity = r.lowSample ? '0.6' : '1';
+    return `
+      <div style="padding:10px 0;border-bottom:1px solid var(--border);opacity:${opacity};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">${r.opponent}</div>
+            ${r.lowSample ? '<div style="font-size:10px;color:var(--warning);">Low sample</div>' : ''}
+          </div>
+          <div style="text-align:right;min-width:130px;">
+            <div style="font-size:12px;color:var(--text2);">Game</div>
+            <div style="font-size:14px;font-weight:700;color:${gColor};">${r.gameMid}%</div>
+            <div style="font-size:10px;color:var(--text2);">${r.gameLow}%–${r.gameHigh}% (${r.gameTotal}g)</div>
+          </div>
+          ${r.matchTotal > 0 ? `
+          <div style="text-align:right;min-width:130px;margin-left:8px;">
+            <div style="font-size:12px;color:var(--text2);">Match</div>
+            <div style="font-size:14px;font-weight:700;color:${mColor};">${r.matchMid}%</div>
+            <div style="font-size:10px;color:var(--text2);">${r.matchLow}%–${r.matchHigh}% (${r.matchTotal}m)</div>
+          </div>` : ''}
+        </div>
+      </div>`;
+  };
+
+  let html = '';
+
+  if (q) {
+    html = filtered.map(renderRow).join('');
+  } else {
+    if (top75.length) {
+      html += `<div class="card-title" style="margin-bottom:4px;">Top 75% of metagame (${top75.length} matchups)</div>`;
+      html += top75.map(renderRow).join('');
+    }
+    if (rest.length && !q) {
+      html += `<hr class="divider">
+        <div class="card-title" style="margin-bottom:4px;cursor:pointer;" onclick="toggleRestMatchups(this)">
+          Other matchups (${rest.length}) — tap to show ▼
+        </div>
+        <div id="rest-matchups" style="display:none;">${rest.map(renderRow).join('')}</div>`;
+    }
+  }
+
+  el.innerHTML = `<div class="card" style="padding:12px;">${html}</div>`;
+}
+
+function toggleRestMatchups(el) {
+  const div = document.getElementById('rest-matchups');
+  if (!div) return;
+  const visible = div.style.display !== 'none';
+  div.style.display = visible ? 'none' : 'block';
+  el.textContent = el.textContent.replace(visible ? '▲' : '▼', visible ? '▼' : '▲');
+}
 </script>
 </body>
 </html>
