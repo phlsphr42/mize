@@ -1475,8 +1475,6 @@ const scores = Object.entries(state.referenceDecks).map(([archetype, refCards]) 
     return { archetype, score: combined };
   });
   scores.sort((a, b) => b.score - a.score);
-  console.log('Top 10 scores:', scores.slice(0,10).map(s => s.archetype + ': ' + s.score.toFixed(4)).join(', '));
-  document.getElementById('new-deck-archetype-section').innerHTML = '<div style="font-size:11px;color:var(--text2);word-break:break-all;margin-bottom:8px;">' + scores.slice(0,10).map(s => s.archetype + ': ' + s.score.toFixed(4)).join('<br>') + '</div>';
   const top3 = scores.slice(0, 3);
   const maxScore = top3[0]?.score || 1;
   document.getElementById('archetype-suggestions').innerHTML = top3.map((s, i) => `
