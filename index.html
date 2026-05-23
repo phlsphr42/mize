@@ -1409,17 +1409,13 @@ function buildCardSlots(count) {
   const el = document.getElementById('card-slots');
   const isPost = state.prepost === 'Post';
   const cards = (state.matchDeck.cards || [])
-    .filter(c => isPost ? true : c.main_side === 'Main')
-    .sort((a, b) => {
-      if (a.main_side !== b.main_side) return a.main_side === 'Main' ? -1 : 1;
-      return a.card_name.localeCompare(b.card_name);
-    });
-  const opts = [...new Set(cards.map(c => c.card_name))];
+    .filter(c => isPost ? true : c.main_side === 'Main');
+  const uniqueNames = [...new Set(cards.map(c => c.card_name))].sort();
   el.innerHTML = Array.from({length: count}, (_, i) =>
     '<div class="card-slot"><span class="card-slot-label">Card ' + (i+1) + '</span>' +
     '<select id="hand-card-' + i + '" onchange="updateCardImage(' + i + ')">' +
     '<option value="">-- empty --</option>' +
-    opts.map(n => '<option value="' + n + '">' + n + '</option>').join('') +
+    uniqueNames.map(n => '<option value="' + n + '">' + n + '</option>').join('') +
     '</select><img id="hand-img-' + i + '" class="card-image-preview" src="" alt="" style="display:none;"></div>'
   ).join('');
 }
