@@ -695,8 +695,7 @@
   <div class="match-info" style="margin-bottom:12px;">Deck: <span id="match-setup-deck-name"></span></div>
   <div class="card">
     <label class="label">Opponent's deck</label>
-    <input type="text" id="opponent-search" placeholder="Search archetypes..." oninput="filterArchetypes(this.value)">
-    <div id="archetype-list" style="max-height:200px;overflow-y:auto;"></div>
+ <input type="text" id="opponent-search" placeholder="Search archetypes..." oninput="filterArchetypes(this.value)">    <div id="archetype-list" style="max-height:200px;overflow-y:auto;"></div>
     <div id="opponent-selected" style="display:none;">
       <hr class="divider">
       <div style="font-size:13px;color:var(--text2);">Selected:</div>
@@ -1574,11 +1573,17 @@ async function selectMatchDeck(deckId) {
 
 function filterArchetypes(query) {
   const list = document.getElementById('archetype-list');
-  const q = query.toLowerCase();
-  const matches = state.archetypes.filter(a => a.toLowerCase().includes(q)).slice(0, 10);
+  const q = query.toLowerCase().trim();
+  if (!q) { list.innerHTML = ''; return; }
+  const matches = state.archetypes
+    .filter(a => a.toLowerCase().includes(q))
+    .slice(0, 10);
   list.innerHTML = matches.map(a => `
-    <div onclick="selectArchetype('${a.replace(/'/g,"\\'")}');"
-         style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">${a}</div>
+    <div onclick="selectArchetype('${a.replace(/'/g, "\\'")}')"
+         style="padding:10px;border-bottom:1px solid var(--border);
+                cursor:pointer;font-size:14px;">
+      ${a}
+    </div>
   `).join('');
 }
 
