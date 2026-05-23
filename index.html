@@ -1427,7 +1427,8 @@ function updateCardImage(idx) {
 async function submitGame() {
   const handSize = 7 - state.mulligans;
   const cards = Array.from({length: handSize}, (_, i) => { const s = document.getElementById('hand-card-' + i); return s ? s.value : ''; });
-  if (!state.gameResult) { showToast('Please select a game result', 'error'); return; }
+if (!state.gameResult && !state.gameresult) { showToast('Please select a game result', 'error'); return; }
+const gameResultValue = state.gameResult || state.gameresult;
   if (!state.playdraw) { showToast('Please select play or draw', 'error'); return; }
   const matchResult = state.matchEnd === 'Yes' ? state.matchResult : null;
   const { error } = await db.from('raw_game_log').insert({
@@ -1439,7 +1440,7 @@ async function submitGame() {
     card1: cards[0]||null, card2: cards[1]||null, card3: cards[2]||null,
     card4: cards[3]||null, card5: cards[4]||null, card6: cards[5]||null, card7: cards[6]||null,
     hand_size: handSize, mulligan_count: state.mulligans,
-    game_result: state.gameResult, match_result: matchResult,
+game_result: gameResultValue, match_result: matchResult,
     notes: document.getElementById('game-notes').value || null
   });
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
