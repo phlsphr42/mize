@@ -1780,7 +1780,7 @@ function renderChiResults(result, fromCache) {
     return a.card.localeCompare(b.card);
   };
   const renderTable = (rows, title) => {
-    if (!rows.length) return '<div style="color:var(--text2);font-size:14px;">No valid results. Run the Colab calculation notebook first, then more game data is needed to meet the minimum sample size threshold.</div>';
+  if (!rows.length) return '<div style="color:var(--text2);font-size:14px;">No significant results found. This means either there is not enough data yet (each cell in the 2×2 contingency table needs at least 5 games) or no cards show a statistically detectable effect on win rate with the current data.</div>';
     const sorted = [...rows].sort(sortFn);
     return (title ? '<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">' + title + '</div>' : '') +
       '<div style="overflow-x:auto;"><table class="sortable"><thead><tr>' +
