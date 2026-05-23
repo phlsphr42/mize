@@ -1454,9 +1454,9 @@ game_result: gameResultValue, match_result: matchResult,
     notes: document.getElementById('game-notes').value || null
   });
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
-  document.getElementById('after-result-label').textContent = 'Game ' + state.gameNumber + ': ' + state.gameResult;
+  document.getElementById('after-result-label').textContent = 'Game ' + state.gameNumber + ': ' + gameResultValue;
   document.getElementById('after-match-label').textContent = matchResult ? 'Match result: ' + matchResult : '';
-  document.getElementById('result-icon').textContent = state.gameResult === 'Win' ? '🏆' : '💀';
+  document.getElementById('result-icon').textContent = gameResultValue === 'Win' ? '🏆' : '💀';
   document.getElementById('btn-next-game').style.display = state.matchEnd === 'Yes' ? 'none' : 'block';
   showToast('Game submitted!');
   showScreen('screen-after-game');
