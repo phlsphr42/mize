@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Mize</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -40,151 +41,61 @@
     gap: 12px;
     padding: 16px 0 24px;
   }
-  .header h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 2px;
-  }
+  .header h1 { font-size: 28px; font-weight: 700; color: var(--accent); letter-spacing: 2px; }
   .header h2 { font-size: 18px; font-weight: 600; }
   .back-btn {
-    background: none;
-    border: none;
-    color: var(--accent);
-    font-size: 24px;
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
+    background: none; border: none; color: var(--accent);
+    font-size: 24px; cursor: pointer; padding: 4px; line-height: 1;
   }
   .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
   }
   .card-title {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text2);
-    margin-bottom: 8px;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text2); margin-bottom: 8px;
   }
   .btn {
-    width: 100%;
-    padding: 14px;
-    border-radius: var(--radius-sm);
-    border: none;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
-    margin-bottom: 8px;
+    width: 100%; padding: 14px; border-radius: var(--radius-sm); border: none;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: opacity 0.15s; margin-bottom: 8px;
   }
   .btn:active { opacity: 0.8; }
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-primary { background: var(--accent); color: #000; }
-  .btn-secondary {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
   .btn-success { background: var(--success); color: #fff; }
   .btn-danger { background: var(--danger); color: #fff; }
-  .btn-sm {
-    width: auto;
-    padding: 8px 16px;
-    font-size: 13px;
-    margin-bottom: 0;
-  }
+  .btn-sm { width: auto; padding: 8px 16px; font-size: 13px; margin-bottom: 0; }
   input, select, textarea {
-    width: 100%;
-    padding: 12px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 15px;
-    margin-bottom: 8px;
-    font-family: inherit;
+    width: 100%; padding: 12px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); font-size: 15px; margin-bottom: 8px; font-family: inherit;
   }
   textarea { resize: vertical; min-height: 120px; }
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
   select option { background: var(--surface2); }
   .toggle-group { display: flex; gap: 8px; margin-bottom: 8px; }
   .toggle-btn {
-    flex: 1;
-    padding: 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--text2);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
+    flex: 1; padding: 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; text-align: center;
   }
-  .toggle-btn.selected {
-    background: var(--accent);
-    color: #000;
-    border-color: var(--accent);
-  }
-  .card-slot {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .card-slot-label {
-    font-size: 12px;
-    color: var(--text2);
-    width: 48px;
-    flex-shrink: 0;
-  }
+  .toggle-btn.selected { background: var(--accent); color: #000; border-color: var(--accent); }
+  .card-slot { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .card-slot-label { font-size: 12px; color: var(--text2); width: 48px; flex-shrink: 0; }
   .card-slot select { margin-bottom: 0; flex: 1; }
   .card-image-preview {
-    width: 36px;
-    height: 50px;
-    border-radius: 4px;
-    object-fit: cover;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    flex-shrink: 0;
+    width: 36px; height: 50px; border-radius: 4px; object-fit: cover;
+    background: var(--surface2); border: 1px solid var(--border); flex-shrink: 0;
   }
-  .step-indicator {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-    padding: 8px 0 16px;
-  }
-  .step-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--border);
-  }
+  .step-indicator { display: flex; gap: 6px; justify-content: center; padding: 8px 0 16px; }
+  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
   .step-dot.active { background: var(--accent); }
   .step-dot.done { background: var(--accent2); }
-  .label {
-    font-size: 13px;
-    color: var(--text2);
-    margin-bottom: 6px;
-    display: block;
-  }
-  .score-badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-  }
+  .label { font-size: 13px; color: var(--text2); margin-bottom: 6px; display: block; }
+  .score-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
   .score-pos { background: #1a3a1a; color: #4caf50; }
   .score-neg { background: #3a1a1a; color: #f44336; }
   .score-neu { background: var(--surface2); color: var(--text2); }
@@ -193,29 +104,16 @@
   .sig-low { color: var(--text2); }
   .loading { text-align: center; padding: 40px; color: var(--text2); }
   .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 12px;
+    width: 32px; height: 32px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 12px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px 20px;
-    font-size: 14px;
-    z-index: 1000;
-    display: none;
-    white-space: nowrap;
-    max-width: 90vw;
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 20px; font-size: 14px;
+    z-index: 1000; display: none; white-space: nowrap; max-width: 90vw;
   }
   .toast.success { border-color: var(--success); color: var(--success); }
   .toast.error { border-color: var(--danger); color: var(--danger); }
@@ -227,203 +125,82 @@
   .match-info { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
   .match-info span { color: var(--accent); font-weight: 600; }
   .auth-logo { text-align: center; padding: 48px 0 32px; }
-  .auth-logo h1 {
-    font-size: 48px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 6px;
-  }
+  .auth-logo h1 { font-size: 48px; font-weight: 700; color: var(--accent); letter-spacing: 6px; }
   .auth-logo p { font-size: 13px; color: var(--text2); margin-top: 8px; }
-  .auth-tabs {
-    display: flex;
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--border);
-  }
+  .auth-tabs { display: flex; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
   .auth-tab {
-    flex: 1;
-    padding: 12px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text2);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
+    flex: 1; padding: 12px; text-align: center; font-size: 14px; font-weight: 600;
+    color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
   }
   .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .auth-form { display: none; }
   .auth-form.active { display: block; }
-  .error-msg {
-    color: var(--danger);
-    font-size: 13px;
-    margin-bottom: 8px;
-    display: none;
-  }
+  .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 8px; display: none; }
   .deck-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: border-color 0.15s;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+    cursor: pointer; transition: border-color 0.15s;
   }
   .deck-card:active { border-color: var(--accent); }
-  .deck-card.selected { border-color: var(--accent); }
   .deck-card-name { font-size: 15px; font-weight: 600; }
   .deck-card-meta { font-size: 12px; color: var(--text2); margin-top: 4px; }
-  .deck-card-notes {
-    font-size: 12px;
-    color: var(--accent);
-    margin-top: 4px;
-    font-style: italic;
-  }
+  .deck-card-notes { font-size: 12px; color: var(--accent); margin-top: 4px; font-style: italic; }
   .archetype-suggestion {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: border-color 0.15s;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px;
+    cursor: pointer; transition: border-color 0.15s;
   }
-  .archetype-suggestion.selected {
-    border-color: var(--accent);
-    background: #1a1500;
-  }
+  .archetype-suggestion.selected { border-color: var(--accent); background: #1a1500; }
   .archetype-suggestion-name { font-size: 15px; font-weight: 600; }
-  .archetype-suggestion-score {
-    font-size: 12px;
-    color: var(--text2);
-    margin-top: 2px;
-  }
+  .archetype-suggestion-score { font-size: 12px; color: var(--text2); margin-top: 2px; }
   .confidence-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; }
   .confidence-fill { height: 4px; background: var(--accent); border-radius: 2px; }
-  .analysis-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 16px;
-  }
+  .analysis-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
   .analysis-tab {
-    flex: 1;
-    padding: 10px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text2);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
+    flex: 1; padding: 10px; text-align: center; font-size: 14px; font-weight: 600;
+    color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
   }
-  .analysis-tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
+  .analysis-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .analysis-panel { display: none; }
   .analysis-panel.active { display: block; }
-  .scope-tabs {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 12px;
-  }
+  .scope-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
   .scope-tab {
-    flex: 1;
-    padding: 8px;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--text2);
-    cursor: pointer;
+    flex: 1; padding: 8px; text-align: center; font-size: 12px; font-weight: 600;
+    border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); cursor: pointer;
   }
-  .scope-tab.active {
-    background: var(--accent);
-    color: #000;
-    border-color: var(--accent);
-  }
-  .compare-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
+  .scope-tab.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .compare-col-header {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text2);
-    margin-bottom: 6px;
-    text-align: center;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text2); margin-bottom: 6px; text-align: center;
   }
-  .throttle-msg {
-    font-size: 12px;
-    color: var(--warning);
-    text-align: center;
-    margin-bottom: 8px;
-    display: none;
-  }
-  .progress-bar-wrap {
-    background: var(--surface2);
-    border-radius: 4px;
-    height: 6px;
-    margin: 8px 0;
-    display: none;
-  }
-  .progress-bar-fill {
-    height: 6px;
-    background: var(--accent);
-    border-radius: 4px;
-    transition: width 0.3s;
-  }
+  .throttle-msg { font-size: 12px; color: var(--warning); text-align: center; margin-bottom: 8px; display: none; }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 4px; height: 6px; margin: 8px 0; display: none; }
+  .progress-bar-fill { height: 6px; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
   .import-preview-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px;
   }
   .import-status-ok { color: var(--success); font-size: 16px; }
   .import-status-err { color: var(--danger); font-size: 16px; }
   .import-status-warn { color: var(--warning); font-size: 16px; }
   .art-option {
-    display: inline-block;
-    margin: 4px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    border-radius: 6px;
-    overflow: hidden;
+    display: inline-block; margin: 4px; cursor: pointer;
+    border: 2px solid transparent; border-radius: 6px; overflow: hidden;
   }
   .art-option.selected { border-color: var(--accent); }
   .art-option img { width: 80px; height: 112px; object-fit: cover; display: block; }
-  .result-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
+  .result-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
   .result-row-name { flex: 1; font-weight: 600; font-size: 13px; }
   .chi-detail { font-size: 11px; color: var(--text2); margin-top: 2px; }
   table.sortable { width: 100%; border-collapse: collapse; font-size: 12px; }
   table.sortable th {
-    text-align: left;
-    padding: 6px 4px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text2);
-    cursor: pointer;
-    font-weight: 600;
-    white-space: nowrap;
+    text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--border);
+    color: var(--text2); cursor: pointer; font-weight: 600; white-space: nowrap;
   }
   table.sortable th:hover { color: var(--accent); }
-  table.sortable td {
-    padding: 5px 4px;
-    border-bottom: 1px solid var(--surface2);
-    vertical-align: middle;
-  }
+  table.sortable td { padding: 5px 4px; border-bottom: 1px solid var(--surface2); vertical-align: middle; }
   .dir-pos { color: var(--success); font-weight: 700; }
   .dir-neg { color: var(--danger); font-weight: 700; }
 </style>
@@ -514,7 +291,7 @@
     </div>
     <textarea id="import-text" placeholder="4 Lantern of Insight&#10;4 Ensnaring Bridge&#10;...&#10;&#10;4 Extirpate&#10;..."></textarea>
   </div>
-  <button class="btn btn-primary" onclick="parseImport()">Validate & preview →</button>
+  <button class="btn btn-primary" onclick="parseImport()">Validate &amp; preview →</button>
 </div>
 
 <!-- IMPORT PREVIEW -->
@@ -533,7 +310,7 @@
       <div class="card-title" style="color:var(--danger);">Cards not found on Scryfall</div>
       <div id="import-missing-list" style="font-size:13px;color:var(--text2);line-height:1.8;"></div>
       <div style="font-size:12px;color:var(--text2);margin-top:8px;">
-        These cards will be skipped. You can add them manually via the deck edit screen after import.
+        These cards will be skipped. You can add them manually via deck edit after import.
       </div>
     </div>
   </div>
@@ -695,7 +472,8 @@
   <div class="match-info" style="margin-bottom:12px;">Deck: <span id="match-setup-deck-name"></span></div>
   <div class="card">
     <label class="label">Opponent's deck</label>
- <input type="text" id="opponent-search" placeholder="Search archetypes..." oninput="filterArchetypes(this.value)">    <div id="archetype-list" style="max-height:200px;overflow-y:auto;"></div>
+    <input type="text" id="opponent-search" placeholder="Search archetypes..." oninput="filterArchetypes(this.value)">
+    <div id="archetype-list" style="max-height:200px;overflow-y:auto;"></div>
     <div id="opponent-selected" style="display:none;">
       <hr class="divider">
       <div style="font-size:13px;color:var(--text2);">Selected:</div>
@@ -810,8 +588,6 @@
     <div class="analysis-tab active" onclick="switchAnalysisTab('bayesian')">Bayesian</div>
     <div class="analysis-tab" onclick="switchAnalysisTab('chisq')">Chi-squared</div>
   </div>
-
-  <!-- BAYESIAN PANEL -->
   <div id="panel-bayesian" class="analysis-panel active">
     <div class="card">
       <div class="row">
@@ -820,16 +596,14 @@
           <select id="b-filter">
             <option value="Overall">Overall</option>
             <option value="G1">Game 1</option>
-            <option value="G23">Games 2 & 3</option>
+            <option value="G23">Games 2 &amp; 3</option>
             <option value="Pre">Preboard</option>
             <option value="Post">Postboard</option>
           </select>
         </div>
         <div>
           <label class="label">Deck</label>
-          <select id="b-deck">
-            <option value="">All decks</option>
-          </select>
+          <select id="b-deck"><option value="">All decks</option></select>
         </div>
       </div>
       <div class="scope-tabs">
@@ -841,15 +615,11 @@
       <div class="progress-bar-wrap" id="progress-b">
         <div class="progress-bar-fill" id="progress-b-fill" style="width:0%"></div>
       </div>
-      <button class="btn btn-primary" id="btn-calc-b" onclick="calcBayesian()" style="margin-bottom:0;">
-        Calculate scores
-      </button>
+      <button class="btn btn-primary" id="btn-calc-b" onclick="calcBayesian()" style="margin-bottom:0;">Calculate scores</button>
       <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="b-cache-info"></div>
     </div>
     <div id="b-results"></div>
   </div>
-
-  <!-- CHI-SQUARED PANEL -->
   <div id="panel-chisq" class="analysis-panel">
     <div class="card">
       <div class="row">
@@ -858,16 +628,14 @@
           <select id="c-filter">
             <option value="Overall">Overall</option>
             <option value="G1">Game 1</option>
-            <option value="G23">Games 2 & 3</option>
+            <option value="G23">Games 2 &amp; 3</option>
             <option value="Pre">Preboard</option>
             <option value="Post">Postboard</option>
           </select>
         </div>
         <div>
           <label class="label">Deck</label>
-          <select id="c-deck">
-            <option value="">All decks</option>
-          </select>
+          <select id="c-deck"><option value="">All decks</option></select>
         </div>
       </div>
       <div class="scope-tabs">
@@ -879,21 +647,72 @@
       <div class="progress-bar-wrap" id="progress-c">
         <div class="progress-bar-fill" id="progress-c-fill" style="width:0%"></div>
       </div>
-      <button class="btn btn-primary" id="btn-calc-c" onclick="calcChiSquared()" style="margin-bottom:0;">
-        Calculate chi-squared
-      </button>
+      <button class="btn btn-primary" id="btn-calc-c" onclick="calcChiSquared()" style="margin-bottom:0;">Calculate chi-squared</button>
       <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="c-cache-info"></div>
     </div>
     <div class="card" id="c-sort-card" style="display:none;">
       <label class="label">Sort by</label>
       <div class="toggle-group">
         <div class="toggle-btn selected" onclick="sortChiResults('p')" id="sort-p">P-value</div>
-        <div class="toggle-btn" onclick="sortChiResults('chi')" id="sort-chi">χ² stat</div>
+        <div class="toggle-btn" onclick="sortChiResults('chi')" id="sort-chi">&#967;&#178; stat</div>
         <div class="toggle-btn" onclick="sortChiResults('name')" id="sort-name">Name</div>
       </div>
     </div>
     <div id="c-results"></div>
   </div>
+</div>
+
+<!-- MATCHUP MATRIX -->
+<div id="screen-matchup" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Matchup matrix</h2>
+  </div>
+  <div class="card">
+    <div class="row">
+      <div>
+        <label class="label">Your deck</label>
+        <select id="m-deck"><option value="">All decks</option></select>
+      </div>
+      <div>
+        <label class="label">Data scope</label>
+        <select id="m-scope">
+          <option value="all">All data</option>
+          <option value="mine">My data</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label class="label">Game filter</label>
+        <select id="m-filter">
+          <option value="Overall">Overall</option>
+          <option value="G1">Game 1</option>
+          <option value="G23">Games 2 &amp; 3</option>
+          <option value="Pre">Preboard</option>
+          <option value="Post">Postboard</option>
+          <option value="Pre_G1">Preboard G1</option>
+          <option value="Post_G23">Postboard G2/3</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Metagame basis</label>
+        <select id="m-meta">
+          <option value="recorded">Recorded games</option>
+          <option value="goldfish">MTGGoldfish</option>
+        </select>
+      </div>
+    </div>
+    <input type="text" id="m-search" placeholder="Search opponent archetype..."
+           oninput="filterMatchupResults(this.value)" style="margin-bottom:8px;">
+    <div class="throttle-msg" id="throttle-m"></div>
+    <div class="progress-bar-wrap" id="progress-m">
+      <div class="progress-bar-fill" id="progress-m-fill" style="width:0%"></div>
+    </div>
+    <button class="btn btn-primary" id="btn-calc-m" onclick="calcMatchups()" style="margin-bottom:0;">Load matchups</button>
+    <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="m-cache-info"></div>
+  </div>
+  <div id="m-results"></div>
 </div>
 
 <!-- TOAST -->
@@ -921,11 +740,14 @@ let state = {
   archetypes: [], referenceDecks: {}, cardFrequency: {},
   totalArchetypes: 0, selectedCard: null,
   artCardName: null, artPrintings: [], artSelectedUrl: null,
-  scopeB: 'mine', scopeC: 'mine',
-  chiSortKey: 'p',
+  scopeB: 'mine', scopeC: 'mine', chiSortKey: 'p',
   cache: { b: null, c: null },
   lastCalc: { b: 0, c: 0 }
 };
+
+let matchupCache = null;
+let matchupLastCalc = 0;
+let matchupRawData = [];
 
 // ── UTILITIES ──────────────────────────────────────────────────────
 
@@ -938,15 +760,14 @@ function showScreen(id) {
   if (id === 'screen-matchup') onShowMatchup();
   if (id === 'screen-change-art') populateArtCardSelect();
   if (id === 'screen-edit-deck-notes') {
-    document.getElementById('deck-notes-input').value =
-      state.currentDeck?.deck_notes || '';
+    document.getElementById('deck-notes-input').value = state.currentDeck?.deck_notes || '';
   }
 }
 
 function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = `toast ${type}`;
+  t.className = 'toast ' + type;
   t.style.display = 'block';
   setTimeout(() => t.style.display = 'none', 3000);
 }
@@ -963,8 +784,8 @@ function hideErrors() {
 function switchAuthTab(tab) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-  document.querySelector(`.auth-tab[onclick*="${tab}"]`).classList.add('active');
-  document.getElementById(`auth-${tab}`).classList.add('active');
+  document.querySelector('.auth-tab[onclick*="' + tab + '"]').classList.add('active');
+  document.getElementById('auth-' + tab).classList.add('active');
   hideErrors();
 }
 
@@ -985,8 +806,8 @@ function selectMulligan(el, count) {
 }
 
 function setProgress(id, pct) {
-  const wrap = document.getElementById(`progress-${id}`);
-  const fill = document.getElementById(`progress-${id}-fill`);
+  const wrap = document.getElementById('progress-' + id);
+  const fill = document.getElementById('progress-' + id + '-fill');
   if (!wrap || !fill) return;
   wrap.style.display = pct > 0 && pct < 100 ? 'block' : 'none';
   fill.style.width = pct + '%';
@@ -997,11 +818,11 @@ function checkThrottle(key) {
   const elapsed = now - state.lastCalc[key];
   if (elapsed < THROTTLE_MS) {
     const secs = Math.ceil((THROTTLE_MS - elapsed) / 1000);
-    const el = document.getElementById(`throttle-${key}`);
+    const el = document.getElementById('throttle-' + key);
     if (el) {
-      el.textContent = `Please wait ${secs}s before recalculating.`;
+      el.textContent = 'Please wait ' + secs + 's before recalculating.';
       el.style.display = 'block';
-      setTimeout(() => el.style.display = 'none', (THROTTLE_MS - elapsed));
+      setTimeout(() => el.style.display = 'none', THROTTLE_MS - elapsed);
     }
     return false;
   }
@@ -1014,14 +835,28 @@ function isCacheValid(key) {
 }
 
 function setCacheInfo(key, fromCache) {
-  const el = document.getElementById(`${key}-cache-info`);
+  const el = document.getElementById(key + '-cache-info');
   if (!el) return;
   if (fromCache && state.cache[key]) {
     const age = Math.round((Date.now() - state.cache[key].timestamp) / 60000);
-    el.textContent = `Showing cached results (${age}m ago). Recalculate to refresh.`;
+    el.textContent = 'Showing cached results (' + age + 'm ago). Recalculate to refresh.';
   } else {
     el.textContent = '';
   }
+}
+
+function wilsonInterval(wins, total, z) {
+  z = z || 1.96;
+  if (total === 0) return { low: 0, mid: 0, high: 0 };
+  const p = wins / total;
+  const z2 = z * z;
+  const mid = (p + z2 / (2 * total)) / (1 + z2 / total);
+  const margin = (z / (1 + z2 / total)) * Math.sqrt(p * (1 - p) / total + z2 / (4 * total * total));
+  return {
+    low: Math.max(0, Math.round((mid - margin) * 1000) / 10),
+    mid: Math.round(p * 1000) / 10,
+    high: Math.min(100, Math.round((mid + margin) * 1000) / 10)
+  };
 }
 
 // ── AUTH ───────────────────────────────────────────────────────────
@@ -1056,15 +891,8 @@ async function signUp() {
 async function onSignedIn(user) {
   try {
     state.user = user;
-    const { data: pilots } = await db.from('pilots')
-      .select('pilot_name,pilot_email')
-      .eq('auth_id', user.id)
-      .limit(1);
-    if (!pilots || !pilots.length) {
-      showError('login', 'No pilot found for this account.');
-      showScreen('screen-auth');
-      return;
-    }
+    const { data: pilots } = await db.from('pilots').select('pilot_name,pilot_email').eq('auth_id', user.id).limit(1);
+    if (!pilots || !pilots.length) { showError('login', 'No pilot found for this account.'); showScreen('screen-auth'); return; }
     state.pilot = pilots[0];
     document.getElementById('home-pilot-name').textContent = state.pilot.pilot_name;
     try {
@@ -1100,6 +928,7 @@ async function signOut() {
     scopeB: 'mine', scopeC: 'mine', chiSortKey: 'p',
     cache: { b: null, c: null }, lastCalc: { b: 0, c: 0 }
   };
+  matchupCache = null; matchupLastCalc = 0; matchupRawData = [];
   showScreen('screen-auth');
 }
 
@@ -1116,9 +945,7 @@ async function forgotPassword() {
 async function loadAllDecks() {
   const { data } = await db.from('decklists')
     .select('id,archetype_name,deck_name,deck_notes,is_active,version_number')
-    .eq('pilot_name', state.pilot.pilot_name)
-    .eq('is_active', true)
-    .order('archetype_name');
+    .eq('pilot_name', state.pilot.pilot_name).eq('is_active', true).order('archetype_name');
   state.allDecks = data || [];
   const count = state.allDecks.length;
   document.getElementById('home-deck-count').textContent =
@@ -1127,17 +954,13 @@ async function loadAllDecks() {
 
 function renderMyDecks() {
   const el = document.getElementById('my-decks-list');
-  if (!state.allDecks.length) {
-    el.innerHTML = '<div style="color:var(--text2);font-size:14px;margin-bottom:12px;">No decks yet.</div>';
-    return;
-  }
-  el.innerHTML = state.allDecks.map(d => `
-    <div class="deck-card" onclick="openDeckDetail('${d.id}')">
-      <div class="deck-card-name">${d.archetype_name || 'Unknown'}</div>
-      ${d.deck_notes ? `<div class="deck-card-notes">${d.deck_notes}</div>` : ''}
-      <div class="deck-card-meta">Tap to manage</div>
-    </div>
-  `).join('');
+  if (!state.allDecks.length) { el.innerHTML = '<div style="color:var(--text2);font-size:14px;margin-bottom:12px;">No decks yet.</div>'; return; }
+  el.innerHTML = state.allDecks.map(d =>
+    '<div class="deck-card" onclick="openDeckDetail(\'' + d.id + '\')">' +
+    '<div class="deck-card-name">' + (d.archetype_name || 'Unknown') + '</div>' +
+    (d.deck_notes ? '<div class="deck-card-notes">' + d.deck_notes + '</div>' : '') +
+    '<div class="deck-card-meta">Tap to manage</div></div>'
+  ).join('');
 }
 
 async function openDeckDetail(deckId) {
@@ -1154,8 +977,7 @@ async function openDeckDetail(deckId) {
 async function loadDeckCards(deckId) {
   const { data } = await db.from('decklist_cards')
     .select('id,card_name,quantity,main_side,preferred_image_url')
-    .eq('decklist_id', deckId)
-    .order('card_name');
+    .eq('decklist_id', deckId).order('card_name');
   state.currentDeck.cards = data || [];
   renderDeckDetail();
 }
@@ -1169,14 +991,16 @@ function renderDeckDetail() {
   const sec = (title, list) => {
     if (!list.length) return '';
     const total = list.reduce((s, c) => s + c.quantity, 0);
-    return `<div class="card-title">${title} (${total})</div>${list.map(c => `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        ${c.preferred_image_url
-          ? `<img src="${c.preferred_image_url}" style="width:36px;height:50px;border-radius:4px;object-fit:cover;">`
-          : `<div style="width:36px;height:50px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);"></div>`}
-        <div style="flex:1;"><div style="font-size:14px;font-weight:600;">${c.card_name}</div><div style="font-size:12px;color:var(--text2);">${c.main_side}</div></div>
-        <div style="font-size:18px;font-weight:700;color:var(--accent);">×${c.quantity}</div>
-      </div>`).join('')}`;
+    return '<div class="card-title">' + title + ' (' + total + ')</div>' +
+      list.map(c =>
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+        (c.preferred_image_url
+          ? '<img src="' + c.preferred_image_url + '" style="width:36px;height:50px;border-radius:4px;object-fit:cover;" loading="lazy">'
+          : '<div style="width:36px;height:50px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);"></div>') +
+        '<div style="flex:1;"><div style="font-size:14px;font-weight:600;">' + c.card_name + '</div>' +
+        '<div style="font-size:12px;color:var(--text2);">' + c.main_side + '</div></div>' +
+        '<div style="font-size:18px;font-weight:700;color:var(--accent);">×' + c.quantity + '</div></div>'
+      ).join('');
   };
   el.innerHTML = sec('Mainboard', main) + sec('Sideboard', side);
 }
@@ -1208,7 +1032,7 @@ function populateArtCardSelect() {
   const sel = document.getElementById('art-card-select');
   const cards = state.currentDeck?.cards || [];
   sel.innerHTML = '<option value="">-- choose card --</option>' +
-    cards.map(c => `<option value="${c.card_name}">${c.card_name}</option>`).join('');
+    cards.map(c => '<option value="' + c.card_name + '">' + c.card_name + '</option>').join('');
   document.getElementById('art-options-wrap').style.display = 'none';
 }
 
@@ -1222,29 +1046,23 @@ async function loadArtOptions() {
   document.getElementById('art-options').innerHTML = '';
   try {
     const res = await fetch(
-      `https://api.scryfall.com/cards/search?q=!"${encodeURIComponent(cardName)}"&unique=prints&order=released`,
+      'https://api.scryfall.com/cards/search?q=!"' + encodeURIComponent(cardName) + '"&unique=prints&order=released',
       { headers: { 'Accept': 'application/json' } }
     );
     const data = await res.json();
     state.artPrintings = (data.data || []).map(c => ({
-      id: c.id,
-      set: c.set_name,
-      collector: c.collector_number,
-      imageUrl: c.image_uris ? c.image_uris.normal : (c.card_faces?.[0]?.image_uris?.normal || '')
+      id: c.id, set: c.set_name, collector: c.collector_number,
+      imageUrl: c.image_uris ? c.image_uris.normal : (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris ? c.card_faces[0].image_uris.normal : '')
     })).filter(p => p.imageUrl);
     document.getElementById('art-loading').style.display = 'none';
     const el = document.getElementById('art-options');
     const currentCard = (state.currentDeck?.cards || []).find(c => c.card_name === cardName);
-    el.innerHTML = state.artPrintings.map((p, i) => `
-      <div class="art-option ${currentCard?.preferred_image_url === p.imageUrl ? 'selected' : ''}"
-           id="art-opt-${i}" onclick="selectArt(${i})">
-        <img src="${p.imageUrl}" alt="${p.set}" loading="lazy">
-        <div style="font-size:10px;color:var(--text2);padding:2px 4px;text-align:center;">${p.set}</div>
-      </div>
-    `).join('');
-    if (currentCard?.preferred_image_url) {
-      state.artSelectedUrl = currentCard.preferred_image_url;
-    }
+    el.innerHTML = state.artPrintings.map((p, i) =>
+      '<div class="art-option ' + (currentCard && currentCard.preferred_image_url === p.imageUrl ? 'selected' : '') + '" id="art-opt-' + i + '" onclick="selectArt(' + i + ')">' +
+      '<img src="' + p.imageUrl + '" alt="' + p.set + '" loading="lazy">' +
+      '<div style="font-size:10px;color:var(--text2);padding:2px 4px;text-align:center;">' + p.set + '</div></div>'
+    ).join('');
+    if (currentCard && currentCard.preferred_image_url) state.artSelectedUrl = currentCard.preferred_image_url;
   } catch(e) {
     document.getElementById('art-loading').style.display = 'none';
     showToast('Error loading printings', 'error');
@@ -1253,7 +1071,7 @@ async function loadArtOptions() {
 
 function selectArt(idx) {
   document.querySelectorAll('.art-option').forEach(el => el.classList.remove('selected'));
-  document.getElementById(`art-opt-${idx}`).classList.add('selected');
+  document.getElementById('art-opt-' + idx).classList.add('selected');
   state.artSelectedUrl = state.artPrintings[idx].imageUrl;
 }
 
@@ -1261,8 +1079,7 @@ async function saveArtChoice() {
   if (!state.artSelectedUrl || !state.artCardName || !state.editingDeckId) return;
   const { error } = await db.from('decklist_cards')
     .update({ preferred_image_url: state.artSelectedUrl })
-    .eq('decklist_id', state.editingDeckId)
-    .eq('card_name', state.artCardName);
+    .eq('decklist_id', state.editingDeckId).eq('card_name', state.artCardName);
   if (error) { showToast('Error saving art', 'error'); return; }
   const card = (state.currentDeck?.cards || []).find(c => c.card_name === state.artCardName);
   if (card) card.preferred_image_url = state.artSelectedUrl;
@@ -1282,11 +1099,12 @@ function parseDeckText(text) {
     if (/^(sideboard|side|sb):?$/i.test(line)) { inSide = true; continue; }
     const match = line.match(/^(\d+)[x\s]+(.+?)(?:\s+\(([A-Z0-9]+)\)\s+(\S+))?$/i);
     if (!match) continue;
-    const qty = parseInt(match[1]);
-    const name = match[2].trim();
-    const setCode = match[3] ? match[3].toUpperCase() : null;
-    const collector = match[4] ? match[4] : null;
-    cards.push({ qty, name, setCode, collector, mainSide: inSide ? 'Side' : 'Main' });
+    cards.push({
+      qty: parseInt(match[1]), name: match[2].trim(),
+      setCode: match[3] ? match[3].toUpperCase() : null,
+      collector: match[4] || null,
+      mainSide: inSide ? 'Side' : 'Main'
+    });
   }
   return cards;
 }
@@ -1301,78 +1119,51 @@ async function parseImport() {
   document.getElementById('import-missing-section').style.display = 'none';
   document.getElementById('btn-confirm-import').style.display = 'none';
   document.getElementById('import-progress-wrap').style.display = 'block';
-  document.getElementById('import-status-msg').textContent = `Validating ${parsed.length} cards with Scryfall...`;
+  document.getElementById('import-status-msg').textContent = 'Validating ' + parsed.length + ' cards with Scryfall...';
   state.importedCards = [];
   state.importMissing = [];
   const previewEl = document.getElementById('import-preview-list');
   for (let i = 0; i < parsed.length; i++) {
     const p = parsed[i];
-    const pct = Math.round((i / parsed.length) * 100);
-    document.getElementById('import-progress-fill').style.width = pct + '%';
-    let card = null;
-    let imageUrl = '';
-    let status = 'ok';
+    document.getElementById('import-progress-fill').style.width = Math.round((i / parsed.length) * 100) + '%';
+    let card = null, imageUrl = '', status = 'ok';
     try {
-      let url;
-      if (p.setCode && p.collector) {
-        url = `https://api.scryfall.com/cards/${p.setCode.toLowerCase()}/${p.collector}`;
-      } else {
-        url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(p.name)}`;
-      }
+      let url = p.setCode && p.collector
+        ? 'https://api.scryfall.com/cards/' + p.setCode.toLowerCase() + '/' + p.collector
+        : 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(p.name);
       const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
       if (res.ok) {
         const data = await res.json();
-        imageUrl = data.image_uris ? data.image_uris.normal
-          : (data.card_faces?.[0]?.image_uris?.normal || '');
+        imageUrl = data.image_uris ? data.image_uris.normal : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.normal : '');
         card = { card_name: data.name, quantity: p.qty, main_side: p.mainSide, preferred_image_url: imageUrl };
         state.importedCards.push(card);
       } else {
-await new Promise(r => setTimeout(r, 150));
-const fuzzyRes = await fetch(
-  `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(p.name)}`,
-  { headers: { 'Accept': 'application/json' } }
-);
+        await new Promise(r => setTimeout(r, 150));
+        const fuzzyRes = await fetch('https://api.scryfall.com/cards/named?fuzzy=' + encodeURIComponent(p.name), { headers: { 'Accept': 'application/json' } });
         if (fuzzyRes.ok) {
           const data = await fuzzyRes.json();
-          imageUrl = data.image_uris ? data.image_uris.normal
-            : (data.card_faces?.[0]?.image_uris?.normal || '');
+          imageUrl = data.image_uris ? data.image_uris.normal : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.normal : '');
           card = { card_name: data.name, quantity: p.qty, main_side: p.mainSide, preferred_image_url: imageUrl };
-          state.importedCards.push(card);
-          status = 'warn';
-        } else {
-          status = 'err';
-          state.importMissing.push(p.name);
-        }
+          state.importedCards.push(card); status = 'warn';
+        } else { status = 'err'; state.importMissing.push(p.name); }
       }
-    } catch(e) {
-      status = 'err';
-      state.importMissing.push(p.name);
-    }
+    } catch(e) { status = 'err'; state.importMissing.push(p.name); }
     const icon = status === 'ok' ? '✓' : status === 'warn' ? '~' : '✗';
-    const iconClass = status === 'ok' ? 'import-status-ok' : status === 'warn' ? 'import-status-warn' : 'import-status-err';
-    const displayName = card ? card.card_name : p.name;
-    previewEl.innerHTML += `
-      <div class="import-preview-item">
-        <span class="${iconClass}">${icon}</span>
-        ${imageUrl ? `<img src="${imageUrl}" style="width:28px;height:39px;border-radius:3px;object-fit:cover;">` : ''}
-        <span style="flex:1;">${p.qty}× ${displayName}</span>
-        <span style="font-size:11px;color:var(--text2);">${p.mainSide}</span>
-      </div>
-    `;
-await new Promise(r => setTimeout(r, 150));
+    const iconClass = 'import-status-' + (status === 'ok' ? 'ok' : status === 'warn' ? 'warn' : 'err');
+    previewEl.innerHTML += '<div class="import-preview-item"><span class="' + iconClass + '">' + icon + '</span>' +
+      (imageUrl ? '<img src="' + imageUrl + '" style="width:28px;height:39px;border-radius:3px;object-fit:cover;">' : '') +
+      '<span style="flex:1;">' + p.qty + '× ' + (card ? card.card_name : p.name) + '</span>' +
+      '<span style="font-size:11px;color:var(--text2);">' + p.mainSide + '</span></div>';
+    await new Promise(r => setTimeout(r, 150));
   }
   document.getElementById('import-progress-fill').style.width = '100%';
   setTimeout(() => { document.getElementById('import-progress-wrap').style.display = 'none'; }, 500);
-  document.getElementById('import-status-msg').textContent =
-    `${state.importedCards.length} cards validated, ${state.importMissing.length} not found.`;
+  document.getElementById('import-status-msg').textContent = state.importedCards.length + ' cards validated, ' + state.importMissing.length + ' not found.';
   if (state.importMissing.length) {
-    document.getElementById('import-missing-list').innerHTML =
-      state.importMissing.map(n => `<div>• ${n}</div>`).join('');
+    document.getElementById('import-missing-list').innerHTML = state.importMissing.map(n => '<div>• ' + n + '</div>').join('');
     document.getElementById('import-missing-section').style.display = 'block';
   }
-  if (state.importedCards.length > 0) {
-    document.getElementById('btn-confirm-import').style.display = 'block';
-  }
+  if (state.importedCards.length > 0) document.getElementById('btn-confirm-import').style.display = 'block';
 }
 
 function confirmImport() {
@@ -1382,8 +1173,7 @@ function confirmImport() {
   document.getElementById('new-deck-notes-section').style.display = 'none';
   showScreen('screen-new-deck');
   renderNewDeckCards();
-  const mainCards = state.newDeckCards.filter(c => c.main_side === 'Main');
-  if (mainCards.length >= 3) suggestArchetypes();
+  if (state.newDeckCards.filter(c => c.main_side === 'Main').length >= 3) suggestArchetypes();
 }
 
 // ── NEW DECK ───────────────────────────────────────────────────────
@@ -1405,8 +1195,9 @@ function showAddCardScreen(context) {
   document.getElementById('add-card-details').style.display = 'none';
   document.getElementById('btn-add-card').style.display = 'none';
   state.selectedCard = null;
-  document.getElementById('add-card-back-btn').onclick = () =>
+  document.getElementById('add-card-back-btn').onclick = function() {
     showScreen(context === 'new-deck' ? 'screen-new-deck' : 'screen-deck-detail');
+  };
   showScreen('screen-add-card');
 }
 
@@ -1415,19 +1206,12 @@ async function addCardToDeck() {
   const qty = parseInt(document.getElementById('add-card-qty').value);
   const mainside = document.getElementById('add-card-mainside').value;
   if (state.addCardContext === 'new-deck') {
-    state.newDeckCards.push({
-      card_name: state.selectedCard.card_name, quantity: qty,
-      main_side: mainside, preferred_image_url: state.selectedCard.default_image_url || ''
-    });
+    state.newDeckCards.push({ card_name: state.selectedCard.card_name, quantity: qty, main_side: mainside, preferred_image_url: state.selectedCard.default_image_url || '' });
     renderNewDeckCards();
     if (state.newDeckCards.filter(c => c.main_side === 'Main').length >= 3) suggestArchetypes();
     showScreen('screen-new-deck');
   } else {
-    const { error } = await db.from('decklist_cards').insert({
-      decklist_id: state.editingDeckId, pilot_name: state.pilot.pilot_name,
-      card_name: state.selectedCard.card_name, quantity: qty,
-      main_side: mainside, preferred_image_url: state.selectedCard.default_image_url || ''
-    });
+    const { error } = await db.from('decklist_cards').insert({ decklist_id: state.editingDeckId, pilot_name: state.pilot.pilot_name, card_name: state.selectedCard.card_name, quantity: qty, main_side: mainside, preferred_image_url: state.selectedCard.default_image_url || '' });
     if (error) { showToast('Error: ' + error.message, 'error'); return; }
     showToast(state.selectedCard.card_name + ' added!');
     await loadDeckCards(state.editingDeckId);
@@ -1442,11 +1226,8 @@ function renderNewDeckCards() {
   const sec = (title, list) => {
     if (!list.length) return '';
     const total = list.reduce((s, c) => s + c.quantity, 0);
-    return `<div class="card-title">${title} (${total})</div><div class="card" style="padding:12px;">
-      ${list.map(c => `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">
-        <span style="font-size:13px;">${c.card_name}</span>
-        <span style="font-size:13px;color:var(--accent);font-weight:600;">×${c.quantity}</span>
-      </div>`).join('')}</div>`;
+    return '<div class="card-title">' + title + ' (' + total + ')</div><div class="card" style="padding:12px;">' +
+      list.map(c => '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);"><span style="font-size:13px;">' + c.card_name + '</span><span style="font-size:13px;color:var(--accent);font-weight:600;">×' + c.quantity + '</span></div>').join('') + '</div>';
   };
   el.innerHTML = sec('Mainboard', main) + sec('Sideboard', side);
 }
@@ -1467,45 +1248,43 @@ function suggestArchetypes() {
   const mainCards = state.newDeckCards.filter(c => c.main_side === 'Main');
   const pilotCards = {};
   mainCards.forEach(c => { pilotCards[c.card_name] = c.quantity; });
-const scores = Object.entries(state.referenceDecks).map(([archetype, refCards]) => {
+  const scores = Object.entries(state.referenceDecks).map(function(entry) {
+    const archetype = entry[0], refCards = entry[1];
     let score = 0, totalWeight = 0, refMatchWeight = 0, refTotalWeight = 0;
-    Object.entries(pilotCards).forEach(([card, qty]) => {
+    Object.entries(pilotCards).forEach(function(pe) {
+      const card = pe[0], qty = pe[1];
       if (refCards[card]) {
         const d = 1 / (state.cardFrequency[card] || 1);
         score += Math.min(qty, refCards[card]) * d;
         totalWeight += d;
       }
     });
-    Object.entries(refCards).forEach(([card, qty]) => {
+    Object.entries(refCards).forEach(function(re) {
+      const card = re[0], qty = re[1];
       const d = 1 / (state.cardFrequency[card] || 1);
       refTotalWeight += qty * d;
-      if (pilotCards[card]) {
-        refMatchWeight += Math.min(qty, pilotCards[card]) * d;
-      }
+      if (pilotCards[card]) refMatchWeight += Math.min(qty, pilotCards[card]) * d;
     });
     const pilotScore = totalWeight > 0 ? score / totalWeight : 0;
     const refScore = refTotalWeight > 0 ? refMatchWeight / refTotalWeight : 0;
-    const combined = (pilotScore + refScore) / 2;
-    return { archetype, score: combined };
+    return { archetype: archetype, score: (pilotScore + refScore) / 2 };
   });
   scores.sort((a, b) => b.score - a.score);
   const top3 = scores.slice(0, 3);
-  const maxScore = top3[0]?.score || 1;
-  document.getElementById('archetype-suggestions').innerHTML = top3.map((s, i) => `
-    <div class="archetype-suggestion" id="suggestion-${i}"
-         onclick="selectSuggestion(${i},'${s.archetype.replace(/'/g,"\\'")}')">
-      <div class="archetype-suggestion-name">${s.archetype}</div>
-      <div class="archetype-suggestion-score">Match confidence: ${Math.round(s.score/maxScore*100)}%</div>
-      <div class="confidence-bar"><div class="confidence-fill" style="width:${Math.round(s.score/maxScore*100)}%"></div></div>
-    </div>
-  `).join('');
+  const maxScore = top3[0] ? top3[0].score : 1;
+  document.getElementById('archetype-suggestions').innerHTML = top3.map((s, i) =>
+    '<div class="archetype-suggestion" id="suggestion-' + i + '" onclick="selectSuggestion(' + i + ',\'' + s.archetype.replace(/'/g, "\\'") + '\')">' +
+    '<div class="archetype-suggestion-name">' + s.archetype + '</div>' +
+    '<div class="archetype-suggestion-score">Match confidence: ' + Math.round(s.score / maxScore * 100) + '%</div>' +
+    '<div class="confidence-bar"><div class="confidence-fill" style="width:' + Math.round(s.score / maxScore * 100) + '%"></div></div></div>'
+  ).join('');
   document.getElementById('new-deck-archetype-section').style.display = 'block';
   document.getElementById('new-deck-notes-section').style.display = 'block';
 }
 
 function selectSuggestion(idx, archetype) {
   document.querySelectorAll('.archetype-suggestion').forEach(el => el.classList.remove('selected'));
-  document.getElementById(`suggestion-${idx}`).classList.add('selected');
+  document.getElementById('suggestion-' + idx).classList.add('selected');
   state.newDeckArchetype = archetype;
   document.getElementById('archetype-custom-section').style.display = 'none';
   document.getElementById('custom-archetype-input').value = '';
@@ -1527,20 +1306,11 @@ async function saveNewDeck() {
   const notes = document.getElementById('new-deck-notes').value.trim();
   if (!archetype) { showToast('Please select or enter an archetype', 'error'); return; }
   if (!state.newDeckCards.length) { showToast('Please add cards first', 'error'); return; }
-  if (custom) {
-    await db.from('deck_archetypes').insert({ archetype_name: custom, archetype_category: 'Other' });
-  }
-  const { data: deckData, error: deckErr } = await db.from('decklists').insert({
-    pilot_name: state.pilot.pilot_name, archetype_name: archetype,
-    deck_notes: notes || null, version_number: 1, is_active: true
-  }).select();
+  if (custom) await db.from('deck_archetypes').insert({ archetype_name: custom, archetype_category: 'Other' });
+  const { data: deckData, error: deckErr } = await db.from('decklists').insert({ pilot_name: state.pilot.pilot_name, archetype_name: archetype, deck_notes: notes || null, version_number: 1, is_active: true }).select();
   if (deckErr) { showToast('Error: ' + deckErr.message, 'error'); return; }
   const newId = deckData[0].id;
-  const rows = state.newDeckCards.map(c => ({
-    decklist_id: newId, pilot_name: state.pilot.pilot_name,
-    card_name: c.card_name, quantity: c.quantity,
-    main_side: c.main_side, preferred_image_url: c.preferred_image_url || ''
-  }));
+  const rows = state.newDeckCards.map(c => ({ decklist_id: newId, pilot_name: state.pilot.pilot_name, card_name: c.card_name, quantity: c.quantity, main_side: c.main_side, preferred_image_url: c.preferred_image_url || '' }));
   const { error: cardsErr } = await db.from('decklist_cards').insert(rows);
   if (cardsErr) { showToast('Deck saved but cards failed: ' + cardsErr.message, 'error'); return; }
   showToast('Deck saved!');
@@ -1559,21 +1329,18 @@ async function startNewMatch() {
 
 function renderMatchDeckList() {
   const el = document.getElementById('match-deck-list');
-  el.innerHTML = state.allDecks.map(d => `
-    <div class="deck-card" onclick="selectMatchDeck('${d.id}')">
-      <div class="deck-card-name">${d.archetype_name || 'Unknown'}</div>
-      ${d.deck_notes ? `<div class="deck-card-notes">${d.deck_notes}</div>` : ''}
-    </div>
-  `).join('');
+  el.innerHTML = state.allDecks.map(d =>
+    '<div class="deck-card" onclick="selectMatchDeck(\'' + d.id + '\')">' +
+    '<div class="deck-card-name">' + (d.archetype_name || 'Unknown') + '</div>' +
+    (d.deck_notes ? '<div class="deck-card-notes">' + d.deck_notes + '</div>' : '') + '</div>'
+  ).join('');
 }
 
 async function selectMatchDeck(deckId) {
   const deck = state.allDecks.find(d => d.id === deckId);
   if (!deck) return;
   state.matchDeck = deck;
-  const { data } = await db.from('decklist_cards')
-    .select('card_name,quantity,main_side,preferred_image_url')
-    .eq('decklist_id', deckId).order('card_name');
+  const { data } = await db.from('decklist_cards').select('card_name,quantity,main_side,preferred_image_url').eq('decklist_id', deckId).order('card_name');
   state.matchDeck.cards = data || [];
   document.getElementById('match-setup-deck-name').textContent = deck.archetype_name || 'Unknown';
   state.opponent = null;
@@ -1588,16 +1355,10 @@ function filterArchetypes(query) {
   const list = document.getElementById('archetype-list');
   const q = query.toLowerCase().trim();
   if (!q) { list.innerHTML = ''; return; }
-  const matches = state.archetypes
-    .filter(a => a.toLowerCase().includes(q))
-    .slice(0, 10);
-  list.innerHTML = matches.map(a => `
-    <div onclick="selectArchetype('${a.replace(/'/g, "\\'")}')"
-         style="padding:10px;border-bottom:1px solid var(--border);
-                cursor:pointer;font-size:14px;">
-      ${a}
-    </div>
-  `).join('');
+  const matches = state.archetypes.filter(a => a.toLowerCase().includes(q)).slice(0, 10);
+  list.innerHTML = matches.map(a =>
+    '<div onclick="selectArchetype(\'' + a.replace(/'/g, "\\'") + '\')" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">' + a + '</div>'
+  ).join('');
 }
 
 function selectArchetype(name) {
@@ -1611,7 +1372,7 @@ function selectArchetype(name) {
 
 function confirmOpponent() {
   if (!state.opponent) { showToast('Please select an opponent deck', 'error'); return; }
-  state.matchId = `${state.pilot.pilot_name}_${Date.now()}`;
+  state.matchId = state.pilot.pilot_name + '_' + Date.now();
   state.gameNumber = 1;
   setupGameScreen();
   showScreen('screen-game');
@@ -1621,8 +1382,7 @@ function setupGameScreen() {
   document.getElementById('game-number-label').textContent = state.gameNumber;
   document.getElementById('game-opponent-label').textContent = state.opponent;
   state.prepost = state.gameNumber === 1 ? 'Pre' : 'Post';
-  state.playdraw = null;
-  state.mulligans = 0;
+  state.playdraw = null; state.mulligans = 0;
   document.querySelectorAll('[onclick*="prepost"]').forEach(b => {
     b.classList.toggle('selected', b.textContent.trim() === (state.gameNumber === 1 ? 'Preboard' : 'Postboard'));
   });
@@ -1637,41 +1397,36 @@ function buildCardSlots(count) {
   const el = document.getElementById('card-slots');
   const cards = (state.matchDeck.cards || []).filter(c => c.main_side === 'Main').sort((a, b) => a.card_name.localeCompare(b.card_name));
   const opts = [...new Set(cards.map(c => c.card_name))];
-  el.innerHTML = Array.from({length: count}, (_, i) => `
-    <div class="card-slot">
-      <span class="card-slot-label">Card ${i+1}</span>
-      <select id="hand-card-${i}" onchange="updateCardImage(${i})">
-        <option value="">-- empty --</option>
-        ${opts.map(n => `<option value="${n}">${n}</option>`).join('')}
-      </select>
-      <img id="hand-img-${i}" class="card-image-preview" src="" alt="" style="display:none;">
-    </div>
-  `).join('');
+  el.innerHTML = Array.from({length: count}, (_, i) =>
+    '<div class="card-slot"><span class="card-slot-label">Card ' + (i+1) + '</span>' +
+    '<select id="hand-card-' + i + '" onchange="updateCardImage(' + i + ')">' +
+    '<option value="">-- empty --</option>' +
+    opts.map(n => '<option value="' + n + '">' + n + '</option>').join('') +
+    '</select><img id="hand-img-' + i + '" class="card-image-preview" src="" alt="" style="display:none;"></div>'
+  ).join('');
 }
 
 function updateCardImage(idx) {
-  const sel = document.getElementById(`hand-card-${idx}`);
-  const img = document.getElementById(`hand-img-${idx}`);
+  const sel = document.getElementById('hand-card-' + idx);
+  const img = document.getElementById('hand-img-' + idx);
   const name = sel.value;
   if (!name) { img.style.display = 'none'; return; }
   const card = (state.matchDeck.cards || []).find(c => c.card_name === name);
-  if (card?.preferred_image_url) { img.src = card.preferred_image_url; img.style.display = 'block'; }
+  if (card && card.preferred_image_url) { img.src = card.preferred_image_url; img.style.display = 'block'; }
   else img.style.display = 'none';
 }
 
 async function submitGame() {
   const handSize = 7 - state.mulligans;
-  const cards = Array.from({length: handSize}, (_, i) => document.getElementById(`hand-card-${i}`)?.value || '');
+  const cards = Array.from({length: handSize}, (_, i) => { const s = document.getElementById('hand-card-' + i); return s ? s.value : ''; });
   if (!state.gameResult) { showToast('Please select a game result', 'error'); return; }
   if (!state.playdraw) { showToast('Please select play or draw', 'error'); return; }
   const matchResult = state.matchEnd === 'Yes' ? state.matchResult : null;
   const { error } = await db.from('raw_game_log').insert({
     match_id: state.matchId, timestamp: new Date().toISOString(),
     pilot_name: state.pilot.pilot_name, pilot_email: state.pilot.pilot_email || '',
-    deck_archetype: state.matchDeck.archetype_name || null,
-    decklist_version: state.matchDeck.id || null,
-    game_number: state.gameNumber === 1 ? 'G1' : 'G23',
-    play_draw: state.playdraw, pre_post: state.prepost,
+    deck_archetype: state.matchDeck.archetype_name || null, decklist_version: state.matchDeck.id || null,
+    game_number: state.gameNumber === 1 ? 'G1' : 'G23', play_draw: state.playdraw, pre_post: state.prepost,
     opponent_archetype: state.opponent,
     card1: cards[0]||null, card2: cards[1]||null, card3: cards[2]||null,
     card4: cards[3]||null, card5: cards[4]||null, card6: cards[5]||null, card7: cards[6]||null,
@@ -1680,8 +1435,8 @@ async function submitGame() {
     notes: document.getElementById('game-notes').value || null
   });
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
-  document.getElementById('after-result-label').textContent = `Game ${state.gameNumber}: ${state.gameResult}`;
-  document.getElementById('after-match-label').textContent = matchResult ? `Match result: ${matchResult}` : '';
+  document.getElementById('after-result-label').textContent = 'Game ' + state.gameNumber + ': ' + state.gameResult;
+  document.getElementById('after-match-label').textContent = matchResult ? 'Match result: ' + matchResult : '';
   document.getElementById('result-icon').textContent = state.gameResult === 'Win' ? '🏆' : '💀';
   document.getElementById('btn-next-game').style.display = state.matchEnd === 'Yes' ? 'none' : 'block';
   showToast('Game submitted!');
@@ -1705,16 +1460,16 @@ async function searchCards(query) {
   if (query.length < 2) { el.innerHTML = ''; return; }
   try {
     const res = await fetch(
-      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}+legal%3Amodern&unique=cards&order=name&limit=10`,
+      'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(query) + '+legal%3Amodern&unique=cards&order=name&limit=10',
       { headers: { 'Accept': 'application/json' } }
     );
     if (!res.ok) { el.innerHTML = ''; return; }
     const data = await res.json();
     el.innerHTML = (data.data || []).map(c => {
-      const img = c.image_uris ? c.image_uris.normal : (c.card_faces?.[0]?.image_uris?.normal || '');
-      const d = JSON.stringify({ card_name: c.name, card_type: c.type_line, mana_cost: c.mana_cost||'', default_image_url: img }).replace(/"/g,'&quot;');
-      return `<div onclick="selectCard(${d})" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">
-        ${c.name}<span style="color:var(--text2);font-size:12px;margin-left:8px;">${c.mana_cost||''}</span></div>`;
+      const img = c.image_uris ? c.image_uris.normal : (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris ? c.card_faces[0].image_uris.normal : '');
+      const d = JSON.stringify({ card_name: c.name, card_type: c.type_line, mana_cost: c.mana_cost || '', default_image_url: img }).replace(/"/g, '&quot;');
+      return '<div onclick="selectCard(' + d + ')" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">' +
+        c.name + '<span style="color:var(--text2);font-size:12px;margin-left:8px;">' + (c.mana_cost || '') + '</span></div>';
     }).join('');
   } catch(e) { el.innerHTML = ''; }
 }
@@ -1737,53 +1492,37 @@ function selectCard(card) {
 function switchAnalysisTab(tab) {
   document.querySelectorAll('.analysis-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.analysis-panel').forEach(p => p.classList.remove('active'));
-  document.querySelector(`.analysis-tab[onclick*="${tab}"]`).classList.add('active');
-  document.getElementById(`panel-${tab}`).classList.add('active');
+  document.querySelector('.analysis-tab[onclick*="' + tab + '"]').classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
 }
 
 function setScopeB(scope) {
   state.scopeB = scope;
-  ['mine','all','compare'].forEach(s => {
-    document.getElementById(`scope-b-${s}`).classList.toggle('active', s === scope);
-  });
+  ['mine','all','compare'].forEach(s => { document.getElementById('scope-b-' + s).classList.toggle('active', s === scope); });
 }
 
 function setScopeC(scope) {
   state.scopeC = scope;
-  ['mine','all','compare'].forEach(s => {
-    document.getElementById(`scope-c-${s}`).classList.toggle('active', s === scope);
-  });
+  ['mine','all','compare'].forEach(s => { document.getElementById('scope-c-' + s).classList.toggle('active', s === scope); });
 }
 
 function onShowAnalysis() {
-  if (isCacheValid('b')) { renderBayesianResults(state.cache.b.data, true); }
-  if (isCacheValid('c')) { renderChiResults(state.cache.c.data, true); }
-}
-
-  function onShowMatchup() {
-  const sel = document.getElementById('m-deck');
-  sel.innerHTML = '<option value="">All decks</option>' +
-    state.allDecks.map(d =>
-      `<option value="${d.archetype_name}">${d.archetype_name}</option>`
-    ).join('');
-  if (matchupCache && (Date.now() - matchupCache.timestamp < CACHE_TTL_MS)) {
-    renderMatchupResults(matchupCache.data, '');
-    setCacheInfo('m', true);
-  }
+  if (isCacheValid('b')) renderBayesianResults(state.cache.b.data, true);
+  if (isCacheValid('c')) renderChiResults(state.cache.c.data, true);
 }
 
 function populateAnalysisFilters() {
   const deckOpts = '<option value="">All decks</option>' +
-    state.allDecks.map(d => `<option value="${d.archetype_name}">${d.archetype_name}</option>`).join('');
+    state.allDecks.map(d => '<option value="' + d.archetype_name + '">' + d.archetype_name + '</option>').join('');
   document.getElementById('b-deck').innerHTML = deckOpts;
   document.getElementById('c-deck').innerHTML = deckOpts;
 }
 
 async function fetchSummaryData(scope, filter, deck) {
-  const cardCols = 'card_name,filter,copy_count,wins,total,win_rate';
-  let query = db.from('card_hand_summary').select(cardCols).eq('filter', filter);
+  let query = db.from('card_hand_summary').select('card_name,filter,copy_count,wins,total,win_rate').eq('filter', filter);
   if (deck) query = query.eq('deck_archetype', deck);
   if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
+  else query = query.is('pilot_name', null);
   const { data, error } = await query.limit(5000);
   if (error) throw error;
   return data || [];
@@ -1798,14 +1537,8 @@ async function calcBayesian() {
   document.getElementById('btn-calc-b').disabled = true;
   try {
     let myData = [], allData = [];
-    if (scope === 'mine' || scope === 'compare') {
-      setProgress('b', 20);
-      myData = await fetchSummaryData('mine', filter, deck);
-    }
-    if (scope === 'all' || scope === 'compare') {
-      setProgress('b', 50);
-      allData = await fetchSummaryData('all', filter, deck);
-    }
+    if (scope === 'mine' || scope === 'compare') { setProgress('b', 20); myData = await fetchSummaryData('mine', filter, deck); }
+    if (scope === 'all' || scope === 'compare') { setProgress('b', 50); allData = await fetchSummaryData('all', filter, deck); }
     setProgress('b', 80);
     const M = 20;
     const myScores = scope !== 'all' ? computeBayesianScores(myData, M) : [];
@@ -1815,24 +1548,18 @@ async function calcBayesian() {
     state.lastCalc.b = Date.now();
     setProgress('b', 100);
     renderBayesianResults(result, false);
-  } catch(e) {
-    showToast('Error: ' + e.message, 'error');
-  } finally {
-    setProgress('b', 0);
-    document.getElementById('btn-calc-b').disabled = false;
-  }
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  finally { setProgress('b', 0); document.getElementById('btn-calc-b').disabled = false; }
 }
 
 function computeBayesianScores(rows, M) {
   const byCard = {};
-  rows.forEach(r => {
-    if (!byCard[r.card_name]) byCard[r.card_name] = {};
-    byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total };
-  });
+  rows.forEach(r => { if (!byCard[r.card_name]) byCard[r.card_name] = {}; byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total }; });
   const totalWins = rows.filter(r => r.copy_count === 0).reduce((s, r) => s + r.wins, 0);
   const totalGames = rows.filter(r => r.copy_count === 0).reduce((s, r) => s + r.total, 0);
   const wBar = totalGames > 0 ? totalWins / totalGames : 0.5;
-  return Object.entries(byCard).map(([card, copies]) => {
+  return Object.entries(byCard).map(function(entry) {
+    const card = entry[0], copies = entry[1];
     const base = copies[0] || { wins: 0, total: 0 };
     if (base.total === 0) return null;
     const shrunkBase = (base.wins + M * wBar) / (base.total + M);
@@ -1842,12 +1569,10 @@ function computeBayesianScores(rows, M) {
       if (!cd || cd.total === 0) continue;
       const shrunk = (cd.wins + M * wBar) / (cd.total + M);
       const w = cd.total * k;
-      wSum += (shrunk - shrunkBase) * w;
-      wTot += w;
-      sampleSize += cd.total;
+      wSum += (shrunk - shrunkBase) * w; wTot += w; sampleSize += cd.total;
     }
     if (wTot === 0) return null;
-    return { card, score: wSum / wTot, sampleSize };
+    return { card: card, score: wSum / wTot, sampleSize: sampleSize };
   }).filter(Boolean).sort((a, b) => b.score - a.score);
 }
 
@@ -1856,26 +1581,22 @@ function renderBayesianResults(result, fromCache) {
   const el = document.getElementById('b-results');
   if (!result) { el.innerHTML = ''; return; }
   const renderList = (scores, title) => {
-    if (!scores.length) return `<div style="color:var(--text2);font-size:14px;">No data available.</div>`;
-    return `${title ? `<div class="card-title" style="margin-bottom:8px;">${title}</div>` : ''}
-      ${scores.slice(0, 50).map(s => {
+    if (!scores.length) return '<div style="color:var(--text2);font-size:14px;">No data available. Run the Colab calculation notebook first.</div>';
+    return (title ? '<div class="card-title" style="margin-bottom:8px;">' + title + '</div>' : '') +
+      scores.slice(0, 50).map(s => {
         const cls = s.score > 0.01 ? 'score-pos' : s.score < -0.01 ? 'score-neg' : 'score-neu';
         const sign = s.score > 0 ? '+' : '';
-        return `<div class="result-row">
-          <div class="result-row-name">${s.card}</div>
-          <div style="font-size:11px;color:var(--text2);">${s.sampleSize}g</div>
-          <span class="score-badge ${cls}">${sign}${s.score.toFixed(4)}</span>
-        </div>`;
-      }).join('')}`;
+        return '<div class="result-row"><div class="result-row-name">' + s.card + '</div>' +
+          '<div style="font-size:11px;color:var(--text2);">' + s.sampleSize + 'g</div>' +
+          '<span class="score-badge ' + cls + '">' + sign + s.score.toFixed(4) + '</span></div>';
+      }).join('');
   };
   if (result.scope === 'compare') {
-    el.innerHTML = `<div class="compare-grid">
-      <div><div class="compare-col-header">My data</div>${renderList(result.myScores, '')}</div>
-      <div><div class="compare-col-header">All data</div>${renderList(result.allScores, '')}</div>
-    </div>`;
+    el.innerHTML = '<div class="compare-grid"><div><div class="compare-col-header">My data</div>' + renderList(result.myScores, '') + '</div>' +
+      '<div><div class="compare-col-header">All data</div>' + renderList(result.allScores, '') + '</div></div>';
   } else {
     const scores = result.scope === 'mine' ? result.myScores : result.allScores;
-    el.innerHTML = `<div class="card" style="padding:12px;">${renderList(scores, '')}</div>`;
+    el.innerHTML = '<div class="card" style="padding:12px;">' + renderList(scores, '') + '</div>';
   }
 }
 
@@ -1888,14 +1609,8 @@ async function calcChiSquared() {
   document.getElementById('btn-calc-c').disabled = true;
   try {
     let myData = [], allData = [];
-    if (scope === 'mine' || scope === 'compare') {
-      setProgress('c', 20);
-      myData = await fetchSummaryData('mine', filter, deck);
-    }
-    if (scope === 'all' || scope === 'compare') {
-      setProgress('c', 50);
-      allData = await fetchSummaryData('all', filter, deck);
-    }
+    if (scope === 'mine' || scope === 'compare') { setProgress('c', 20); myData = await fetchSummaryData('mine', filter, deck); }
+    if (scope === 'all' || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all', filter, deck); }
     setProgress('c', 80);
     const myResults = scope !== 'all' ? computeChiSquared(myData) : [];
     const allResults = scope !== 'mine' ? computeChiSquared(allData) : [];
@@ -1904,42 +1619,31 @@ async function calcChiSquared() {
     state.lastCalc.c = Date.now();
     setProgress('c', 100);
     renderChiResults(result, false);
-  } catch(e) {
-    showToast('Error: ' + e.message, 'error');
-  } finally {
-    setProgress('c', 0);
-    document.getElementById('btn-calc-c').disabled = false;
-  }
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  finally { setProgress('c', 0); document.getElementById('btn-calc-c').disabled = false; }
 }
 
 function computeChiSquared(rows) {
   const byCard = {};
-  rows.forEach(r => {
-    if (!byCard[r.card_name]) byCard[r.card_name] = {};
-    byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total };
-  });
+  rows.forEach(r => { if (!byCard[r.card_name]) byCard[r.card_name] = {}; byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total }; });
   const results = [];
-  Object.entries(byCard).forEach(([card, copies]) => {
+  Object.entries(byCard).forEach(function(entry) {
+    const card = entry[0], copies = entry[1];
     const base = copies[0];
     if (!base || base.total === 0) return;
-    const baseWins = base.wins;
-    const baseLoss = base.total - base.wins;
+    const c = base.wins, d = base.total - base.wins;
     for (let k = 1; k <= 4; k++) {
       const cd = copies[k];
       if (!cd || cd.total === 0) continue;
-      const a = cd.wins, b = cd.total - cd.wins;
-      const c = baseWins, d = baseLoss;
-      const n = a + b + c + d;
+      const a = cd.wins, b = cd.total - cd.wins, n = a + b + c + d;
       if (n === 0) continue;
-      const e1 = (a+c)*(a+b)/n, e2 = (a+c)*(c+d)/n;
-      const e3 = (b+d)*(a+b)/n, e4 = (b+d)*(c+d)/n;
+      const e1 = (a+c)*(a+b)/n, e2 = (a+c)*(c+d)/n, e3 = (b+d)*(a+b)/n, e4 = (b+d)*(c+d)/n;
       if (e1 < 5 || e2 < 5 || e3 < 5 || e4 < 5) continue;
       const chi2 = n * Math.pow(a*d - b*c, 2) / ((a+b)*(c+d)*(a+c)*(b+d));
       const p = 1 - chi2CDF(chi2, 1);
       const wrWith = cd.total > 0 ? cd.wins / cd.total : 0;
       const wrWithout = base.total > 0 ? base.wins / base.total : 0;
-      const direction = wrWith > wrWithout ? 'positive' : 'negative';
-      results.push({ card, copyCount: k, chi2, p, direction, wrWith, wrWithout, sampleWith: cd.total, sampleWithout: base.total });
+      results.push({ card: card, copyCount: k, chi2: chi2, p: p, direction: wrWith > wrWithout ? 'positive' : 'negative', wrWith: wrWith, wrWithout: wrWithout, sampleWith: cd.total, sampleWithout: base.total });
     }
   });
   return results;
@@ -1969,32 +1673,27 @@ function gammaSeriesExpansion(a, x) {
 function gammaContinuedFraction(a, x) {
   let b = x + 1 - a, c = 1e30, d = 1 / b, h = d;
   for (let i = 1; i <= 200; i++) {
-    const an = -i * (i - a);
-    b += 2;
+    const an = -i * (i - a); b += 2;
     d = an * d + b; if (Math.abs(d) < 1e-30) d = 1e-30;
     c = b + an / c; if (Math.abs(c) < 1e-30) c = 1e-30;
-    d = 1 / d;
-    const del = d * c; h *= del;
+    d = 1 / d; const del = d * c; h *= del;
     if (Math.abs(del - 1) < 1e-10) break;
   }
   return h * Math.exp(-x + a * Math.log(x) - lnGamma(a));
 }
 
 function lnGamma(z) {
-  const c = [76.18009172947146,-86.50532032941677,24.01409824083091,
-    -1.231739572450155,0.001208650973866179,-0.000005395239384953];
+  const co = [76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.001208650973866179,-0.000005395239384953];
   let y = z, x = z, tmp = x + 5.5;
   tmp -= (x + 0.5) * Math.log(tmp);
   let ser = 1.000000000190015;
-  for (let j = 0; j < 6; j++) { y++; ser += c[j] / y; }
+  for (let j = 0; j < 6; j++) { y++; ser += co[j] / y; }
   return -tmp + Math.log(2.5066282746310005 * ser / x);
 }
 
 function sortChiResults(key) {
   state.chiSortKey = key;
-  ['p','chi','name'].forEach(k => {
-    document.getElementById(`sort-${k}`).classList.toggle('selected', k === key);
-  });
+  ['p','chi','name'].forEach(k => { document.getElementById('sort-' + k).classList.toggle('selected', k === key); });
   if (state.cache.c) renderChiResults(state.cache.c.data, true);
 }
 
@@ -2009,189 +1708,83 @@ function renderChiResults(result, fromCache) {
     return a.card.localeCompare(b.card);
   };
   const renderTable = (rows, title) => {
-    if (!rows.length) return `<div style="color:var(--text2);font-size:14px;">No valid results. More data needed.</div>`;
+    if (!rows.length) return '<div style="color:var(--text2);font-size:14px;">No valid results. Run the Colab calculation notebook first, then more game data is needed to meet the minimum sample size threshold.</div>';
     const sorted = [...rows].sort(sortFn);
-    return `${title ? `<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">${title}</div>` : ''}
-      <div style="overflow-x:auto;">
-      <table class="sortable">
-        <thead><tr>
-          <th onclick="sortChiResults('name')">Card</th>
-          <th onclick="sortChiResults('chi')">χ²</th>
-          <th onclick="sortChiResults('p')">p-value</th>
-          <th>Effect</th>
-          <th>Sig</th>
-        </tr></thead>
-        <tbody>${sorted.slice(0, 50).map(r => {
-          const sigClass = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
-          const sigLabel = r.p < 0.01 ? '**' : r.p < 0.05 ? '*' : 'ns';
-          const dirClass = r.direction === 'positive' ? 'dir-pos' : 'dir-neg';
-          const dirLabel = r.direction === 'positive' ? '▲ +' : '▼ −';
-          const wrDiff = ((r.wrWith - r.wrWithout) * 100).toFixed(1);
-          return `<tr>
-            <td><div style="font-weight:600;font-size:12px;">${r.card}</div>
-                <div class="chi-detail">${r.copyCount}× | ${r.sampleWith}g with</div></td>
-            <td style="white-space:nowrap;">${r.chi2.toFixed(2)}</td>
-            <td style="white-space:nowrap;">${r.p < 0.0001 ? '<0.0001' : r.p.toFixed(4)}</td>
-            <td><span class="${dirClass}">${dirLabel}${Math.abs(wrDiff)}%</span></td>
-            <td><span class="${sigClass}">${sigLabel}</span></td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table></div>
-      <div style="font-size:11px;color:var(--text2);margin-top:8px;">
-        ** p&lt;0.01 highly significant &nbsp;* p&lt;0.05 significant &nbsp;ns not significant<br>
-        ▲ positive: win rate higher with card in hand &nbsp;▼ negative: win rate lower
-      </div>`;
+    return (title ? '<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">' + title + '</div>' : '') +
+      '<div style="overflow-x:auto;"><table class="sortable"><thead><tr>' +
+      '<th onclick="sortChiResults(\'name\')">Card</th>' +
+      '<th onclick="sortChiResults(\'chi\')">&#967;&#178;</th>' +
+      '<th onclick="sortChiResults(\'p\')">p-value</th>' +
+      '<th>Effect</th><th>Sig</th></tr></thead><tbody>' +
+      sorted.slice(0, 50).map(r => {
+        const sigClass = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
+        const sigLabel = r.p < 0.01 ? '**' : r.p < 0.05 ? '*' : 'ns';
+        const dirClass = r.direction === 'positive' ? 'dir-pos' : 'dir-neg';
+        const dirLabel = r.direction === 'positive' ? '▲ +' : '▼ −';
+        const wrDiff = ((r.wrWith - r.wrWithout) * 100).toFixed(1);
+        return '<tr><td><div style="font-weight:600;font-size:12px;">' + r.card + '</div>' +
+          '<div class="chi-detail">' + r.copyCount + '× | ' + r.sampleWith + 'g with</div></td>' +
+          '<td style="white-space:nowrap;">' + r.chi2.toFixed(2) + '</td>' +
+          '<td style="white-space:nowrap;">' + (r.p < 0.0001 ? '&lt;0.0001' : r.p.toFixed(4)) + '</td>' +
+          '<td><span class="' + dirClass + '">' + dirLabel + Math.abs(wrDiff) + '%</span></td>' +
+          '<td><span class="' + sigClass + '">' + sigLabel + '</span></td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<div style="font-size:11px;color:var(--text2);margin-top:8px;">' +
+      '** p&lt;0.01 highly significant &nbsp;* p&lt;0.05 significant &nbsp;ns not significant<br>' +
+      '▲ positive: win rate higher with card in hand &nbsp;▼ negative: win rate lower</div>';
   };
   if (result.scope === 'compare') {
-    el.innerHTML = `<div class="compare-grid">
-      <div>${renderTable(result.myResults, 'My data')}</div>
-      <div>${renderTable(result.allResults, 'All data')}</div>
-    </div>`;
+    el.innerHTML = '<div class="compare-grid"><div>' + renderTable(result.myResults, 'My data') + '</div><div>' + renderTable(result.allResults, 'All data') + '</div></div>';
   } else {
     const rows = result.scope === 'mine' ? result.myResults : result.allResults;
-    el.innerHTML = `<div class="card" style="padding:12px;">${renderTable(rows, '')}</div>`;
+    el.innerHTML = '<div class="card" style="padding:12px;">' + renderTable(rows, '') + '</div>';
   }
 }
 
-// ── INIT ───────────────────────────────────────────────────────────
+// ── MATCHUP MATRIX ─────────────────────────────────────────────────
 
-async function init() {
-  try {
-    const { data: { session } } = await db.auth.getSession();
-    if (session) {
-      await onSignedIn(session.user);
-    } else {
-      showScreen('screen-auth');
-    }
-  } catch(e) {
-    showScreen('screen-auth');
+function onShowMatchup() {
+  const sel = document.getElementById('m-deck');
+  sel.innerHTML = '<option value="">All decks</option>' +
+    state.allDecks.map(d => '<option value="' + d.archetype_name + '">' + d.archetype_name + '</option>').join('');
+  if (matchupCache && (Date.now() - matchupCache.timestamp < CACHE_TTL_MS)) {
+    renderMatchupResults(matchupCache.data, '');
+    const el = document.getElementById('m-cache-info');
+    if (el) { const age = Math.round((Date.now() - matchupCache.timestamp) / 60000); el.textContent = 'Showing cached results (' + age + 'm ago). Recalculate to refresh.'; }
   }
 }
-
-init();
-  <!-- MATCHUP MATRIX -->
-<div id="screen-matchup" class="screen">
-  <div class="header">
-    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
-    <h2>Matchup matrix</h2>
-  </div>
-  <div class="card">
-    <div class="row">
-      <div>
-        <label class="label">Your deck</label>
-        <select id="m-deck">
-          <option value="">All decks</option>
-        </select>
-      </div>
-      <div>
-        <label class="label">Data scope</label>
-        <select id="m-scope">
-          <option value="all">All data</option>
-          <option value="mine">My data</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label class="label">Game filter</label>
-        <select id="m-filter">
-          <option value="Overall">Overall</option>
-          <option value="G1">Game 1</option>
-          <option value="G23">Games 2 & 3</option>
-          <option value="Pre">Preboard</option>
-          <option value="Post">Postboard</option>
-          <option value="Pre_G1">Preboard G1</option>
-          <option value="Post_G23">Postboard G2/3</option>
-        </select>
-      </div>
-      <div>
-        <label class="label">Metagame basis</label>
-        <select id="m-meta">
-          <option value="recorded">Recorded games</option>
-          <option value="goldfish">MTGGoldfish</option>
-        </select>
-      </div>
-    </div>
-    <input type="text" id="m-search" placeholder="Search opponent archetype..."
-           oninput="filterMatchupResults(this.value)" style="margin-bottom:8px;">
-    <div class="throttle-msg" id="throttle-m"></div>
-    <div class="progress-bar-wrap" id="progress-m">
-      <div class="progress-bar-fill" id="progress-m-fill" style="width:0%"></div>
-    </div>
-    <button class="btn btn-primary" id="btn-calc-m"
-            onclick="calcMatchups()" style="margin-bottom:0;">
-      Load matchups
-    </button>
-    <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;"
-         id="m-cache-info"></div>
-  </div>
-  <div id="m-results"></div>
-</div>
-  // ── MATCHUP MATRIX ─────────────────────────────────────────────────
-
-function wilsonInterval(wins, total, z = 1.96) {
-  if (total === 0) return { low: 0, mid: 0, high: 0 };
-  const p = wins / total;
-  const z2 = z * z;
-  const mid = (p + z2 / (2 * total)) / (1 + z2 / total);
-  const margin = (z / (1 + z2 / total)) *
-    Math.sqrt(p * (1 - p) / total + z2 / (4 * total * total));
-  return {
-    low: Math.max(0, Math.round((mid - margin) * 1000) / 10),
-    mid: Math.round(p * 1000) / 10,
-    high: Math.min(100, Math.round((mid + margin) * 1000) / 10)
-  };
-}
-
-let matchupCache = null;
-let matchupLastCalc = 0;
-let matchupRawData = [];
 
 async function calcMatchups() {
   const now = Date.now();
   if (now - matchupLastCalc < THROTTLE_MS) {
     const secs = Math.ceil((THROTTLE_MS - (now - matchupLastCalc)) / 1000);
     const el = document.getElementById('throttle-m');
-    el.textContent = `Please wait ${secs}s before recalculating.`;
+    el.textContent = 'Please wait ' + secs + 's before recalculating.';
     el.style.display = 'block';
     setTimeout(() => el.style.display = 'none', THROTTLE_MS - (now - matchupLastCalc));
     return;
   }
-
   const deck = document.getElementById('m-deck').value;
   const scope = document.getElementById('m-scope').value;
   const filter = document.getElementById('m-filter').value;
   const meta = document.getElementById('m-meta').value;
-
   setProgress('m', 10);
   document.getElementById('btn-calc-m').disabled = true;
-
   try {
     let query = db.from('matchup_summary')
       .select('pilot_deck,opponent_archetype,filter,pilot_name,game_wins,game_losses,match_wins,match_losses')
       .eq('filter', filter);
-
     if (deck) query = query.eq('pilot_deck', deck);
     else query = query.is('pilot_deck', null);
-
-    if (scope === 'mine') {
-      query = query.eq('pilot_name', state.pilot.pilot_name);
-    } else {
-      query = query.is('pilot_name', null);
-    }
-
+    if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
+    else query = query.is('pilot_name', null);
     setProgress('m', 40);
     const { data: matchups, error } = await query;
     if (error) throw error;
-
     setProgress('m', 60);
-
     let topArchetypes = new Set();
-
     if (meta === 'goldfish') {
-      const { data: goldfishData } = await db.from('metagame_share')
-        .select('archetype_name,share_percent,cumulative_share')
-        .order('share_percent', { ascending: false });
+      const { data: goldfishData } = await db.from('metagame_share').select('archetype_name,share_percent').order('share_percent', { ascending: false });
       if (goldfishData && goldfishData.length) {
         let cumulative = 0;
         for (const row of goldfishData) {
@@ -2202,75 +1795,38 @@ async function calcMatchups() {
       }
     } else {
       const totalGames = (matchups || []).reduce((s, r) => s + r.game_wins + r.game_losses, 0);
-      const byOpponent = {};
-      (matchups || []).forEach(r => {
-        const opp = r.opponent_archetype;
-        if (!byOpponent[opp]) byOpponent[opp] = 0;
-        byOpponent[opp] += r.game_wins + r.game_losses;
-      });
-      const sorted = Object.entries(byOpponent).sort((a, b) => b[1] - a[1]);
+      const byOpp = {};
+      (matchups || []).forEach(r => { if (!byOpp[r.opponent_archetype]) byOpp[r.opponent_archetype] = 0; byOpp[r.opponent_archetype] += r.game_wins + r.game_losses; });
+      const sorted = Object.entries(byOpp).sort((a, b) => b[1] - a[1]);
       let cumulative = 0;
-      for (const [opp, count] of sorted) {
-        topArchetypes.add(opp);
-        cumulative += count;
+      for (const entry of sorted) {
+        topArchetypes.add(entry[0]); cumulative += entry[1];
         if (totalGames > 0 && cumulative / totalGames >= 0.75) break;
       }
     }
-
     setProgress('m', 80);
-
     const byOpponent = {};
     (matchups || []).forEach(r => {
       const opp = r.opponent_archetype;
-      if (!byOpponent[opp]) {
-        byOpponent[opp] = { game_wins: 0, game_losses: 0, match_wins: 0, match_losses: 0 };
-      }
-      byOpponent[opp].game_wins += r.game_wins;
-      byOpponent[opp].game_losses += r.game_losses;
-      byOpponent[opp].match_wins += r.match_wins;
-      byOpponent[opp].match_losses += r.match_losses;
+      if (!byOpponent[opp]) byOpponent[opp] = { game_wins: 0, game_losses: 0, match_wins: 0, match_losses: 0 };
+      byOpponent[opp].game_wins += r.game_wins; byOpponent[opp].game_losses += r.game_losses;
+      byOpponent[opp].match_wins += r.match_wins; byOpponent[opp].match_losses += r.match_losses;
     });
-
-    matchupRawData = Object.entries(byOpponent).map(([opp, stats]) => {
+    matchupRawData = Object.entries(byOpponent).map(function(entry) {
+      const opp = entry[0], stats = entry[1];
       const gTotal = stats.game_wins + stats.game_losses;
       const mTotal = stats.match_wins + stats.match_losses;
       const gInterval = wilsonInterval(stats.game_wins, gTotal);
       const mInterval = wilsonInterval(stats.match_wins, mTotal);
-      return {
-        opponent: opp,
-        inTop75: topArchetypes.has(opp) || topArchetypes.size === 0,
-        gameWins: stats.game_wins,
-        gameLosses: stats.game_losses,
-        gameTotal: gTotal,
-        gameMid: gInterval.mid,
-        gameLow: gInterval.low,
-        gameHigh: gInterval.high,
-        matchWins: stats.match_wins,
-        matchLosses: stats.match_losses,
-        matchTotal: mTotal,
-        matchMid: mInterval.mid,
-        matchLow: mInterval.low,
-        matchHigh: mInterval.high,
-        lowSample: gTotal < 10
-      };
-    }).sort((a, b) => {
-      if (a.inTop75 && !b.inTop75) return -1;
-      if (!a.inTop75 && b.inTop75) return 1;
-      return b.gameMid - a.gameMid;
-    });
-
+      return { opponent: opp, inTop75: topArchetypes.has(opp) || topArchetypes.size === 0, gameWins: stats.game_wins, gameLosses: stats.game_losses, gameTotal: gTotal, gameMid: gInterval.mid, gameLow: gInterval.low, gameHigh: gInterval.high, matchWins: stats.match_wins, matchLosses: stats.match_losses, matchTotal: mTotal, matchMid: mInterval.mid, matchLow: mInterval.low, matchHigh: mInterval.high, lowSample: gTotal < 10 };
+    }).sort((a, b) => { if (a.inTop75 && !b.inTop75) return -1; if (!a.inTop75 && b.inTop75) return 1; return b.gameMid - a.gameMid; });
     matchupCache = { data: matchupRawData, timestamp: Date.now() };
     matchupLastCalc = Date.now();
     setProgress('m', 100);
     renderMatchupResults(matchupRawData, '');
-    setCacheInfo('m', false);
-
-  } catch(e) {
-    showToast('Error: ' + e.message, 'error');
-  } finally {
-    setProgress('m', 0);
-    document.getElementById('btn-calc-m').disabled = false;
-  }
+    const ci = document.getElementById('m-cache-info'); if (ci) ci.textContent = '';
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  finally { setProgress('m', 0); document.getElementById('btn-calc-m').disabled = false; }
 }
 
 function filterMatchupResults(query) {
@@ -2281,68 +1837,37 @@ function filterMatchupResults(query) {
 function renderMatchupResults(data, searchQuery) {
   const el = document.getElementById('m-results');
   const q = (searchQuery || '').toLowerCase();
-
-  let filtered = q
-    ? data.filter(r => r.opponent.toLowerCase().includes(q))
-    : data.filter(r => r.inTop75);
-
-  if (q && !filtered.length) {
-    filtered = data.filter(r => r.opponent.toLowerCase().includes(q));
-  }
-
+  let filtered = q ? data.filter(r => r.opponent.toLowerCase().includes(q)) : data.filter(r => r.inTop75);
+  if (!filtered.length && q) filtered = data.filter(r => r.opponent.toLowerCase().includes(q));
   if (!filtered.length) {
     el.innerHTML = '<div style="color:var(--text2);font-size:14px;padding:8px 0;">No matchup data available. Run the calculation notebook first, then load matchups.</div>';
     return;
   }
-
   const top75 = filtered.filter(r => r.inTop75);
   const rest = filtered.filter(r => !r.inTop75);
-
   const renderRow = r => {
     const gColor = r.gameMid >= 55 ? 'var(--success)' : r.gameMid <= 45 ? 'var(--danger)' : 'var(--text)';
     const mColor = r.matchMid >= 55 ? 'var(--success)' : r.matchMid <= 45 ? 'var(--danger)' : 'var(--text)';
-    const opacity = r.lowSample ? '0.6' : '1';
-    return `
-      <div style="padding:10px 0;border-bottom:1px solid var(--border);opacity:${opacity};">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:600;">${r.opponent}</div>
-            ${r.lowSample ? '<div style="font-size:10px;color:var(--warning);">Low sample</div>' : ''}
-          </div>
-          <div style="text-align:right;min-width:130px;">
-            <div style="font-size:12px;color:var(--text2);">Game</div>
-            <div style="font-size:14px;font-weight:700;color:${gColor};">${r.gameMid}%</div>
-            <div style="font-size:10px;color:var(--text2);">${r.gameLow}%–${r.gameHigh}% (${r.gameTotal}g)</div>
-          </div>
-          ${r.matchTotal > 0 ? `
-          <div style="text-align:right;min-width:130px;margin-left:8px;">
-            <div style="font-size:12px;color:var(--text2);">Match</div>
-            <div style="font-size:14px;font-weight:700;color:${mColor};">${r.matchMid}%</div>
-            <div style="font-size:10px;color:var(--text2);">${r.matchLow}%–${r.matchHigh}% (${r.matchTotal}m)</div>
-          </div>` : ''}
-        </div>
-      </div>`;
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--border);opacity:' + (r.lowSample ? '0.6' : '1') + ';">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+      '<div style="flex:1;"><div style="font-size:13px;font-weight:600;">' + r.opponent + '</div>' +
+      (r.lowSample ? '<div style="font-size:10px;color:var(--warning);">Low sample</div>' : '') + '</div>' +
+      '<div style="text-align:right;min-width:120px;"><div style="font-size:12px;color:var(--text2);">Game</div>' +
+      '<div style="font-size:14px;font-weight:700;color:' + gColor + ';">' + r.gameMid + '%</div>' +
+      '<div style="font-size:10px;color:var(--text2);">' + r.gameLow + '%–' + r.gameHigh + '% (' + r.gameTotal + 'g)</div></div>' +
+      (r.matchTotal > 0 ? '<div style="text-align:right;min-width:120px;margin-left:8px;"><div style="font-size:12px;color:var(--text2);">Match</div>' +
+      '<div style="font-size:14px;font-weight:700;color:' + mColor + ';">' + r.matchMid + '%</div>' +
+      '<div style="font-size:10px;color:var(--text2);">' + r.matchLow + '%–' + r.matchHigh + '% (' + r.matchTotal + 'm)</div></div>' : '') +
+      '</div></div>';
   };
-
   let html = '';
-
   if (q) {
     html = filtered.map(renderRow).join('');
   } else {
-    if (top75.length) {
-      html += `<div class="card-title" style="margin-bottom:4px;">Top 75% of metagame (${top75.length} matchups)</div>`;
-      html += top75.map(renderRow).join('');
-    }
-    if (rest.length && !q) {
-      html += `<hr class="divider">
-        <div class="card-title" style="margin-bottom:4px;cursor:pointer;" onclick="toggleRestMatchups(this)">
-          Other matchups (${rest.length}) — tap to show ▼
-        </div>
-        <div id="rest-matchups" style="display:none;">${rest.map(renderRow).join('')}</div>`;
-    }
+    if (top75.length) html += '<div class="card-title" style="margin-bottom:4px;">Top 75% of metagame (' + top75.length + ' matchups)</div>' + top75.map(renderRow).join('');
+    if (rest.length) html += '<hr class="divider"><div class="card-title" style="margin-bottom:4px;cursor:pointer;" onclick="toggleRestMatchups(this)">Other matchups (' + rest.length + ') — tap to show ▼</div><div id="rest-matchups" style="display:none;">' + rest.map(renderRow).join('') + '</div>';
   }
-
-  el.innerHTML = `<div class="card" style="padding:12px;">${html}</div>`;
+  el.innerHTML = '<div class="card" style="padding:12px;">' + html + '</div>';
 }
 
 function toggleRestMatchups(el) {
@@ -2352,6 +1877,20 @@ function toggleRestMatchups(el) {
   div.style.display = visible ? 'none' : 'block';
   el.textContent = el.textContent.replace(visible ? '▲' : '▼', visible ? '▼' : '▲');
 }
+
+// ── INIT ───────────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) await onSignedIn(session.user);
+    else showScreen('screen-auth');
+  } catch(e) {
+    showScreen('screen-auth');
+  }
+}
+
+init();
 </script>
 </body>
 </html>
