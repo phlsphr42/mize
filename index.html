@@ -1453,8 +1453,8 @@ function suggestArchetypes() {
   const mainCards = state.newDeckCards.filter(c => c.main_side === 'Main');
   const pilotCards = {};
   mainCards.forEach(c => { pilotCards[c.card_name] = c.quantity; });
-  const scores = Object.entries(state.referenceDecks).map(([archetype, refCards]) => {
-    let score = 0, totalWeight = 0;
+const scores = Object.entries(state.referenceDecks).map(([archetype, refCards]) => {
+    let score = 0, totalWeight = 0, refMatchWeight = 0, refTotalWeight = 0;
     Object.entries(pilotCards).forEach(([card, qty]) => {
       if (refCards[card]) {
         const d = 1 / (state.cardFrequency[card] || 1);
@@ -1462,7 +1462,17 @@ function suggestArchetypes() {
         totalWeight += d;
       }
     });
-    return { archetype, score: totalWeight > 0 ? score / totalWeight : 0 };
+    Object.entries(refCards).forEach(([card, qty]) => {
+      const d = 1 / (state.cardFrequency[card] || 1);
+      refTotalWeight += qty * d;
+      if (pilotCards[card]) {
+        refMatchWeight += Math.min(qty, pilotCards[card]) * d;
+      }
+    });
+    const pilotScore = totalWeight > 0 ? score / totalWeight : 0;
+    const refScore = refTotalWeight > 0 ? refMatchWeight / refTotalWeight : 0;
+    const combined = (pilotScore + refScore) / 2;
+    return { archetype, score: combined };
   });
   scores.sort((a, b) => b.score - a.score);
   const top3 = scores.slice(0, 3);
