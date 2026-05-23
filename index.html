@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mize</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #333;
+    --accent: #c8a84b;
+    --accent2: #a08030;
+    --text: #f0f0f0;
+    --text2: #999;
+    --success: #4caf50;
+    --danger: #f44336;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .screen { display: none; padding: 16px; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 0 24px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+  .header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .back-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text2);
+    margin-bottom: 8px;
+  }
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    margin-bottom: 8px;
+  }
+  .btn:active { opacity: 0.8; }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-success {
+    background: var(--success);
+    color: #fff;
+  }
+  .btn-danger {
+    background: var(--danger);
+    color: #fff;
+  }
+  .btn-sm {
+    width: auto;
+    padding: 8px 16px;
+    font-size: 13px;
+    margin-bottom: 0;
+  }
+  input, select {
+    width: 100%;
+    padding: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  select option { background: var(--surface2); }
+  .toggle-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .toggle-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .toggle-btn.selected {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+  .pilot-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 15px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+    text-align: left;
+  }
+  .pilot-btn:active { border-color: var(--accent); }
+  .pilot-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #000;
+    flex-shrink: 0;
+  }
+  .card-slot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .card-slot-label {
+    font-size: 12px;
+    color: var(--text2);
+    width: 48px;
+    flex-shrink: 0;
+  }
+  .card-slot select {
+    margin-bottom: 0;
+    flex: 1;
+  }
+  .card-image-preview {
+    width: 36px;
+    height: 50px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .step-indicator {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    padding: 8px 0 16px;
+  }
+  .step-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--accent2); }
+  .label {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .score-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .score-pos { background: #1a3a1a; color: #4caf50; }
+  .score-neg { background: #3a1a1a; color: #f44336; }
+  .score-neu { background: var(--surface2); color: var(--text2); }
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text2);
+  }
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 20px;
+    font-size: 14px;
+    z-index: 1000;
+    display: none;
+    white-space: nowrap;
+  }
+  .toast.success { border-color: var(--success); color: var(--success); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+  .spacer { flex: 1; }
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 12px 0;
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .row > * { flex: 1; margin-bottom: 0; }
+  .match-info {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+  .match-info span { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ── SCREEN: LOADING ─────────────────────────────────────────────── -->
+<div id="screen-loading" class="screen active">
+  <div class="spacer"></div>
+  <div class="loading">
+    <div class="spinner"></div>
+    <div style="font-size:28px;font-weight:700;color:var(--accent);letter-spacing:3px;margin-bottom:8px">MIZE</div>
+    <div>Loading...</div>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- ── SCREEN: PILOT SELECT ───────────────────────────────────────── -->
+<div id="screen-pilot" class="screen">
+  <div class="header"><h1>MIZE</h1></div>
+  <div class="card-title">Select pilot</div>
+  <div id="pilot-list"></div>
+  <button class="btn btn-secondary" onclick="showScreen('screen-new-pilot')">
+    + Register new pilot
+  </button>
+</div>
+
+<!-- ── SCREEN: NEW PILOT ──────────────────────────────────────────── -->
+<div id="screen-new-pilot" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-pilot')">←</button>
+    <h2>New pilot</h2>
+  </div>
+  <div class="card">
+    <label class="label">Pilot name</label>
+    <input type="text" id="new-pilot-name" placeholder="Enter your name">
+    <label class="label">Email (optional)</label>
+    <input type="email" id="new-pilot-email" placeholder="your@email.com">
+  </div>
+  <button class="btn btn-primary" onclick="registerPilot()">Register</button>
+</div>
+
+<!-- ── SCREEN: PILOT HOME ─────────────────────────────────────────── -->
+<div id="screen-home" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-pilot')">←</button>
+    <div>
+      <h2 id="home-pilot-name"></h2>
+      <div class="match-info">Deck: <span id="home-deck-name">No deck selected</span></div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="startNewMatch()">
+    + New match
+  </button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-deck')">
+    Manage deck
+  </button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-scores')">
+    View card scores
+  </button>
+  <hr class="divider">
+  <div class="card-title">Recent matches</div>
+  <div id="recent-matches">
+    <div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div>
+  </div>
+</div>
+
+<!-- ── SCREEN: MATCH SETUP ────────────────────────────────────────── -->
+<div id="screen-match-setup" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>New match</h2>
+  </div>
+  <div class="step-indicator">
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+  </div>
+  <div class="card">
+    <label class="label">Opponent's deck</label>
+    <input type="text" id="opponent-search" placeholder="Search archetypes..."
+           oninput="filterArchetypes(this.value)">
+    <div id="archetype-list" style="max-height:200px;overflow-y:auto;"></div>
+    <div id="opponent-selected" style="display:none;">
+      <hr class="divider">
+      <div style="font-size:13px;color:var(--text2);">Selected:</div>
+      <div id="opponent-name" style="font-size:16px;font-weight:600;color:var(--accent);"></div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="confirmOpponent()"
+          id="btn-confirm-opponent" disabled>
+    Continue →
+  </button>
+</div>
+
+<!-- ── SCREEN: GAME ENTRY ─────────────────────────────────────────── -->
+<div id="screen-game" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-match-setup')">←</button>
+    <h2>Game <span id="game-number-label">1</span></h2>
+  </div>
+  <div class="step-indicator">
+    <div class="step-dot done"></div>
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+  </div>
+  <div class="match-info" style="margin-bottom:12px;">
+    vs <span id="game-opponent-label"></span>
+  </div>
+  <div class="card">
+    <div class="card-title">Game details</div>
+    <label class="label">Pre or postboard?</label>
+    <div class="toggle-group">
+      <div class="toggle-btn selected" onclick="selectToggle(this,'prepost','Pre')">Preboard</div>
+      <div class="toggle-btn" onclick="selectToggle(this,'prepost','Post')">Postboard</div>
+    </div>
+    <label class="label">Play or draw?</label>
+    <div class="toggle-group">
+      <div class="toggle-btn" onclick="selectToggle(this,'playdraw','Play')">Play</div>
+      <div class="toggle-btn" onclick="selectToggle(this,'playdraw','Draw')">Draw</div>
+    </div>
+    <label class="label">Mulligans taken</label>
+    <div class="toggle-group" id="mulligan-group">
+      <div class="toggle-btn selected" onclick="selectMulligan(this,0)">0</div>
+      <div class="toggle-btn" onclick="selectMulligan(this,1)">1</div>
+      <div class="toggle-btn" onclick="selectMulligan(this,2)">2</div>
+      <div class="toggle-btn" onclick="selectMulligan(this,3)">3</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Opening hand</div>
+    <div id="card-slots"></div>
+  </div>
+  <button class="btn btn-primary" onclick="showScreen('screen-result')">
+    Continue →
+  </button>
+</div>
+
+<!-- ── SCREEN: RESULT ─────────────────────────────────────────────── -->
+<div id="screen-result" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-game')">←</button>
+    <h2>Game result</h2>
+  </div>
+  <div class="step-indicator">
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+  </div>
+  <div class="match-info" style="margin-bottom:12px;">
+    Game <span id="result-game-num"></span> vs
+    <span id="result-opponent"></span>
+  </div>
+  <div class="card">
+    <div class="card-title">Did you win this game?</div>
+    <div class="toggle-group">
+      <div class="toggle-btn" onclick="selectToggle(this,'gameresult','Win')"
+           style="color:var(--success)">Win</div>
+      <div class="toggle-btn" onclick="selectToggle(this,'gameresult','Loss')"
+           style="color:var(--danger)">Loss</div>
+    </div>
+  </div>
+  <div class="card" id="match-result-card">
+    <div class="card-title">Did this game end the match?</div>
+    <div class="toggle-group">
+      <div class="toggle-btn selected"
+           onclick="selectToggle(this,'matchend','No')">No</div>
+      <div class="toggle-btn"
+           onclick="selectToggle(this,'matchend','Yes')">Yes</div>
+    </div>
+    <div id="match-result-section" style="display:none;margin-top:12px;">
+      <label class="label">Match result</label>
+      <div class="toggle-group">
+        <div class="toggle-btn"
+             onclick="selectToggle(this,'matchresult','Win')"
+             style="color:var(--success)">Win</div>
+        <div class="toggle-btn"
+             onclick="selectToggle(this,'matchresult','Loss')"
+             style="color:var(--danger)">Loss</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <label class="label">Notes (optional)</label>
+    <input type="text" id="game-notes"
+           placeholder="Any unusual circumstances?">
+  </div>
+  <button class="btn btn-success" onclick="submitGame()">
+    Submit game
+  </button>
+</div>
+
+<!-- ── SCREEN: AFTER GAME ─────────────────────────────────────────── -->
+<div id="screen-after-game" class="screen">
+  <div class="header">
+    <h2>Game submitted</h2>
+  </div>
+  <div class="step-indicator">
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot active"></div>
+  </div>
+  <div class="card" style="text-align:center;padding:24px;">
+    <div style="font-size:40px;margin-bottom:8px;" id="result-icon">✓</div>
+    <div style="font-size:18px;font-weight:600;" id="after-result-label"></div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px;"
+         id="after-match-label"></div>
+  </div>
+  <button class="btn btn-primary" onclick="nextGame()" id="btn-next-game">
+    Enter next game
+  </button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-home')">
+    Back to home
+  </button>
+</div>
+
+<!-- ── SCREEN: DECK MANAGEMENT ───────────────────────────────────── -->
+<div id="screen-deck" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>My deck</h2>
+  </div>
+  <div id="deck-content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div>Loading deck...</div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="showScreen('screen-add-card')">
+    + Add card
+  </button>
+</div>
+
+<!-- ── SCREEN: ADD CARD ───────────────────────────────────────────── -->
+<div id="screen-add-card" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-deck')">←</button>
+    <h2>Add card</h2>
+  </div>
+  <div class="card">
+    <label class="label">Card name</label>
+    <input type="text" id="add-card-search" placeholder="Search card name..."
+           oninput="searchCards(this.value)">
+    <div id="card-search-results" style="max-height:200px;overflow-y:auto;"></div>
+    <div id="add-card-selected" style="display:none;">
+      <hr class="divider">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <img id="add-card-image" src="" alt="" style="width:60px;height:84px;
+             border-radius:6px;object-fit:cover;">
+        <div>
+          <div id="add-card-name"
+               style="font-size:15px;font-weight:600;"></div>
+          <div id="add-card-type"
+               style="font-size:12px;color:var(--text2);margin-top:2px;"></div>
+          <div id="add-card-mana"
+               style="font-size:12px;color:var(--accent);margin-top:2px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="add-card-details" style="display:none;">
+    <div class="row">
+      <div>
+        <label class="label">Quantity</label>
+        <select id="add-card-qty">
+          <option>1</option><option>2</option>
+          <option>3</option><option selected>4</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Main / Side</label>
+        <select id="add-card-mainside">
+          <option value="Main">Mainboard</option>
+          <option value="Side">Sideboard</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-add-card"
+          onclick="addCardToDeck()" style="display:none;">
+    Add to deck
+  </button>
+</div>
+
+<!-- ── SCREEN: SCORES ─────────────────────────────────────────────── -->
+<div id="screen-scores" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Card scores</h2>
+  </div>
+  <div class="card">
+    <label class="label">Filter</label>
+    <select onchange="loadScores(this.value)">
+      <option value="Overall">Overall</option>
+      <option value="G1">Game 1 only</option>
+      <option value="G23">Games 2 & 3</option>
+      <option value="Pre">Preboard</option>
+      <option value="Post">Postboard</option>
+    </select>
+  </div>
+  <div id="scores-list">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div>Loading scores...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ──────────────────────────────────────────────────────── -->
+<div id="toast" class="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://vkgtqunhsalquihlqkxp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZ3RxdW5oc2FscXVpaGxxa3hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDAwOTMsImV4cCI6MjA5NTExNjA5M30.tvTFa8Tt9dN5uC1xFQCUTV7ryGNhqgUa8TEonca6viA';
+
+const api = {
+  headers: {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  },
+  async get(table, params = '') {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}${params}`,
+      { headers: this.headers }
+    );
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async post(table, data) {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}`,
+      { method: 'POST', headers: this.headers, body: JSON.stringify(data) }
+    );
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async patch(table, params, data) {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}${params}`,
+      { method: 'PATCH', headers: this.headers, body: JSON.stringify(data) }
+    );
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+};
+
+let state = {
+  pilot: null,
+  decklist: null,
+  deckCards: [],
+  matchId: null,
+  opponent: null,
+  gameNumber: 1,
+  prepost: 'Pre',
+  playdraw: null,
+  mulligans: 0,
+  handCards: [],
+  gameResult: null,
+  matchEnd: 'No',
+  matchResult: null,
+  archetypes: [],
+  cardPool: []
+};
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function selectToggle(el, group, value) {
+  el.closest('.toggle-group').querySelectorAll('.toggle-btn')
+    .forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  state[group] = value;
+  if (group === 'matchend') {
+    document.getElementById('match-result-section').style.display =
+      value === 'Yes' ? 'block' : 'none';
+  }
+}
+
+function selectMulligan(el, count) {
+  el.closest('.toggle-group').querySelectorAll('.toggle-btn')
+    .forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.mulligans = count;
+  buildCardSlots(7 - count);
+}
+
+async function init() {
+  try {
+    const [archetypes, pilots] = await Promise.all([
+      api.get('opponent_archetypes', '?select=canonical_name&order=canonical_name'),
+      api.get('pilots', '?select=pilot_name,pilot_email&order=pilot_name')
+    ]);
+    state.archetypes = archetypes.map(a => a.canonical_name);
+    renderPilotList(pilots);
+    showScreen('screen-pilot');
+  } catch(e) {
+    showToast('Connection error: ' + e.message, 'error');
+    showScreen('screen-pilot');
+  }
+}
+
+function renderPilotList(pilots) {
+  const el = document.getElementById('pilot-list');
+  if (!pilots.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:14px;margin-bottom:12px;">No pilots registered yet.</div>';
+    return;
+  }
+  el.innerHTML = pilots.map(p => `
+    <button class="pilot-btn" onclick="selectPilot('${p.pilot_name}','${p.pilot_email||''}')">
+      <div class="pilot-avatar">${p.pilot_name[0].toUpperCase()}</div>
+      <div>
+        <div style="font-weight:600;">${p.pilot_name}</div>
+        <div style="font-size:12px;color:var(--text2);">${p.pilot_email||''}</div>
+      </div>
+    </button>
+  `).join('');
+}
+
+async function selectPilot(name, email) {
+  state.pilot = { pilot_name: name, pilot_email: email };
+  document.getElementById('home-pilot-name').textContent = name;
+  await loadDeck();
+  showScreen('screen-home');
+}
+
+async function registerPilot() {
+  const name = document.getElementById('new-pilot-name').value.trim().toLowerCase();
+  const email = document.getElementById('new-pilot-email').value.trim();
+  if (!name) { showToast('Please enter a name', 'error'); return; }
+  try {
+    await api.post('pilots', { pilot_name: name, pilot_email: email });
+    showToast('Pilot registered!');
+    state.pilot = { pilot_name: name, pilot_email: email };
+    document.getElementById('home-pilot-name').textContent = name;
+    await loadDeck();
+    showScreen('screen-home');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function loadDeck() {
+  try {
+    const decklists = await api.get('decklists',
+      `?pilot_name=eq.${encodeURIComponent(state.pilot.pilot_name)}&is_active=eq.true&select=id,archetype_name`
+    );
+    if (decklists.length) {
+      state.decklist = decklists[0];
+      document.getElementById('home-deck-name').textContent =
+        decklists[0].archetype_name || 'Unknown archetype';
+      const cards = await api.get('decklist_cards',
+        `?decklist_id=eq.${decklists[0].id}&select=card_name,quantity,main_side,preferred_image_url&order=main_side,card_name`
+      );
+      state.deckCards = cards;
+    } else {
+      state.decklist = null;
+      state.deckCards = [];
+      document.getElementById('home-deck-name').textContent = 'No deck registered';
+    }
+    renderDeck();
+  } catch(e) {
+    console.error('Error loading deck:', e);
+  }
+}
+
+function renderDeck() {
+  const el = document.getElementById('deck-content');
+  if (!state.deckCards.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:14px;margin-bottom:12px;">No cards in deck yet. Add cards below.</div>';
+    return;
+  }
+  const main = state.deckCards.filter(c => c.main_side === 'Main');
+  const side = state.deckCards.filter(c => c.main_side === 'Side');
+  const renderSection = (title, cards) => {
+    if (!cards.length) return '';
+    const total = cards.reduce((s, c) => s + c.quantity, 0);
+    return `
+      <div class="card-title">${title} (${total})</div>
+      ${cards.map(c => `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          ${c.preferred_image_url
+            ? `<img src="${c.preferred_image_url}" style="width:36px;height:50px;border-radius:4px;object-fit:cover;">`
+            : `<div style="width:36px;height:50px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);"></div>`
+          }
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;">${c.card_name}</div>
+            <div style="font-size:12px;color:var(--text2);">${c.main_side}</div>
+          </div>
+          <div style="font-size:18px;font-weight:700;color:var(--accent);">×${c.quantity}</div>
+        </div>
+      `).join('')}
+    `;
+  };
+  el.innerHTML = renderSection('Mainboard', main) + renderSection('Sideboard', side);
+}
+
+function filterArchetypes(query) {
+  const list = document.getElementById('archetype-list');
+  const q = query.toLowerCase();
+  const matches = state.archetypes.filter(a => a.toLowerCase().includes(q)).slice(0, 10);
+  list.innerHTML = matches.map(a => `
+    <div onclick="selectArchetype('${a.replace(/'/g, "\\'")}')"
+         style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">
+      ${a}
+    </div>
+  `).join('');
+}
+
+function selectArchetype(name) {
+  state.opponent = name;
+  document.getElementById('opponent-name').textContent = name;
+  document.getElementById('opponent-selected').style.display = 'block';
+  document.getElementById('archetype-list').innerHTML = '';
+  document.getElementById('opponent-search').value = name;
+  document.getElementById('btn-confirm-opponent').disabled = false;
+}
+
+function confirmOpponent() {
+  if (!state.opponent) { showToast('Please select an opponent deck', 'error'); return; }
+  state.matchId = `${state.pilot.pilot_name}_${Date.now()}`;
+  state.gameNumber = 1;
+  setupGameScreen();
+  showScreen('screen-game');
+}
+
+function startNewMatch() {
+  if (!state.decklist) {
+    showToast('Please add a deck first', 'error');
+    showScreen('screen-deck');
+    return;
+  }
+  state.opponent = null;
+  state.gameNumber = 1;
+  document.getElementById('opponent-search').value = '';
+  document.getElementById('opponent-selected').style.display = 'none';
+  document.getElementById('btn-confirm-opponent').disabled = true;
+  filterArchetypes('');
+  showScreen('screen-match-setup');
+}
+
+function setupGameScreen() {
+  document.getElementById('game-number-label').textContent = state.gameNumber;
+  document.getElementById('game-opponent-label').textContent = state.opponent;
+  state.prepost = state.gameNumber === 1 ? 'Pre' : 'Post';
+  state.playdraw = null;
+  state.mulligans = 0;
+
+  const prepostBtns = document.querySelectorAll('[onclick*="prepost"]');
+  prepostBtns.forEach(b => {
+    b.classList.toggle('selected',
+      b.textContent.trim() === (state.gameNumber === 1 ? 'Preboard' : 'Postboard'));
+  });
+
+  document.querySelectorAll('[onclick*="playdraw"]')
+    .forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('[onclick*="selectMulligan"]')[0]
+    .click();
+
+  buildCardSlots(7);
+
+  document.getElementById('result-game-num').textContent = state.gameNumber;
+  document.getElementById('result-opponent').textContent = state.opponent;
+}
+
+function buildCardSlots(count) {
+  const el = document.getElementById('card-slots');
+  const mainCards = state.deckCards
+    .filter(c => c.main_side === 'Main')
+    .sort((a, b) => a.card_name.localeCompare(b.card_name));
+
+  const options = mainCards.map(c =>
+    Array(c.quantity).fill(c.card_name)
+  ).flat();
+  const uniqueOptions = [...new Set(options)];
+
+  el.innerHTML = Array.from({length: count}, (_, i) => `
+    <div class="card-slot">
+      <span class="card-slot-label">Card ${i+1}</span>
+      <select id="hand-card-${i}" onchange="updateCardImage(${i})">
+        <option value="">-- empty --</option>
+        ${uniqueOptions.map(name =>
+          `<option value="${name}">${name}</option>`
+        ).join('')}
+      </select>
+      <img id="hand-img-${i}" class="card-image-preview" src="" alt=""
+           style="display:none;">
+    </div>
+  `).join('');
+}
+
+function updateCardImage(idx) {
+  const sel = document.getElementById(`hand-card-${idx}`);
+  const img = document.getElementById(`hand-img-${idx}`);
+  const cardName = sel.value;
+  if (!cardName) { img.style.display = 'none'; return; }
+  const card = state.deckCards.find(c => c.card_name === cardName);
+  if (card && card.preferred_image_url) {
+    img.src = card.preferred_image_url;
+    img.style.display = 'block';
+  } else {
+    img.style.display = 'none';
+  }
+}
+
+async function submitGame() {
+  const handSize = 7 - state.mulligans;
+  const cards = Array.from({length: handSize}, (_, i) => {
+    const sel = document.getElementById(`hand-card-${i}`);
+    return sel ? sel.value : '';
+  });
+
+  if (!state.gameResult) {
+    showToast('Please select a game result', 'error');
+    return;
+  }
+  if (!state.playdraw) {
+    showToast('Please select play or draw', 'error');
+    return;
+  }
+
+  const matchResult = state.matchEnd === 'Yes' ? state.matchResult : null;
+
+  const entry = {
+    match_id: state.matchId,
+    timestamp: new Date().toISOString(),
+    pilot_name: state.pilot.pilot_name,
+    pilot_email: state.pilot.pilot_email || '',
+    deck_archetype: state.decklist ? state.decklist.archetype_name : null,
+    decklist_version: state.decklist ? state.decklist.id : null,
+    game_number: state.gameNumber === 1 ? 'G1' : 'G23',
+    play_draw: state.playdraw,
+    pre_post: state.prepost,
+    opponent_archetype: state.opponent,
+    card1: cards[0] || null,
+    card2: cards[1] || null,
+    card3: cards[2] || null,
+    card4: cards[3] || null,
+    card5: cards[4] || null,
+    card6: cards[5] || null,
+    card7: cards[6] || null,
+    hand_size: handSize,
+    mulligan_count: state.mulligans,
+    game_result: state.gameResult,
+    match_result: matchResult,
+    notes: document.getElementById('game-notes').value || null
+  };
+
+  try {
+    await api.post('raw_game_log', entry);
+    document.getElementById('after-result-label').textContent =
+      `Game ${state.gameNumber}: ${state.gameResult}`;
+    document.getElementById('after-match-label').textContent =
+      matchResult ? `Match result: ${matchResult}` : '';
+    document.getElementById('result-icon').textContent =
+      state.gameResult === 'Win' ? '🏆' : '💀';
+    document.getElementById('btn-next-game').style.display =
+      state.matchEnd === 'Yes' ? 'none' : 'block';
+    showToast('Game submitted!');
+    showScreen('screen-after-game');
+  } catch(e) {
+    showToast('Error submitting: ' + e.message, 'error');
+  }
+}
+
+function nextGame() {
+  state.gameNumber++;
+  state.gameResult = null;
+  state.matchEnd = 'No';
+  state.matchResult = null;
+  document.getElementById('game-notes').value = '';
+  document.querySelectorAll('[onclick*="gameresult"]')
+    .forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('[onclick*="matchend"]')[0].click();
+  setupGameScreen();
+  showScreen('screen-game');
+}
+
+async function searchCards(query) {
+  const el = document.getElementById('card-search-results');
+  if (query.length < 2) { el.innerHTML = ''; return; }
+  try {
+    const cards = await api.get('card_pool',
+      `?card_name=ilike.*${encodeURIComponent(query)}*&select=card_name,card_type,mana_cost,default_image_url&limit=10`,
+    );
+    el.innerHTML = cards.map(c => `
+      <div onclick="selectCard(${JSON.stringify(c).replace(/"/g, '&quot;')})"
+           style="padding:10px;border-bottom:1px solid var(--border);
+                  cursor:pointer;font-size:14px;">
+        ${c.card_name}
+        <span style="color:var(--text2);font-size:12px;margin-left:8px;">
+          ${c.mana_cost||''}
+        </span>
+      </div>
+    `).join('');
+  } catch(e) {
+    el.innerHTML = '';
+  }
+}
+
+function selectCard(card) {
+  document.getElementById('add-card-name').textContent = card.card_name;
+  document.getElementById('add-card-type').textContent = card.card_type || '';
+  document.getElementById('add-card-mana').textContent = card.mana_cost || '';
+  document.getElementById('add-card-image').src = card.default_image_url || '';
+  document.getElementById('add-card-selected').style.display = 'block';
+  document.getElementById('add-card-details').style.display = 'block';
+  document.getElementById('btn-add-card').style.display = 'block';
+  document.getElementById('add-card-search').value = card.card_name;
+  document.getElementById('card-search-results').innerHTML = '';
+  state.selectedCard = card;
+}
+
+async function addCardToDeck() {
+  if (!state.selectedCard) return;
+  if (!state.decklist) {
+    try {
+      const result = await api.post('decklists', {
+        pilot_name: state.pilot.pilot_name,
+        archetype_name: 'Unknown',
+        version_number: 1,
+        is_active: true
+      });
+      state.decklist = result[0];
+    } catch(e) {
+      showToast('Error creating decklist: ' + e.message, 'error');
+      return;
+    }
+  }
+  const qty = parseInt(document.getElementById('add-card-qty').value);
+  const mainside = document.getElementById('add-card-mainside').value;
+  try {
+    await api.post('decklist_cards', {
+      decklist_id: state.decklist.id,
+      pilot_name: state.pilot.pilot_name,
+      card_name: state.selectedCard.card_name,
+      quantity: qty,
+      main_side: mainside,
+      preferred_image_url: state.selectedCard.default_image_url || ''
+    });
+    showToast(`${state.selectedCard.card_name} added!`);
+    await loadDeck();
+    showScreen('screen-deck');
+  } catch(e) {
+    showToast('Error adding card: ' + e.message, 'error');
+  }
+}
+
+async function loadScores(filter = 'Overall') {
+  const el = document.getElementById('scores-list');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><div>Loading...</div></div>';
+  try {
+    const deckFilter = state.decklist
+      ? `&deck_archetype=eq.${encodeURIComponent(state.decklist.archetype_name)}`
+      : '';
+    const scores = await api.get('scores',
+      `?filter=eq.${encodeURIComponent(filter)}${deckFilter}&order=bayesian_score.desc&limit=50&select=card_name,bayesian_score,sample_size,data_flag`
+    );
+    if (!scores.length) {
+      el.innerHTML = '<div style="color:var(--text2);font-size:14px;">No scores available yet.</div>';
+      return;
+    }
+    el.innerHTML = scores.map(s => {
+      const score = parseFloat(s.bayesian_score) || 0;
+      const cls = score > 0.01 ? 'score-pos' : score < -0.01 ? 'score-neg' : 'score-neu';
+      const sign = score > 0 ? '+' : '';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;
+                    padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="flex:1;font-size:14px;font-weight:600;">${s.card_name}</div>
+          <div style="font-size:11px;color:var(--text2);">${s.sample_size} games</div>
+          <span class="score-badge ${cls}">${sign}${score.toFixed(4)}</span>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--danger);">Error loading scores.</div>';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
