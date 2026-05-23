@@ -1403,7 +1403,13 @@ function setupGameScreen() {
 
 function buildCardSlots(count) {
   const el = document.getElementById('card-slots');
-  const cards = (state.matchDeck.cards || []).filter(c => c.main_side === 'Main').sort((a, b) => a.card_name.localeCompare(b.card_name));
+  const isPost = state.prepost === 'Post';
+  const cards = (state.matchDeck.cards || [])
+    .filter(c => isPost ? true : c.main_side === 'Main')
+    .sort((a, b) => {
+      if (a.main_side !== b.main_side) return a.main_side === 'Main' ? -1 : 1;
+      return a.card_name.localeCompare(b.card_name);
+    });
   const opts = [...new Set(cards.map(c => c.card_name))];
   el.innerHTML = Array.from({length: count}, (_, i) =>
     '<div class="card-slot"><span class="card-slot-label">Card ' + (i+1) + '</span>' +
