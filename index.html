@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Mize</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #0f0f0f;
@@ -84,23 +85,14 @@
     margin-bottom: 8px;
   }
   .btn:active { opacity: 0.8; }
-  .btn-primary {
-    background: var(--accent);
-    color: #000;
-  }
+  .btn-primary { background: var(--accent); color: #000; }
   .btn-secondary {
     background: var(--surface2);
     color: var(--text);
     border: 1px solid var(--border);
   }
-  .btn-success {
-    background: var(--success);
-    color: #fff;
-  }
-  .btn-danger {
-    background: var(--danger);
-    color: #fff;
-  }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-danger { background: var(--danger); color: #fff; }
   .btn-sm {
     width: auto;
     padding: 8px 16px;
@@ -145,36 +137,6 @@
     color: #000;
     border-color: var(--accent);
   }
-  .pilot-btn {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 15px;
-    cursor: pointer;
-    margin-bottom: 8px;
-    transition: border-color 0.15s;
-    text-align: left;
-  }
-  .pilot-btn:active { border-color: var(--accent); }
-  .pilot-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--accent2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 700;
-    color: #000;
-    flex-shrink: 0;
-  }
   .card-slot {
     display: flex;
     align-items: center;
@@ -187,10 +149,7 @@
     width: 48px;
     flex-shrink: 0;
   }
-  .card-slot select {
-    margin-bottom: 0;
-    flex: 1;
-  }
+  .card-slot select { margin-bottom: 0; flex: 1; }
   .card-image-preview {
     width: 36px;
     height: 50px;
@@ -279,6 +238,49 @@
     margin-bottom: 4px;
   }
   .match-info span { color: var(--accent); font-weight: 600; }
+  .auth-logo {
+    text-align: center;
+    padding: 48px 0 32px;
+  }
+  .auth-logo h1 {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 6px;
+  }
+  .auth-logo p {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 8px;
+  }
+  .auth-tabs {
+    display: flex;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .auth-tab {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .auth-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .auth-form { display: none; }
+  .auth-form.active { display: block; }
+  .error-msg {
+    color: var(--danger);
+    font-size: 13px;
+    margin-bottom: 8px;
+    display: none;
+  }
 </style>
 </head>
 <body>
@@ -288,45 +290,69 @@
   <div class="spacer"></div>
   <div class="loading">
     <div class="spinner"></div>
-    <div style="font-size:28px;font-weight:700;color:var(--accent);letter-spacing:3px;margin-bottom:8px">MIZE</div>
+    <div style="font-size:28px;font-weight:700;color:var(--accent);
+                letter-spacing:3px;margin-bottom:8px">MIZE</div>
     <div>Loading...</div>
   </div>
   <div class="spacer"></div>
 </div>
 
-<!-- ── SCREEN: PILOT SELECT ───────────────────────────────────────── -->
-<div id="screen-pilot" class="screen">
-  <div class="header"><h1>MIZE</h1></div>
-  <div class="card-title">Select pilot</div>
-  <div id="pilot-list"></div>
-  <button class="btn btn-secondary" onclick="showScreen('screen-new-pilot')">
-    + Register new pilot
-  </button>
-</div>
+<!-- ── SCREEN: AUTH ────────────────────────────────────────────────── -->
+<div id="screen-auth" class="screen">
+  <div class="auth-logo">
+    <h1>MIZE</h1>
+    <p>MTG opening hand tracker</p>
+  </div>
+  <div class="auth-tabs">
+    <div class="auth-tab active" onclick="switchAuthTab('login')">Sign in</div>
+    <div class="auth-tab" onclick="switchAuthTab('register')">Register</div>
+  </div>
 
-<!-- ── SCREEN: NEW PILOT ──────────────────────────────────────────── -->
-<div id="screen-new-pilot" class="screen">
-  <div class="header">
-    <button class="back-btn" onclick="showScreen('screen-pilot')">←</button>
-    <h2>New pilot</h2>
+  <!-- Login form -->
+  <div id="auth-login" class="auth-form active">
+    <div id="login-error" class="error-msg"></div>
+    <label class="label">Email</label>
+    <input type="email" id="login-email" placeholder="your@email.com"
+           autocomplete="email">
+    <label class="label">Password</label>
+    <input type="password" id="login-password" placeholder="Password"
+           autocomplete="current-password">
+    <button class="btn btn-primary" onclick="signIn()">Sign in</button>
+    <button class="btn btn-secondary" onclick="forgotPassword()">
+      Forgot password?
+    </button>
   </div>
-  <div class="card">
-    <label class="label">Pilot name</label>
-    <input type="text" id="new-pilot-name" placeholder="Enter your name">
-    <label class="label">Email (optional)</label>
-    <input type="email" id="new-pilot-email" placeholder="your@email.com">
+
+  <!-- Register form -->
+  <div id="auth-register" class="auth-form">
+    <div id="register-error" class="error-msg"></div>
+    <label class="label">Pilot name (your display name)</label>
+    <input type="text" id="register-name" placeholder="e.g. thnkr"
+           autocomplete="username">
+    <label class="label">Email</label>
+    <input type="email" id="register-email" placeholder="your@email.com"
+           autocomplete="email">
+    <label class="label">Password</label>
+    <input type="password" id="register-password" placeholder="Min 8 characters"
+           autocomplete="new-password">
+    <label class="label">Confirm password</label>
+    <input type="password" id="register-confirm" placeholder="Repeat password"
+           autocomplete="new-password">
+    <button class="btn btn-primary" onclick="signUp()">Create account</button>
   </div>
-  <button class="btn btn-primary" onclick="registerPilot()">Register</button>
 </div>
 
 <!-- ── SCREEN: PILOT HOME ─────────────────────────────────────────── -->
 <div id="screen-home" class="screen">
   <div class="header">
-    <button class="back-btn" onclick="showScreen('screen-pilot')">←</button>
-    <div>
+    <div style="flex:1;">
       <h2 id="home-pilot-name"></h2>
-      <div class="match-info">Deck: <span id="home-deck-name">No deck selected</span></div>
+      <div class="match-info">
+        Deck: <span id="home-deck-name">No deck selected</span>
+      </div>
     </div>
+    <button class="btn-sm btn btn-secondary" onclick="signOut()"
+            style="width:auto;">Sign out</button>
   </div>
   <button class="btn btn-primary" onclick="startNewMatch()">
     + New match
@@ -340,7 +366,9 @@
   <hr class="divider">
   <div class="card-title">Recent matches</div>
   <div id="recent-matches">
-    <div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div>
+    <div style="color:var(--text2);font-size:14px;">
+      No matches recorded yet.
+    </div>
   </div>
 </div>
 
@@ -358,13 +386,16 @@
   </div>
   <div class="card">
     <label class="label">Opponent's deck</label>
-    <input type="text" id="opponent-search" placeholder="Search archetypes..."
+    <input type="text" id="opponent-search"
+           placeholder="Search archetypes..."
            oninput="filterArchetypes(this.value)">
-    <div id="archetype-list" style="max-height:200px;overflow-y:auto;"></div>
+    <div id="archetype-list"
+         style="max-height:200px;overflow-y:auto;"></div>
     <div id="opponent-selected" style="display:none;">
       <hr class="divider">
       <div style="font-size:13px;color:var(--text2);">Selected:</div>
-      <div id="opponent-name" style="font-size:16px;font-weight:600;color:var(--accent);"></div>
+      <div id="opponent-name"
+           style="font-size:16px;font-weight:600;color:var(--accent);"></div>
     </div>
   </div>
   <button class="btn btn-primary" onclick="confirmOpponent()"
@@ -376,7 +407,8 @@
 <!-- ── SCREEN: GAME ENTRY ─────────────────────────────────────────── -->
 <div id="screen-game" class="screen">
   <div class="header">
-    <button class="back-btn" onclick="showScreen('screen-match-setup')">←</button>
+    <button class="back-btn"
+            onclick="showScreen('screen-match-setup')">←</button>
     <h2>Game <span id="game-number-label">1</span></h2>
   </div>
   <div class="step-indicator">
@@ -392,20 +424,28 @@
     <div class="card-title">Game details</div>
     <label class="label">Pre or postboard?</label>
     <div class="toggle-group">
-      <div class="toggle-btn selected" onclick="selectToggle(this,'prepost','Pre')">Preboard</div>
-      <div class="toggle-btn" onclick="selectToggle(this,'prepost','Post')">Postboard</div>
+      <div class="toggle-btn selected"
+           onclick="selectToggle(this,'prepost','Pre')">Preboard</div>
+      <div class="toggle-btn"
+           onclick="selectToggle(this,'prepost','Post')">Postboard</div>
     </div>
     <label class="label">Play or draw?</label>
     <div class="toggle-group">
-      <div class="toggle-btn" onclick="selectToggle(this,'playdraw','Play')">Play</div>
-      <div class="toggle-btn" onclick="selectToggle(this,'playdraw','Draw')">Draw</div>
+      <div class="toggle-btn"
+           onclick="selectToggle(this,'playdraw','Play')">Play</div>
+      <div class="toggle-btn"
+           onclick="selectToggle(this,'playdraw','Draw')">Draw</div>
     </div>
     <label class="label">Mulligans taken</label>
     <div class="toggle-group" id="mulligan-group">
-      <div class="toggle-btn selected" onclick="selectMulligan(this,0)">0</div>
-      <div class="toggle-btn" onclick="selectMulligan(this,1)">1</div>
-      <div class="toggle-btn" onclick="selectMulligan(this,2)">2</div>
-      <div class="toggle-btn" onclick="selectMulligan(this,3)">3</div>
+      <div class="toggle-btn selected"
+           onclick="selectMulligan(this,0)">0</div>
+      <div class="toggle-btn"
+           onclick="selectMulligan(this,1)">1</div>
+      <div class="toggle-btn"
+           onclick="selectMulligan(this,2)">2</div>
+      <div class="toggle-btn"
+           onclick="selectMulligan(this,3)">3</div>
     </div>
   </div>
   <div class="card">
@@ -436,13 +476,15 @@
   <div class="card">
     <div class="card-title">Did you win this game?</div>
     <div class="toggle-group">
-      <div class="toggle-btn" onclick="selectToggle(this,'gameresult','Win')"
+      <div class="toggle-btn"
+           onclick="selectToggle(this,'gameresult','Win')"
            style="color:var(--success)">Win</div>
-      <div class="toggle-btn" onclick="selectToggle(this,'gameresult','Loss')"
+      <div class="toggle-btn"
+           onclick="selectToggle(this,'gameresult','Loss')"
            style="color:var(--danger)">Loss</div>
     </div>
   </div>
-  <div class="card" id="match-result-card">
+  <div class="card">
     <div class="card-title">Did this game end the match?</div>
     <div class="toggle-group">
       <div class="toggle-btn selected"
@@ -450,7 +492,8 @@
       <div class="toggle-btn"
            onclick="selectToggle(this,'matchend','Yes')">Yes</div>
     </div>
-    <div id="match-result-section" style="display:none;margin-top:12px;">
+    <div id="match-result-section"
+         style="display:none;margin-top:12px;">
       <label class="label">Match result</label>
       <div class="toggle-group">
         <div class="toggle-btn"
@@ -474,9 +517,7 @@
 
 <!-- ── SCREEN: AFTER GAME ─────────────────────────────────────────── -->
 <div id="screen-after-game" class="screen">
-  <div class="header">
-    <h2>Game submitted</h2>
-  </div>
+  <div class="header"><h2>Game submitted</h2></div>
   <div class="step-indicator">
     <div class="step-dot done"></div>
     <div class="step-dot done"></div>
@@ -484,15 +525,19 @@
     <div class="step-dot active"></div>
   </div>
   <div class="card" style="text-align:center;padding:24px;">
-    <div style="font-size:40px;margin-bottom:8px;" id="result-icon">✓</div>
-    <div style="font-size:18px;font-weight:600;" id="after-result-label"></div>
+    <div style="font-size:40px;margin-bottom:8px;"
+         id="result-icon">✓</div>
+    <div style="font-size:18px;font-weight:600;"
+         id="after-result-label"></div>
     <div style="font-size:13px;color:var(--text2);margin-top:4px;"
          id="after-match-label"></div>
   </div>
-  <button class="btn btn-primary" onclick="nextGame()" id="btn-next-game">
+  <button class="btn btn-primary" onclick="nextGame()"
+          id="btn-next-game">
     Enter next game
   </button>
-  <button class="btn btn-secondary" onclick="showScreen('screen-home')">
+  <button class="btn btn-secondary"
+          onclick="showScreen('screen-home')">
     Back to home
   </button>
 </div>
@@ -509,7 +554,8 @@
       <div>Loading deck...</div>
     </div>
   </div>
-  <button class="btn btn-primary" onclick="showScreen('screen-add-card')">
+  <button class="btn btn-primary"
+          onclick="showScreen('screen-add-card')">
     + Add card
   </button>
 </div>
@@ -522,21 +568,26 @@
   </div>
   <div class="card">
     <label class="label">Card name</label>
-    <input type="text" id="add-card-search" placeholder="Search card name..."
+    <input type="text" id="add-card-search"
+           placeholder="Search card name..."
            oninput="searchCards(this.value)">
-    <div id="card-search-results" style="max-height:200px;overflow-y:auto;"></div>
+    <div id="card-search-results"
+         style="max-height:200px;overflow-y:auto;"></div>
     <div id="add-card-selected" style="display:none;">
       <hr class="divider">
       <div style="display:flex;gap:12px;align-items:center;">
-        <img id="add-card-image" src="" alt="" style="width:60px;height:84px;
-             border-radius:6px;object-fit:cover;">
+        <img id="add-card-image" src="" alt=""
+             style="width:60px;height:84px;border-radius:6px;
+                    object-fit:cover;">
         <div>
           <div id="add-card-name"
                style="font-size:15px;font-weight:600;"></div>
           <div id="add-card-type"
-               style="font-size:12px;color:var(--text2);margin-top:2px;"></div>
+               style="font-size:12px;color:var(--text2);
+                      margin-top:2px;"></div>
           <div id="add-card-mana"
-               style="font-size:12px;color:var(--accent);margin-top:2px;"></div>
+               style="font-size:12px;color:var(--accent);
+                      margin-top:2px;"></div>
         </div>
       </div>
     </div>
@@ -596,40 +647,11 @@
 const SUPABASE_URL = 'https://vkgtqunhsalquihlqkxp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrZ3RxdW5oc2FscXVpaGxxa3hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDAwOTMsImV4cCI6MjA5NTExNjA5M30.tvTFa8Tt9dN5uC1xFQCUTV7ryGNhqgUa8TEonca6viA';
 
-const api = {
-  headers: {
-    'apikey': SUPABASE_KEY,
-    'Authorization': `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation'
-  },
-  async get(table, params = '') {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/${table}${params}`,
-      { headers: this.headers }
-    );
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  },
-  async post(table, data) {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/${table}`,
-      { method: 'POST', headers: this.headers, body: JSON.stringify(data) }
-    );
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  },
-  async patch(table, params, data) {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/${table}${params}`,
-      { method: 'PATCH', headers: this.headers, body: JSON.stringify(data) }
-    );
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  }
-};
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let state = {
+  user: null,
   pilot: null,
   decklist: null,
   deckCards: [],
@@ -639,18 +661,20 @@ let state = {
   prepost: 'Pre',
   playdraw: null,
   mulligans: 0,
-  handCards: [],
   gameResult: null,
   matchEnd: 'No',
   matchResult: null,
   archetypes: [],
-  cardPool: []
+  selectedCard: null
 };
 
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen')
+    .forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
+  if (id === 'screen-deck') renderDeck();
+  if (id === 'screen-scores') loadScores('Overall');
 }
 
 function showToast(msg, type = 'success') {
@@ -661,108 +685,149 @@ function showToast(msg, type = 'success') {
   setTimeout(() => t.style.display = 'none', 3000);
 }
 
-function selectToggle(el, group, value) {
-  el.closest('.toggle-group').querySelectorAll('.toggle-btn')
-    .forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-  state[group] = value;
-  if (group === 'matchend') {
-    document.getElementById('match-result-section').style.display =
-      value === 'Yes' ? 'block' : 'none';
-  }
+function showError(formId, msg) {
+  const el = document.getElementById(formId + '-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
 }
 
-function selectMulligan(el, count) {
-  el.closest('.toggle-group').querySelectorAll('.toggle-btn')
-    .forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-  state.mulligans = count;
-  buildCardSlots(7 - count);
+function hideErrors() {
+  document.querySelectorAll('.error-msg')
+    .forEach(el => el.style.display = 'none');
 }
 
-async function init() {
-  try {
-    const [archetypes, pilots] = await Promise.all([
-      api.get('opponent_archetypes', '?select=canonical_name&order=canonical_name'),
-      api.get('pilots', '?select=pilot_name,pilot_email&order=pilot_name')
-    ]);
-    state.archetypes = archetypes.map(a => a.canonical_name);
-    renderPilotList(pilots);
-    showScreen('screen-pilot');
-  } catch(e) {
-    showToast('Connection error: ' + e.message, 'error');
-    showScreen('screen-pilot');
-  }
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab')
+    .forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form')
+    .forEach(f => f.classList.remove('active'));
+  document.querySelector(
+    `.auth-tab[onclick*="${tab}"]`
+  ).classList.add('active');
+  document.getElementById(`auth-${tab}`).classList.add('active');
+  hideErrors();
 }
 
-function renderPilotList(pilots) {
-  const el = document.getElementById('pilot-list');
-  if (!pilots.length) {
-    el.innerHTML = '<div style="color:var(--text2);font-size:14px;margin-bottom:12px;">No pilots registered yet.</div>';
+async function signIn() {
+  hideErrors();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) {
+    showError('login', 'Please enter your email and password.');
     return;
   }
-  el.innerHTML = pilots.map(p => `
-    <button class="pilot-btn" onclick="selectPilot('${p.pilot_name}','${p.pilot_email||''}')">
-      <div class="pilot-avatar">${p.pilot_name[0].toUpperCase()}</div>
-      <div>
-        <div style="font-weight:600;">${p.pilot_name}</div>
-        <div style="font-size:12px;color:var(--text2);">${p.pilot_email||''}</div>
-      </div>
-    </button>
-  `).join('');
+  const { data, error } = await db.auth.signInWithPassword({
+    email, password
+  });
+  if (error) { showError('login', error.message); return; }
+  await onSignedIn(data.user);
 }
 
-async function selectPilot(name, email) {
-  state.pilot = { pilot_name: name, pilot_email: email };
-  document.getElementById('home-pilot-name').textContent = name;
+async function signUp() {
+  hideErrors();
+  const name = document.getElementById('register-name').value.trim().toLowerCase();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  const confirm = document.getElementById('register-confirm').value;
+  if (!name || !email || !password) {
+    showError('register', 'Please fill in all fields.');
+    return;
+  }
+  if (password !== confirm) {
+    showError('register', 'Passwords do not match.');
+    return;
+  }
+  if (password.length < 8) {
+    showError('register', 'Password must be at least 8 characters.');
+    return;
+  }
+  const { data, error } = await db.auth.signUp({ email, password });
+  if (error) { showError('register', error.message); return; }
+  const { error: pilotError } = await db.from('pilots').insert({
+    pilot_name: name,
+    pilot_email: email,
+    auth_id: data.user.id
+  });
+  if (pilotError) {
+    showError('register', 'Account created but pilot setup failed: ' +
+              pilotError.message);
+    return;
+  }
+  showToast('Account created! Welcome, ' + name);
+  await onSignedIn(data.user);
+}
+
+async function onSignedIn(user) {
+  state.user = user;
+  const { data: pilots } = await db.from('pilots')
+    .select('pilot_name,pilot_email')
+    .eq('auth_id', user.id)
+    .limit(1);
+  if (!pilots || !pilots.length) {
+    showError('login', 'No pilot found for this account.');
+    return;
+  }
+  state.pilot = pilots[0];
+  document.getElementById('home-pilot-name').textContent =
+    state.pilot.pilot_name;
+  const { data: archetypes } = await db.from('opponent_archetypes')
+    .select('canonical_name')
+    .order('canonical_name');
+  state.archetypes = (archetypes || []).map(a => a.canonical_name);
   await loadDeck();
   showScreen('screen-home');
 }
 
-async function registerPilot() {
-  const name = document.getElementById('new-pilot-name').value.trim().toLowerCase();
-  const email = document.getElementById('new-pilot-email').value.trim();
-  if (!name) { showToast('Please enter a name', 'error'); return; }
-  try {
-    await api.post('pilots', { pilot_name: name, pilot_email: email });
-    showToast('Pilot registered!');
-    state.pilot = { pilot_name: name, pilot_email: email };
-    document.getElementById('home-pilot-name').textContent = name;
-    await loadDeck();
-    showScreen('screen-home');
-  } catch(e) {
-    showToast('Error: ' + e.message, 'error');
+async function signOut() {
+  await db.auth.signOut();
+  state = {
+    user: null, pilot: null, decklist: null, deckCards: [],
+    matchId: null, opponent: null, gameNumber: 1,
+    prepost: 'Pre', playdraw: null, mulligans: 0,
+    gameResult: null, matchEnd: 'No', matchResult: null,
+    archetypes: [], selectedCard: null
+  };
+  showScreen('screen-auth');
+}
+
+async function forgotPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) {
+    showError('login', 'Enter your email address above first.');
+    return;
   }
+  const { error } = await db.auth.resetPasswordForEmail(email);
+  if (error) { showError('login', error.message); return; }
+  showToast('Password reset email sent!');
 }
 
 async function loadDeck() {
-  try {
-    const decklists = await api.get('decklists',
-      `?pilot_name=eq.${encodeURIComponent(state.pilot.pilot_name)}&is_active=eq.true&select=id,archetype_name`
-    );
-    if (decklists.length) {
-      state.decklist = decklists[0];
-      document.getElementById('home-deck-name').textContent =
-        decklists[0].archetype_name || 'Unknown archetype';
-      const cards = await api.get('decklist_cards',
-        `?decklist_id=eq.${decklists[0].id}&select=card_name,quantity,main_side,preferred_image_url&order=main_side,card_name`
-      );
-      state.deckCards = cards;
-    } else {
-      state.decklist = null;
-      state.deckCards = [];
-      document.getElementById('home-deck-name').textContent = 'No deck registered';
-    }
-    renderDeck();
-  } catch(e) {
-    console.error('Error loading deck:', e);
+  const { data: decklists } = await db.from('decklists')
+    .select('id,archetype_name')
+    .eq('pilot_name', state.pilot.pilot_name)
+    .eq('is_active', true)
+    .limit(1);
+  if (decklists && decklists.length) {
+    state.decklist = decklists[0];
+    document.getElementById('home-deck-name').textContent =
+      decklists[0].archetype_name || 'Unknown archetype';
+    const { data: cards } = await db.from('decklist_cards')
+      .select('card_name,quantity,main_side,preferred_image_url')
+      .eq('decklist_id', decklists[0].id)
+      .order('card_name');
+    state.deckCards = cards || [];
+  } else {
+    state.decklist = null;
+    state.deckCards = [];
+    document.getElementById('home-deck-name').textContent =
+      'No deck registered';
   }
 }
 
 function renderDeck() {
   const el = document.getElementById('deck-content');
   if (!state.deckCards.length) {
-    el.innerHTML = '<div style="color:var(--text2);font-size:14px;margin-bottom:12px;">No cards in deck yet. Add cards below.</div>';
+    el.innerHTML = '<div style="color:var(--text2);font-size:14px;' +
+      'margin-bottom:12px;">No cards yet. Add cards below.</div>';
     return;
   }
   const main = state.deckCards.filter(c => c.main_side === 'Main');
@@ -773,30 +838,65 @@ function renderDeck() {
     return `
       <div class="card-title">${title} (${total})</div>
       ${cards.map(c => `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;
+                    margin-bottom:8px;">
           ${c.preferred_image_url
-            ? `<img src="${c.preferred_image_url}" style="width:36px;height:50px;border-radius:4px;object-fit:cover;">`
-            : `<div style="width:36px;height:50px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);"></div>`
-          }
+            ? `<img src="${c.preferred_image_url}"
+                    style="width:36px;height:50px;border-radius:4px;
+                           object-fit:cover;">`
+            : `<div style="width:36px;height:50px;border-radius:4px;
+                           background:var(--surface2);
+                           border:1px solid var(--border);"></div>`}
           <div style="flex:1;">
-            <div style="font-size:14px;font-weight:600;">${c.card_name}</div>
-            <div style="font-size:12px;color:var(--text2);">${c.main_side}</div>
+            <div style="font-size:14px;font-weight:600;">
+              ${c.card_name}
+            </div>
+            <div style="font-size:12px;color:var(--text2);">
+              ${c.main_side}
+            </div>
           </div>
-          <div style="font-size:18px;font-weight:700;color:var(--accent);">×${c.quantity}</div>
+          <div style="font-size:18px;font-weight:700;color:var(--accent);">
+            ×${c.quantity}
+          </div>
         </div>
       `).join('')}
     `;
   };
-  el.innerHTML = renderSection('Mainboard', main) + renderSection('Sideboard', side);
+  el.innerHTML = renderSection('Mainboard', main) +
+                 renderSection('Sideboard', side);
+}
+
+function selectToggle(el, group, value) {
+  el.closest('.toggle-group')
+    .querySelectorAll('.toggle-btn')
+    .forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  state[group] = value;
+  if (group === 'matchend') {
+    document.getElementById('match-result-section').style.display =
+      value === 'Yes' ? 'block' : 'none';
+  }
+}
+
+function selectMulligan(el, count) {
+  el.closest('.toggle-group')
+    .querySelectorAll('.toggle-btn')
+    .forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.mulligans = count;
+  buildCardSlots(7 - count);
 }
 
 function filterArchetypes(query) {
   const list = document.getElementById('archetype-list');
   const q = query.toLowerCase();
-  const matches = state.archetypes.filter(a => a.toLowerCase().includes(q)).slice(0, 10);
+  const matches = state.archetypes
+    .filter(a => a.toLowerCase().includes(q))
+    .slice(0, 10);
   list.innerHTML = matches.map(a => `
     <div onclick="selectArchetype('${a.replace(/'/g, "\\'")}')"
-         style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">
+         style="padding:10px;border-bottom:1px solid var(--border);
+                cursor:pointer;font-size:14px;">
       ${a}
     </div>
   `).join('');
@@ -812,7 +912,10 @@ function selectArchetype(name) {
 }
 
 function confirmOpponent() {
-  if (!state.opponent) { showToast('Please select an opponent deck', 'error'); return; }
+  if (!state.opponent) {
+    showToast('Please select an opponent deck', 'error');
+    return;
+  }
   state.matchId = `${state.pilot.pilot_name}_${Date.now()}`;
   state.gameNumber = 1;
   setupGameScreen();
@@ -835,27 +938,32 @@ function startNewMatch() {
 }
 
 function setupGameScreen() {
-  document.getElementById('game-number-label').textContent = state.gameNumber;
-  document.getElementById('game-opponent-label').textContent = state.opponent;
+  document.getElementById('game-number-label').textContent =
+    state.gameNumber;
+  document.getElementById('game-opponent-label').textContent =
+    state.opponent;
   state.prepost = state.gameNumber === 1 ? 'Pre' : 'Post';
   state.playdraw = null;
   state.mulligans = 0;
-
-  const prepostBtns = document.querySelectorAll('[onclick*="prepost"]');
+  const prepostBtns = document.querySelectorAll(
+    '[onclick*="prepost"]'
+  );
   prepostBtns.forEach(b => {
     b.classList.toggle('selected',
-      b.textContent.trim() === (state.gameNumber === 1 ? 'Preboard' : 'Postboard'));
+      b.textContent.trim() ===
+      (state.gameNumber === 1 ? 'Preboard' : 'Postboard')
+    );
   });
-
   document.querySelectorAll('[onclick*="playdraw"]')
     .forEach(b => b.classList.remove('selected'));
-  document.querySelectorAll('[onclick*="selectMulligan"]')[0]
-    .click();
-
+  document.querySelectorAll(
+    '#mulligan-group .toggle-btn'
+  )[0].click();
   buildCardSlots(7);
-
-  document.getElementById('result-game-num').textContent = state.gameNumber;
-  document.getElementById('result-opponent').textContent = state.opponent;
+  document.getElementById('result-game-num').textContent =
+    state.gameNumber;
+  document.getElementById('result-opponent').textContent =
+    state.opponent;
 }
 
 function buildCardSlots(count) {
@@ -863,12 +971,7 @@ function buildCardSlots(count) {
   const mainCards = state.deckCards
     .filter(c => c.main_side === 'Main')
     .sort((a, b) => a.card_name.localeCompare(b.card_name));
-
-  const options = mainCards.map(c =>
-    Array(c.quantity).fill(c.card_name)
-  ).flat();
-  const uniqueOptions = [...new Set(options)];
-
+  const uniqueOptions = [...new Set(mainCards.map(c => c.card_name))];
   el.innerHTML = Array.from({length: count}, (_, i) => `
     <div class="card-slot">
       <span class="card-slot-label">Card ${i+1}</span>
@@ -904,7 +1007,6 @@ async function submitGame() {
     const sel = document.getElementById(`hand-card-${i}`);
     return sel ? sel.value : '';
   });
-
   if (!state.gameResult) {
     showToast('Please select a game result', 'error');
     return;
@@ -913,15 +1015,15 @@ async function submitGame() {
     showToast('Please select play or draw', 'error');
     return;
   }
-
-  const matchResult = state.matchEnd === 'Yes' ? state.matchResult : null;
-
+  const matchResult = state.matchEnd === 'Yes'
+    ? state.matchResult : null;
   const entry = {
     match_id: state.matchId,
     timestamp: new Date().toISOString(),
     pilot_name: state.pilot.pilot_name,
     pilot_email: state.pilot.pilot_email || '',
-    deck_archetype: state.decklist ? state.decklist.archetype_name : null,
+    deck_archetype: state.decklist
+      ? state.decklist.archetype_name : null,
     decklist_version: state.decklist ? state.decklist.id : null,
     game_number: state.gameNumber === 1 ? 'G1' : 'G23',
     play_draw: state.playdraw,
@@ -940,22 +1042,21 @@ async function submitGame() {
     match_result: matchResult,
     notes: document.getElementById('game-notes').value || null
   };
-
-  try {
-    await api.post('raw_game_log', entry);
-    document.getElementById('after-result-label').textContent =
-      `Game ${state.gameNumber}: ${state.gameResult}`;
-    document.getElementById('after-match-label').textContent =
-      matchResult ? `Match result: ${matchResult}` : '';
-    document.getElementById('result-icon').textContent =
-      state.gameResult === 'Win' ? '🏆' : '💀';
-    document.getElementById('btn-next-game').style.display =
-      state.matchEnd === 'Yes' ? 'none' : 'block';
-    showToast('Game submitted!');
-    showScreen('screen-after-game');
-  } catch(e) {
-    showToast('Error submitting: ' + e.message, 'error');
+  const { error } = await db.from('raw_game_log').insert(entry);
+  if (error) {
+    showToast('Error submitting: ' + error.message, 'error');
+    return;
   }
+  document.getElementById('after-result-label').textContent =
+    `Game ${state.gameNumber}: ${state.gameResult}`;
+  document.getElementById('after-match-label').textContent =
+    matchResult ? `Match result: ${matchResult}` : '';
+  document.getElementById('result-icon').textContent =
+    state.gameResult === 'Win' ? '🏆' : '💀';
+  document.getElementById('btn-next-game').style.display =
+    state.matchEnd === 'Yes' ? 'none' : 'block';
+  showToast('Game submitted!');
+  showScreen('screen-after-game');
 }
 
 function nextGame() {
@@ -975,33 +1076,58 @@ async function searchCards(query) {
   const el = document.getElementById('card-search-results');
   if (query.length < 2) { el.innerHTML = ''; return; }
   try {
-    const cards = await api.get('card_pool',
-      `?card_name=ilike.*${encodeURIComponent(query)}*&select=card_name,card_type,mana_cost,default_image_url&limit=10`,
+    const response = await fetch(
+      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}+legal%3Amodern&unique=cards&order=name&limit=10`,
+      { headers: { 'Accept': 'application/json' } }
     );
-    el.innerHTML = cards.map(c => `
-      <div onclick="selectCard(${JSON.stringify(c).replace(/"/g, '&quot;')})"
-           style="padding:10px;border-bottom:1px solid var(--border);
-                  cursor:pointer;font-size:14px;">
-        ${c.card_name}
-        <span style="color:var(--text2);font-size:12px;margin-left:8px;">
-          ${c.mana_cost||''}
-        </span>
-      </div>
-    `).join('');
+    if (!response.ok) { el.innerHTML = ''; return; }
+    const data = await response.json();
+    const cards = data.data || [];
+    el.innerHTML = cards.map(c => {
+      const imageUrl = c.image_uris
+        ? c.image_uris.normal
+        : (c.card_faces && c.card_faces[0].image_uris
+          ? c.card_faces[0].image_uris.normal : '');
+      const cardData = JSON.stringify({
+        card_name: c.name,
+        card_type: c.type_line,
+        mana_cost: c.mana_cost || '',
+        default_image_url: imageUrl
+      }).replace(/"/g, '&quot;');
+      return `
+        <div onclick="selectCard(${cardData})"
+             style="padding:10px;
+                    border-bottom:1px solid var(--border);
+                    cursor:pointer;font-size:14px;">
+          ${c.name}
+          <span style="color:var(--text2);font-size:12px;
+                       margin-left:8px;">
+            ${c.mana_cost||''}
+          </span>
+        </div>
+      `;
+    }).join('');
   } catch(e) {
     el.innerHTML = '';
   }
 }
 
 function selectCard(card) {
-  document.getElementById('add-card-name').textContent = card.card_name;
-  document.getElementById('add-card-type').textContent = card.card_type || '';
-  document.getElementById('add-card-mana').textContent = card.mana_cost || '';
-  document.getElementById('add-card-image').src = card.default_image_url || '';
-  document.getElementById('add-card-selected').style.display = 'block';
-  document.getElementById('add-card-details').style.display = 'block';
+  document.getElementById('add-card-name').textContent =
+    card.card_name;
+  document.getElementById('add-card-type').textContent =
+    card.card_type || '';
+  document.getElementById('add-card-mana').textContent =
+    card.mana_cost || '';
+  document.getElementById('add-card-image').src =
+    card.default_image_url || '';
+  document.getElementById('add-card-selected').style.display =
+    'block';
+  document.getElementById('add-card-details').style.display =
+    'block';
   document.getElementById('btn-add-card').style.display = 'block';
-  document.getElementById('add-card-search').value = card.card_name;
+  document.getElementById('add-card-search').value =
+    card.card_name;
   document.getElementById('card-search-results').innerHTML = '';
   state.selectedCard = card;
 }
@@ -1009,67 +1135,84 @@ function selectCard(card) {
 async function addCardToDeck() {
   if (!state.selectedCard) return;
   if (!state.decklist) {
-    try {
-      const result = await api.post('decklists', {
-        pilot_name: state.pilot.pilot_name,
-        archetype_name: 'Unknown',
-        version_number: 1,
-        is_active: true
-      });
-      state.decklist = result[0];
-    } catch(e) {
-      showToast('Error creating decklist: ' + e.message, 'error');
+    const { data, error } = await db.from('decklists').insert({
+      pilot_name: state.pilot.pilot_name,
+      archetype_name: 'Unknown',
+      version_number: 1,
+      is_active: true
+    }).select();
+    if (error) {
+      showToast('Error creating decklist: ' + error.message, 'error');
       return;
     }
+    state.decklist = data[0];
   }
   const qty = parseInt(document.getElementById('add-card-qty').value);
   const mainside = document.getElementById('add-card-mainside').value;
-  try {
-    await api.post('decklist_cards', {
-      decklist_id: state.decklist.id,
-      pilot_name: state.pilot.pilot_name,
-      card_name: state.selectedCard.card_name,
-      quantity: qty,
-      main_side: mainside,
-      preferred_image_url: state.selectedCard.default_image_url || ''
-    });
-    showToast(`${state.selectedCard.card_name} added!`);
-    await loadDeck();
-    showScreen('screen-deck');
-  } catch(e) {
-    showToast('Error adding card: ' + e.message, 'error');
+  const { error } = await db.from('decklist_cards').insert({
+    decklist_id: state.decklist.id,
+    pilot_name: state.pilot.pilot_name,
+    card_name: state.selectedCard.card_name,
+    quantity: qty,
+    main_side: mainside,
+    preferred_image_url: state.selectedCard.default_image_url || ''
+  });
+  if (error) {
+    showToast('Error adding card: ' + error.message, 'error');
+    return;
   }
+  showToast(`${state.selectedCard.card_name} added!`);
+  await loadDeck();
+  showScreen('screen-deck');
 }
 
 async function loadScores(filter = 'Overall') {
   const el = document.getElementById('scores-list');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div><div>Loading...</div></div>';
-  try {
-    const deckFilter = state.decklist
-      ? `&deck_archetype=eq.${encodeURIComponent(state.decklist.archetype_name)}`
-      : '';
-    const scores = await api.get('scores',
-      `?filter=eq.${encodeURIComponent(filter)}${deckFilter}&order=bayesian_score.desc&limit=50&select=card_name,bayesian_score,sample_size,data_flag`
-    );
-    if (!scores.length) {
-      el.innerHTML = '<div style="color:var(--text2);font-size:14px;">No scores available yet.</div>';
-      return;
-    }
-    el.innerHTML = scores.map(s => {
-      const score = parseFloat(s.bayesian_score) || 0;
-      const cls = score > 0.01 ? 'score-pos' : score < -0.01 ? 'score-neg' : 'score-neu';
-      const sign = score > 0 ? '+' : '';
-      return `
-        <div style="display:flex;align-items:center;gap:10px;
-                    padding:10px 0;border-bottom:1px solid var(--border);">
-          <div style="flex:1;font-size:14px;font-weight:600;">${s.card_name}</div>
-          <div style="font-size:11px;color:var(--text2);">${s.sample_size} games</div>
-          <span class="score-badge ${cls}">${sign}${score.toFixed(4)}</span>
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>' +
+    '<div>Loading...</div></div>';
+  let query = db.from('scores')
+    .select('card_name,bayesian_score,sample_size,data_flag')
+    .eq('filter', filter)
+    .order('bayesian_score', { ascending: false })
+    .limit(50);
+  if (state.decklist && state.decklist.archetype_name !== 'Unknown') {
+    query = query.eq('deck_archetype', state.decklist.archetype_name);
+  }
+  const { data: scores, error } = await query;
+  if (error || !scores || !scores.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:14px;">' +
+      'No scores available yet.</div>';
+    return;
+  }
+  el.innerHTML = scores.map(s => {
+    const score = parseFloat(s.bayesian_score) || 0;
+    const cls = score > 0.01 ? 'score-pos'
+      : score < -0.01 ? 'score-neg' : 'score-neu';
+    const sign = score > 0 ? '+' : '';
+    return `
+      <div style="display:flex;align-items:center;gap:10px;
+                  padding:10px 0;
+                  border-bottom:1px solid var(--border);">
+        <div style="flex:1;font-size:14px;font-weight:600;">
+          ${s.card_name}
         </div>
-      `;
-    }).join('');
-  } catch(e) {
-    el.innerHTML = '<div style="color:var(--danger);">Error loading scores.</div>';
+        <div style="font-size:11px;color:var(--text2);">
+          ${s.sample_size} games
+        </div>
+        <span class="score-badge ${cls}">
+          ${sign}${score.toFixed(4)}
+        </span>
+      </div>
+    `;
+  }).join('');
+}
+
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    await onSignedIn(session.user);
+  } else {
+    showScreen('screen-auth');
   }
 }
 
