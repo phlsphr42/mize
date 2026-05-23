@@ -1878,66 +1878,97 @@ async function calcMatchups() {
   const deck = document.getElementById('m-deck').value;
   const scope = document.getElementById('m-scope').value;
   const filter = document.getElementById('m-filter').value;
-  const meta = document.getElementById('m-meta').value;
+
   setProgress('m', 10);
   document.getElementById('btn-calc-m').disabled = true;
+
   try {
-    let query = db.from('matchup_summary')
-      .select('pilot_deck,opponent_archetype,filter,pilot_name,game_wins,game_losses,match_wins,match_losses')
-      .eq('filter', filter);
-    if (deck) query = query.eq('pilot_deck', deck);
-    else query = query.is('pilot_deck', null);
+    let query = db.from('raw_game_log')
+      .select('pilot_name,deck_archetype,game_number,pre_post,opponent_archetype,game_result,match_result')
+      .not('opponent_archetype', 'is', null)
+      .not('game_result', 'is', null);
+
     if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
-    else query = query.is('pilot_name', null);
+    if (deck) query = query.eq('deck_archetype', deck);
+
+    if (filter === 'G1') query = query.eq('game_number', 'G1');
+    else if (filter === 'G23') query = query.eq('game_number', 'G23');
+    else if (filter === 'Pre') query = query.eq('pre_post', 'Pre');
+    else if (filter === 'Post') query = query.eq('pre_post', 'Post');
+    else if (filter === 'Pre_G1') query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
+    else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
+
     setProgress('m', 40);
-    const { data: matchups, error } = await query;
+    const { data: games, error } = await query.limit(50000);
     if (error) throw error;
+
     setProgress('m', 60);
-    let topArchetypes = new Set();
-    if (meta === 'goldfish') {
-      const { data: goldfishData } = await db.from('metagame_share').select('archetype_name,share_percent').order('share_percent', { ascending: false });
-      if (goldfishData && goldfishData.length) {
-        let cumulative = 0;
-        for (const row of goldfishData) {
-          topArchetypes.add(row.archetype_name);
-          cumulative += row.share_percent || 0;
-          if (cumulative >= 75) break;
-        }
-      }
-    } else {
-      const totalGames = (matchups || []).reduce((s, r) => s + r.game_wins + r.game_losses, 0);
-      const byOpp = {};
-      (matchups || []).forEach(r => { if (!byOpp[r.opponent_archetype]) byOpp[r.opponent_archetype] = 0; byOpp[r.opponent_archetype] += r.game_wins + r.game_losses; });
-      const sorted = Object.entries(byOpp).sort((a, b) => b[1] - a[1]);
-      let cumulative = 0;
-      for (const entry of sorted) {
-        topArchetypes.add(entry[0]); cumulative += entry[1];
-        if (totalGames > 0 && cumulative / totalGames >= 0.75) break;
-      }
-    }
-    setProgress('m', 80);
+
     const byOpponent = {};
-    (matchups || []).forEach(r => {
-      const opp = r.opponent_archetype;
+    for (const g of games || []) {
+      const opp = g.opponent_archetype;
       if (!byOpponent[opp]) byOpponent[opp] = { game_wins: 0, game_losses: 0, match_wins: 0, match_losses: 0 };
-      byOpponent[opp].game_wins += r.game_wins; byOpponent[opp].game_losses += r.game_losses;
-      byOpponent[opp].match_wins += r.match_wins; byOpponent[opp].match_losses += r.match_losses;
-    });
+      if (g.game_result === 'Win') byOpponent[opp].game_wins++;
+      else if (g.game_result === 'Loss') byOpponent[opp].game_losses++;
+      if (g.match_result === 'Win') byOpponent[opp].match_wins++;
+      else if (g.match_result === 'Loss') byOpponent[opp].match_losses++;
+    }
+
+    const totalGames = Object.values(byOpponent).reduce((s, r) => s + r.game_wins + r.game_losses, 0);
+
+    const sorted = Object.entries(byOpponent).sort((a, b) => (b[1].game_wins + b[1].game_losses) - (a[1].game_wins + a[1].game_losses));
+    const topArchetypes = new Set();
+    let cumulative = 0;
+    for (const [opp, stats] of sorted) {
+      topArchetypes.add(opp);
+      cumulative += stats.game_wins + stats.game_losses;
+      if (totalGames > 0 && cumulative / totalGames >= 0.75) break;
+    }
+
+    setProgress('m', 80);
+
     matchupRawData = Object.entries(byOpponent).map(function(entry) {
       const opp = entry[0], stats = entry[1];
       const gTotal = stats.game_wins + stats.game_losses;
       const mTotal = stats.match_wins + stats.match_losses;
       const gInterval = wilsonInterval(stats.game_wins, gTotal);
       const mInterval = wilsonInterval(stats.match_wins, mTotal);
-      return { opponent: opp, inTop75: topArchetypes.has(opp) || topArchetypes.size === 0, gameWins: stats.game_wins, gameLosses: stats.game_losses, gameTotal: gTotal, gameMid: gInterval.mid, gameLow: gInterval.low, gameHigh: gInterval.high, matchWins: stats.match_wins, matchLosses: stats.match_losses, matchTotal: mTotal, matchMid: mInterval.mid, matchLow: mInterval.low, matchHigh: mInterval.high, lowSample: gTotal < 10 };
-    }).sort((a, b) => { if (a.inTop75 && !b.inTop75) return -1; if (!a.inTop75 && b.inTop75) return 1; return b.gameMid - a.gameMid; });
+      return {
+        opponent: opp,
+        inTop75: topArchetypes.has(opp),
+        gameWins: stats.game_wins,
+        gameLosses: stats.game_losses,
+        gameTotal: gTotal,
+        gameMid: gInterval.mid,
+        gameLow: gInterval.low,
+        gameHigh: gInterval.high,
+        matchWins: stats.match_wins,
+        matchLosses: stats.match_losses,
+        matchTotal: mTotal,
+        matchMid: mInterval.mid,
+        matchLow: mInterval.low,
+        matchHigh: mInterval.high,
+        lowSample: gTotal < 10
+      };
+    }).sort((a, b) => {
+      if (a.inTop75 && !b.inTop75) return -1;
+      if (!a.inTop75 && b.inTop75) return 1;
+      return b.gameMid - a.gameMid;
+    });
+
     matchupCache = { data: matchupRawData, timestamp: Date.now() };
     matchupLastCalc = Date.now();
     setProgress('m', 100);
     renderMatchupResults(matchupRawData, '');
-    const ci = document.getElementById('m-cache-info'); if (ci) ci.textContent = '';
-  } catch(e) { showToast('Error: ' + e.message, 'error'); }
-  finally { setProgress('m', 0); document.getElementById('btn-calc-m').disabled = false; }
+    const ci = document.getElementById('m-cache-info');
+    if (ci) ci.textContent = '';
+
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    setProgress('m', 0);
+    document.getElementById('btn-calc-m').disabled = false;
+  }
 }
 
 function filterMatchupResults(query) {
