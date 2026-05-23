@@ -793,6 +793,10 @@ function selectToggle(el, group, value) {
   el.closest('.toggle-group').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
   state[group] = value;
+  if (group === 'prepost') {
+    const handSize = 7 - state.mulligans;
+    buildCardSlots(handSize);
+  }
   if (group === 'matchend') {
     document.getElementById('match-result-section').style.display = value === 'Yes' ? 'block' : 'none';
   }
