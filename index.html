@@ -8,16 +8,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Mize</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  #archetype-suggestions {
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  margin-top: 6px;
-}
-#archetype-suggestions .archetype-suggestion-row:hover {
-  background: var(--surface2);
-}
 <style>
   :root {
     --bg: #0f0f0f;
@@ -213,6 +203,16 @@
   table.sortable td { padding: 5px 4px; border-bottom: 1px solid var(--surface2); vertical-align: middle; }
   .dir-pos { color: var(--success); font-weight: 700; }
   .dir-neg { color: var(--danger); font-weight: 700; }
+    #archetype-suggestions {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-top: 6px;
+}
+#archetype-suggestions .archetype-suggestion-row:hover {
+  background: var(--surface2);
+}
 </style>
 </head>
 <body>
