@@ -494,41 +494,17 @@
   </div>
 </div>
 
-<!-- MATCH SETUP -->
+<!-- MATCH SETUP (now just deck selection context) -->
 <div id="screen-match-setup" class="screen">
   <div class="header">
     <button class="back-btn" onclick="showScreen('screen-select-deck')">←</button>
-    <h2>New match</h2>
+    <h2>New game</h2>
   </div>
   <div class="step-indicator">
     <div class="step-dot done"></div><div class="step-dot active"></div>
-    <div class="step-dot"></div><div class="step-dot"></div><div class="step-dot"></div>
+    <div class="step-dot"></div><div class="step-dot"></div>
   </div>
   <div class="match-info" style="margin-bottom:12px;">Deck: <span id="match-setup-deck-name"></span></div>
-  <div class="card">
-    <label class="label">Opponent's deck</label>
-    <input type="text" id="opponent-search" placeholder="Search archetypes..." oninput="filterArchetypes(this.value)">
-    <div id="archetype-list" style="max-height:200px;overflow-y:auto;"></div>
-    <div id="opponent-selected" style="display:none;">
-      <hr class="divider">
-      <div style="font-size:13px;color:var(--text2);">Selected:</div>
-      <div id="opponent-name" style="font-size:16px;font-weight:600;color:var(--accent);"></div>
-    </div>
-  </div>
-  <button class="btn btn-primary" onclick="confirmOpponent()" id="btn-confirm-opponent" disabled>Continue →</button>
-</div>
-
-<!-- GAME ENTRY -->
-<div id="screen-game" class="screen">
-  <div class="header">
-    <button class="back-btn" onclick="showScreen('screen-match-setup')">←</button>
-    <h2>Game <span id="game-number-label">1</span></h2>
-  </div>
-  <div class="step-indicator">
-    <div class="step-dot done"></div><div class="step-dot done"></div>
-    <div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div>
-  </div>
-  <div class="match-info" style="margin-bottom:12px;">vs <span id="game-opponent-label"></span></div>
   <div class="card">
     <div class="card-title">Game details</div>
     <label class="label">Pre or postboard?</label>
@@ -553,7 +529,75 @@
     <div class="card-title">Opening hand</div>
     <div id="card-slots"></div>
   </div>
-  <button class="btn btn-primary" onclick="showScreen('screen-result')">Continue →</button>
+  <button class="btn btn-primary" onclick="showScreen('screen-opponent-entry')">Continue →</button>
+</div>
+
+  <!-- OPPONENT ENTRY -->
+<div id="screen-opponent-entry" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-match-setup')">←</button>
+    <h2>Opponent's deck</h2>
+  </div>
+  <div class="step-indicator">
+    <div class="step-dot done"></div><div class="step-dot done"></div>
+    <div class="step-dot active"></div><div class="step-dot"></div>
+  </div>
+  <div class="match-info" style="margin-bottom:12px;">Deck: <span id="opponent-entry-deck-name"></span></div>
+  <div class="card">
+    <label class="label">Opponent's deck</label>
+    <input type="text" id="opponent-search" placeholder="Search archetypes..." oninput="filterArchetypes(this.value)">
+    <div id="archetype-list" style="max-height:200px;overflow-y:auto;"></div>
+    <div id="opponent-selected" style="display:none;">
+      <hr class="divider">
+      <div style="font-size:13px;color:var(--text2);">Selected:</div>
+      <div id="opponent-name" style="font-size:16px;font-weight:600;color:var(--accent);"></div>
+    </div>
+  </div>
+  <div id="opponent-prefill-section" style="display:none;">
+    <button class="btn btn-secondary" id="btn-use-last-opponent" onclick="useLastOpponent()">
+      Use last opponent again
+    </button>
+  </div>
+  <button class="btn btn-primary" onclick="confirmOpponent()" id="btn-confirm-opponent" disabled>Continue →</button>
+</div>
+
+<!-- GAME ENTRY (now just result) -->
+<div id="screen-game" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-opponent-entry')">←</button>
+    <h2>Game result</h2>
+  </div>
+  <div class="step-indicator">
+    <div class="step-dot done"></div><div class="step-dot done"></div>
+    <div class="step-dot done"></div><div class="step-dot active"></div>
+  </div>
+  <div class="match-info" style="margin-bottom:12px;">vs <span id="game-opponent-label"></span></div>
+  <div class="card">
+    <div class="card-title">Did you win this game?</div>
+    <div class="toggle-group">
+      <div class="toggle-btn" onclick="selectToggle(this,'gameresult','Win')" style="color:var(--success)">Win</div>
+      <div class="toggle-btn" onclick="selectToggle(this,'gameresult','Loss')" style="color:var(--danger)">Loss</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Did this game end the match? (optional)</div>
+    <div class="toggle-group">
+      <div class="toggle-btn selected" onclick="selectToggle(this,'matchend','No')">No</div>
+      <div class="toggle-btn" onclick="selectToggle(this,'matchend','Yes')">Yes</div>
+    </div>
+    <div id="match-result-section" style="display:none;margin-top:12px;">
+      <label class="label">Match result</label>
+      <div class="toggle-group">
+        <div class="toggle-btn" onclick="selectToggle(this,'matchresult','Win')" style="color:var(--success)">Win</div>
+        <div class="toggle-btn" onclick="selectToggle(this,'matchresult','Loss')" style="color:var(--danger)">Loss</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <label class="label">Notes (optional)</label>
+    <input type="text" id="game-notes" placeholder="Any unusual circumstances?">
+  </div>
+  <button class="btn btn-success" onclick="submitGame()">Submit game</button>
 </div>
 
 <!-- RESULT -->
@@ -600,16 +644,19 @@
 <!-- AFTER GAME -->
 <div id="screen-after-game" class="screen">
   <div class="header"><h2>Game submitted</h2></div>
-  <div class="step-indicator">
-    <div class="step-dot done"></div><div class="step-dot done"></div>
-    <div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot active"></div>
-  </div>
   <div class="card" style="text-align:center;padding:24px;">
     <div style="font-size:40px;margin-bottom:8px;" id="result-icon">✓</div>
     <div style="font-size:18px;font-weight:600;" id="after-result-label"></div>
     <div style="font-size:13px;color:var(--text2);margin-top:4px;" id="after-match-label"></div>
   </div>
-  <button class="btn btn-primary" onclick="nextGame()" id="btn-next-game">Enter next game</button>
+  <div class="card">
+    <div class="card-title">Enter another game?</div>
+    <div class="toggle-group">
+      <div class="toggle-btn selected" id="after-same-deck-btn" onclick="selectAfterGame(this,'same')">Same deck</div>
+      <div class="toggle-btn" id="after-switch-deck-btn" onclick="selectAfterGame(this,'switch')">Switch deck</div>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-next-game" onclick="nextGame()">Enter next game</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-home')">Back to home</button>
 </div>
 
@@ -905,6 +952,7 @@ let state = {
   editingDeckId: null, addCardContext: null,
   matchId: null, matchDeck: null,
   opponent: null, gameNumber: 1,
+    lastOpponent: null, afterGameChoice: 'same',
   prepost: 'Pre', playdraw: null, mulligans: 0,
   gameResult: null, matchEnd: 'No', matchResult: null,
   archetypes: [], referenceDecks: {}, cardFrequency: {},
@@ -927,6 +975,22 @@ function showScreen(id) {
   window.scrollTo(0, 0);
   if (id === 'screen-my-decks') renderMyDecks();
   if (id === 'screen-analysis') onShowAnalysis();
+  if (id === 'screen-opponent-entry') {
+    document.getElementById('opponent-entry-deck-name').textContent = state.matchDeck?.archetype_name || 'Unknown';
+    state.opponent = null;
+    document.getElementById('opponent-search').value = '';
+    document.getElementById('opponent-selected').style.display = 'none';
+    document.getElementById('btn-confirm-opponent').disabled = true;
+    document.getElementById('archetype-list').innerHTML = '';
+    if (state.lastOpponent) {
+      const sec = document.getElementById('opponent-prefill-section');
+      const btn = document.getElementById('btn-use-last-opponent');
+      sec.style.display = 'block';
+      btn.textContent = 'Use last opponent: ' + state.lastOpponent;
+    } else {
+      document.getElementById('opponent-prefill-section').style.display = 'none';
+    }
+  }
   if (id === 'screen-matchup') { try { onShowMatchup(); } catch(e) { console.error('matchup error:', e); } }
   if (id === 'screen-matrix') {
     if (matrixCache && (Date.now() - matrixCache.timestamp < CACHE_TTL_MS)) {
@@ -1106,7 +1170,7 @@ if (!pilots || !pilots.length) {
 async function signOut() {
   await db.auth.signOut();
   state = {
-    user: null, pilot: null, allDecks: [], currentDeck: null,
+    user: null, lastOpponent: null, afterGameChoice: 'same', pilot: null, allDecks: [], currentDeck: null,
     newDeckCards: [], newDeckArchetype: null, importedCards: [], importMissing: [],
     editingDeckId: null, addCardContext: null, matchId: null, matchDeck: null,
     opponent: null, gameNumber: 1, prepost: 'Pre', playdraw: null, mulligans: 0,
@@ -1615,17 +1679,23 @@ async function selectMatchDeck(deckId) {
   const deck = state.allDecks.find(d => d.id === deckId);
   if (!deck) return;
   state.matchDeck = deck;
-  const { data } = await db.from('decklist_cards').select('card_name,quantity,main_side,preferred_image_url').eq('decklist_id', deckId).order('card_name');
+  const { data } = await db.from('decklist_cards')
+    .select('card_name,quantity,main_side,preferred_image_url')
+    .eq('decklist_id', deckId).order('card_name');
   state.matchDeck.cards = data || [];
   document.getElementById('match-setup-deck-name').textContent = deck.archetype_name || 'Unknown';
-  state.opponent = null;
-  document.getElementById('opponent-search').value = '';
-  document.getElementById('opponent-selected').style.display = 'none';
-  document.getElementById('btn-confirm-opponent').disabled = true;
-  filterArchetypes('');
+  state.matchId = state.pilot.pilot_name + '_' + Date.now();
+  state.prepost = 'Pre';
+  state.playdraw = null;
+  state.mulligans = 0;
+  document.querySelectorAll('[onclick*="prepost"]').forEach(b => {
+    b.classList.toggle('selected', b.textContent.trim() === 'Preboard');
+  });
+  document.querySelectorAll('[onclick*="playdraw"]').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('#mulligan-group .toggle-btn')[0].click();
+  buildCardSlots(7);
   showScreen('screen-match-setup');
 }
-
 function filterArchetypes(query) {
   const list = document.getElementById('archetype-list');
   const q = query.toLowerCase().trim();
@@ -1655,9 +1725,17 @@ function selectArchetype(name) {
 
 function confirmOpponent() {
   if (!state.opponent) { showToast('Please select an opponent deck', 'error'); return; }
-  state.matchId = state.pilot.pilot_name + '_' + Date.now();
-  state.gameNumber = 1;
-  setupGameScreen();
+  state.lastOpponent = state.opponent;
+  document.getElementById('game-opponent-label').textContent = state.opponent;
+  document.getElementById('opponent-entry-deck-name').textContent = state.matchDeck.archetype_name || 'Unknown';
+  state.gameResult = null;
+  state.matchEnd = 'No';
+  state.matchResult = null;
+  document.getElementById('game-notes').value = '';
+  document.querySelectorAll('[onclick*="gameresult"]').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('[onclick*="matchend"]')[0].classList.add('selected');
+  document.querySelectorAll('[onclick*="matchend"]')[1].classList.remove('selected');
+  document.getElementById('match-result-section').style.display = 'none';
   showScreen('screen-game');
 }
 
@@ -1729,14 +1807,34 @@ game_result: gameResultValue, match_result: matchResult,
   showScreen('screen-after-game');
 }
 
+  function useLastOpponent() {
+  if (!state.lastOpponent) return;
+  selectArchetype(state.lastOpponent);
+}
+
+function selectAfterGame(el, choice) {
+  state.afterGameChoice = choice;
+  document.getElementById('after-same-deck-btn').classList.toggle('selected', choice === 'same');
+  document.getElementById('after-switch-deck-btn').classList.toggle('selected', choice === 'switch');
+}
+
 function nextGame() {
-  state.gameNumber++;
-  state.gameResult = null; state.matchEnd = 'No'; state.matchResult = null;
-  document.getElementById('game-notes').value = '';
-  document.querySelectorAll('[onclick*="gameresult"]').forEach(b => b.classList.remove('selected'));
-  document.querySelectorAll('[onclick*="matchend"]')[0].click();
-  setupGameScreen();
-  showScreen('screen-game');
+  if (state.afterGameChoice === 'switch') {
+    renderMatchDeckList();
+    showScreen('screen-select-deck');
+  } else {
+    state.matchId = state.pilot.pilot_name + '_' + Date.now();
+    state.prepost = 'Pre';
+    state.playdraw = null;
+    state.mulligans = 0;
+    document.querySelectorAll('[onclick*="prepost"]').forEach(b => {
+      b.classList.toggle('selected', b.textContent.trim() === 'Preboard');
+    });
+    document.querySelectorAll('[onclick*="playdraw"]').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('#mulligan-group .toggle-btn')[0].click();
+    buildCardSlots(7);
+    showScreen('screen-match-setup');
+  }
 }
 
 // ── CARD SEARCH ────────────────────────────────────────────────────
