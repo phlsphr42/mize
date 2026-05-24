@@ -1016,6 +1016,41 @@ function showScreen(id) {
   }
 }
 
+  async function scanExistingDecks() {
+  if (!archetypeDefinitions || !archetypeDefinitions.length) {
+    console.log('Archetype definitions not loaded yet. Try again in a moment.');
+    return;
+  }
+  const { data: decks } = await db.from('decklists').select('id,archetype_name,pilot_name');
+  if (!decks || !decks.length) { console.log('No decks found.'); return; }
+  console.log(`Scanning ${decks.length} decks...`);
+  const mismatches = [];
+  for (const deck of decks) {
+    const { data: cards } = await db.from('decklist_cards')
+      .select('card_name,quantity,main_side').eq('decklist_id', deck.id);
+    if (!cards || !cards.length) continue;
+    const suggestions = await suggestArchetypesForDeck(cards);
+    if (suggestions.length && suggestions[0].name !== deck.archetype_name) {
+      mismatches.push({
+        pilot: deck.pilot_name,
+        current: deck.archetype_name,
+        suggested: suggestions[0].name,
+        method: suggestions[0].method,
+        score: suggestions[0].score
+      });
+    }
+  }
+  if (!mismatches.length) {
+    console.log('All decks match their current archetype names.');
+  } else {
+    console.log(`Found ${mismatches.length} potential mismatches:`);
+    mismatches.forEach(m => {
+      console.log(`  ${m.pilot} — "${m.current}" → suggested "${m.suggested}" (${m.method}, ${Math.round(m.score * 100)}%)`);
+    });
+  }
+  return mismatches;
+}
+
 function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
