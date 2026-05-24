@@ -1947,7 +1947,16 @@ function renderMtgoArchetypes(rows) {
     return;
   }
 
-  let html = '<div class="card" style="padding:0;overflow:hidden;">';
+  // Normalise meta_adjusted_score to 0-100
+  const maxScore = Math.max(...rows.map(r => r.meta_adjusted_score || 0));
+  const totalEvents = Math.max(...rows.map(r => r.event_count || 0));
+  const totalAppearances = rows.reduce((s, r) => s + (r.top32_appearances || 0), 0);
+
+  let html = `<div class="card" style="font-size:12px;color:var(--text2);margin-bottom:4px;">
+    ${rows.length} archetypes · ${totalAppearances} total top 32 finishes
+  </div>`;
+
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="overflow-x:auto;">';
   html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
   html += '<thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border);">' +
@@ -1966,7 +1975,9 @@ function renderMtgoArchetypes(rows) {
     const top8 = r.top8_rate != null ? (r.top8_rate * 100).toFixed(0) + '%' : '—';
     const pts = r.avg_points != null ? r.avg_points.toFixed(1) : '—';
     const mwp = r.avg_mwp != null ? (r.avg_mwp * 100).toFixed(1) + '%' : '—';
-    const score = r.meta_adjusted_score != null ? r.meta_adjusted_score.toFixed(3) : '—';
+    const normScore = maxScore > 0
+      ? ((r.meta_adjusted_score / maxScore) * 100).toFixed(1)
+      : '—';
     const bg = i % 2 === 0 ? '' : 'background:var(--surface2);';
 
     html += `<tr style="${bg}border-bottom:1px solid var(--border);" onclick="showMtgoArchetypeDetail('${r.archetype_name.replace(/'/g, "\\'")}')">` +
@@ -1977,12 +1988,12 @@ function renderMtgoArchetypes(rows) {
       `<td style="padding:7px 6px;text-align:right;">${top8}</td>` +
       `<td style="padding:7px 6px;text-align:right;">${pts}</td>` +
       `<td style="padding:7px 6px;text-align:right;">${mwp}</td>` +
-      `<td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${score}</td>` +
+      `<td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${normScore}</td>` +
       `</tr>`;
   });
 
   html += '</tbody></table></div></div>';
-  html += '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Score = meta-adjusted performance. Tap a row for details.</div>';
+  html += '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Score normalised to 100 = best performing archetype. Tap a row for details.</div>';
   el.innerHTML = html;
 }
 
@@ -1993,7 +2004,13 @@ function renderMtgoPilots(rows) {
     return;
   }
 
-  let html = '<div class="card" style="padding:0;overflow:hidden;">';
+  const maxScore = Math.max(...rows.map(r => r.performance_score || 0));
+
+  let html = `<div class="card" style="font-size:12px;color:var(--text2);margin-bottom:4px;">
+    ${rows.length} pilots · top 32 finishes in selected window
+  </div>`;
+
+  html += '<div class="card" style="padding:0;overflow:hidden;">';
   html += '<div style="overflow-x:auto;">';
   html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
   html += '<thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border);">' +
@@ -2011,7 +2028,9 @@ function renderMtgoPilots(rows) {
   rows.forEach((r, i) => {
     const pts = r.avg_points != null ? r.avg_points.toFixed(1) : '—';
     const mwp = r.avg_mwp != null ? (r.avg_mwp * 100).toFixed(1) + '%' : '—';
-    const score = r.performance_score != null ? r.performance_score.toFixed(3) : '—';
+    const normScore = maxScore > 0
+      ? ((r.performance_score / maxScore) * 100).toFixed(1)
+      : '—';
     const bg = i % 2 === 0 ? '' : 'background:var(--surface2);';
 
     html += `<tr style="${bg}border-bottom:1px solid var(--border);">` +
@@ -2023,11 +2042,12 @@ function renderMtgoPilots(rows) {
       `<td style="padding:7px 6px;text-align:right;">${pts}</td>` +
       `<td style="padding:7px 6px;text-align:right;">${mwp}</td>` +
       `<td style="padding:7px 6px;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.primary_archetype || '—'}</td>` +
-      `<td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${score}</td>` +
+      `<td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${normScore}</td>` +
       `</tr>`;
   });
 
   html += '</tbody></table></div></div>';
+  html += '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Score normalised to 100 = best performing pilot in this window.</div>';
   el.innerHTML = html;
 }
 
