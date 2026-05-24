@@ -623,73 +623,123 @@
     <div class="analysis-tab" onclick="switchAnalysisTab('chisq')">Chi-squared</div>
   </div>
   <div id="panel-bayesian" class="analysis-panel active">
-    <div class="card">
+  <div class="card">
+    <div class="row">
+      <div>
+        <label class="label">Game filter</label>
+        <select id="b-filter">
+          <option value="Overall">Overall</option>
+          <option value="Pre">Preboard</option>
+          <option value="Post">Postboard</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Deck</label>
+        <select id="b-deck"><option value="">All decks</option></select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label class="label">Date range</label>
+        <select id="b-date-preset" onchange="applyDatePreset('b')">
+          <option value="all">All time</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="180">Last 6 months</option>
+          <option value="365">Last year</option>
+          <option value="custom">Custom range</option>
+        </select>
+      </div>
+    </div>
+    <div id="b-date-custom" style="display:none;">
       <div class="row">
         <div>
-          <label class="label">Game filter</label>
-<select id="b-filter">
-  <option value="Overall">Overall</option>
-  <option value="Pre">Preboard</option>
-  <option value="Post">Postboard</option>
-</select>
+          <label class="label">From</label>
+          <input type="date" id="b-date-from" style="margin-bottom:0;">
         </div>
         <div>
-          <label class="label">Deck</label>
-          <select id="b-deck"><option value="">All decks</option></select>
+          <label class="label">To</label>
+          <input type="date" id="b-date-to" style="margin-bottom:0;">
         </div>
       </div>
-      <div class="scope-tabs">
-        <div class="scope-tab active" onclick="setScopeB('mine')" id="scope-b-mine">My data</div>
-        <div class="scope-tab" onclick="setScopeB('all')" id="scope-b-all">All data</div>
-        <div class="scope-tab" onclick="setScopeB('compare')" id="scope-b-compare">Compare</div>
-      </div>
-      <div class="throttle-msg" id="throttle-b"></div>
-      <div class="progress-bar-wrap" id="progress-b">
-        <div class="progress-bar-fill" id="progress-b-fill" style="width:0%"></div>
-      </div>
-      <button class="btn btn-primary" id="btn-calc-b" onclick="calcBayesian()" style="margin-bottom:0;">Calculate scores</button>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="b-cache-info"></div>
     </div>
-    <div id="b-results"></div>
+    <div class="scope-tabs">
+      <div class="scope-tab active" onclick="setScopeB('mine')" id="scope-b-mine">My data</div>
+      <div class="scope-tab" onclick="setScopeB('all')" id="scope-b-all">All data</div>
+      <div class="scope-tab" onclick="setScopeB('compare')" id="scope-b-compare">Compare</div>
+    </div>
+    <div class="throttle-msg" id="throttle-b"></div>
+    <div class="progress-bar-wrap" id="progress-b">
+      <div class="progress-bar-fill" id="progress-b-fill" style="width:0%"></div>
+    </div>
+    <button class="btn btn-primary" id="btn-calc-b" onclick="calcBayesian()" style="margin-bottom:0;">Calculate scores</button>
+    <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="b-cache-info"></div>
   </div>
-  <div id="panel-chisq" class="analysis-panel">
-    <div class="card">
+  <div id="b-results"></div>
+</div>
+
+<div id="panel-chisq" class="analysis-panel">
+  <div class="card">
+    <div class="row">
+      <div>
+        <label class="label">Game filter</label>
+        <select id="c-filter">
+          <option value="Overall">Overall</option>
+          <option value="Pre">Preboard</option>
+          <option value="Post">Postboard</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Deck</label>
+        <select id="c-deck"><option value="">All decks</option></select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label class="label">Date range</label>
+        <select id="c-date-preset" onchange="applyDatePreset('c')">
+          <option value="all">All time</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="180">Last 6 months</option>
+          <option value="365">Last year</option>
+          <option value="custom">Custom range</option>
+        </select>
+      </div>
+    </div>
+    <div id="c-date-custom" style="display:none;">
       <div class="row">
         <div>
-          <label class="label">Game filter</label>
-          <select id="c-filter">
-            <option value="Overall">Overall</option>
-            <option value="Pre">Preboard</option>
-            <option value="Post">Postboard</option>
-          </select>
+          <label class="label">From</label>
+          <input type="date" id="c-date-from" style="margin-bottom:0;">
         </div>
         <div>
-          <label class="label">Deck</label>
-          <select id="c-deck"><option value="">All decks</option></select>
+          <label class="label">To</label>
+          <input type="date" id="c-date-to" style="margin-bottom:0;">
         </div>
       </div>
-      <div class="scope-tabs">
-        <div class="scope-tab active" onclick="setScopeC('mine')" id="scope-c-mine">My data</div>
-        <div class="scope-tab" onclick="setScopeC('all')" id="scope-c-all">All data</div>
-        <div class="scope-tab" onclick="setScopeC('compare')" id="scope-c-compare">Compare</div>
-      </div>
-      <div class="throttle-msg" id="throttle-c"></div>
-      <div class="progress-bar-wrap" id="progress-c">
-        <div class="progress-bar-fill" id="progress-c-fill" style="width:0%"></div>
-      </div>
-      <button class="btn btn-primary" id="btn-calc-c" onclick="calcChiSquared()" style="margin-bottom:0;">Calculate chi-squared</button>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="c-cache-info"></div>
     </div>
-    <div class="card" id="c-sort-card" style="display:none;">
-      <label class="label">Sort by</label>
-      <div class="toggle-group">
-        <div class="toggle-btn selected" onclick="sortChiResults('p')" id="sort-p">P-value</div>
-        <div class="toggle-btn" onclick="sortChiResults('chi')" id="sort-chi">&#967;&#178; stat</div>
-        <div class="toggle-btn" onclick="sortChiResults('name')" id="sort-name">Name</div>
-      </div>
+    <div class="scope-tabs">
+      <div class="scope-tab active" onclick="setScopeC('mine')" id="scope-c-mine">My data</div>
+      <div class="scope-tab" onclick="setScopeC('all')" id="scope-c-all">All data</div>
+      <div class="scope-tab" onclick="setScopeC('compare')" id="scope-c-compare">Compare</div>
     </div>
-    <div id="c-results"></div>
+    <div class="throttle-msg" id="throttle-c"></div>
+    <div class="progress-bar-wrap" id="progress-c">
+      <div class="progress-bar-fill" id="progress-c-fill" style="width:0%"></div>
+    </div>
+    <button class="btn btn-primary" id="btn-calc-c" onclick="calcChiSquared()" style="margin-bottom:0;">Calculate chi-squared</button>
+    <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="c-cache-info"></div>
   </div>
+  <div class="card" id="c-sort-card" style="display:none;">
+    <label class="label">Sort by</label>
+    <div class="toggle-group">
+      <div class="toggle-btn selected" onclick="sortChiResults('p')" id="sort-p">P-value</div>
+      <div class="toggle-btn" onclick="sortChiResults('chi')" id="sort-chi">&#967;&#178; stat</div>
+      <div class="toggle-btn" onclick="sortChiResults('name')" id="sort-name">Name</div>
+    </div>
+  </div>
+  <div id="c-results"></div>
 </div>
 
 <!-- MATCHUP MATRIX -->
@@ -722,11 +772,27 @@
         </select>
       </div>
       <div>
-        <label class="label">Metagame basis</label>
-        <select id="m-meta">
-          <option value="recorded">Recorded games</option>
-          <option value="goldfish">MTGGoldfish</option>
+        <label class="label">Date range</label>
+        <select id="m-date-preset" onchange="applyDatePreset('m')">
+          <option value="all">All time</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="180">Last 6 months</option>
+          <option value="365">Last year</option>
+          <option value="custom">Custom range</option>
         </select>
+      </div>
+    </div>
+    <div id="m-date-custom" style="display:none;">
+      <div class="row">
+        <div>
+          <label class="label">From</label>
+          <input type="date" id="m-date-from" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label class="label">To</label>
+          <input type="date" id="m-date-to" style="margin-bottom:0;">
+        </div>
       </div>
     </div>
     <input type="text" id="m-search" placeholder="Search opponent archetype..."
@@ -1653,7 +1719,35 @@ function populateAnalysisFilters() {
   document.getElementById('c-deck').innerHTML = deckOpts;
 }
 
-async function fetchSummaryData(scope, filter, deck) {
+function applyDatePreset(panel) {
+  const preset = document.getElementById(panel + '-date-preset').value;
+  const customDiv = document.getElementById(panel + '-date-custom');
+  if (preset === 'custom') {
+    customDiv.style.display = 'block';
+  } else {
+    customDiv.style.display = 'none';
+  }
+}
+
+function getDateRange(panel) {
+  const preset = document.getElementById(panel + '-date-preset').value;
+  if (preset === 'all') return { from: null, to: null };
+  if (preset === 'custom') {
+    const from = document.getElementById(panel + '-date-from').value;
+    const to = document.getElementById(panel + '-date-to').value;
+    return {
+      from: from ? from + 'T00:00:00.000Z' : null,
+      to: to ? to + 'T23:59:59.999Z' : null
+    };
+  }
+  const days = parseInt(preset);
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - days);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+async function fetchSummaryData(scope, filter, deck, panel) {
   let query = db.from('raw_game_log')
     .select('pilot_name,deck_archetype,game_number,pre_post,opponent_archetype,card1,card2,card3,card4,card5,card6,card7,game_result')
     .not('game_result', 'is', null);
@@ -1661,12 +1755,18 @@ async function fetchSummaryData(scope, filter, deck) {
   if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
   if (deck) query = query.eq('deck_archetype', deck);
 
-  if (filter === 'G1') query = query.eq('game_number', 'G1');
+if (filter === 'G1') query = query.eq('game_number', 'G1');
   else if (filter === 'G23') query = query.eq('game_number', 'G23');
   else if (filter === 'Pre') query = query.eq('pre_post', 'Pre');
   else if (filter === 'Post') query = query.eq('pre_post', 'Post');
   else if (filter === 'Pre_G1') query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
   else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
+
+  if (panel) {
+    const dateRange = getDateRange(panel);
+    if (dateRange.from) query = query.gte('timestamp', dateRange.from);
+    if (dateRange.to) query = query.lte('timestamp', dateRange.to);
+  }
 
   const { data, error } = await query.limit(50000);
   if (error) throw error;
@@ -1729,7 +1829,7 @@ async function calcBayesian() {
   document.getElementById('btn-calc-b').disabled = true;
   try {
     let myData = [], allData = [];
-    if (scope === 'mine' || scope === 'compare') { setProgress('b', 20); myData = await fetchSummaryData('mine', filter, deck); }
+    if (scope === 'mine' || scope === 'compare') { setProgress('b', 20); myData = await fetchSummaryData('mine', filter, deck, 'b'); }
     if (scope === 'all' || scope === 'compare') { setProgress('b', 50); allData = await fetchSummaryData('all', filter, deck); }
     setProgress('b', 80);
     const M = 20;
@@ -1801,8 +1901,8 @@ async function calcChiSquared() {
   document.getElementById('btn-calc-c').disabled = true;
   try {
     let myData = [], allData = [];
-    if (scope === 'mine' || scope === 'compare') { setProgress('c', 20); myData = await fetchSummaryData('mine', filter, deck); }
-    if (scope === 'all' || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all', filter, deck); }
+    if (scope === 'mine' || scope === 'compare') { setProgress('c', 20); myData = await fetchSummaryData('mine', filter, deck, 'c'); }
+    if (scope === 'all' || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all', filter, deck, 'c'); }
     setProgress('c', 80);
     const myResults = scope !== 'all' ? computeChiSquared(myData) : [];
     const allResults = scope !== 'mine' ? computeChiSquared(allData) : [];
@@ -1972,14 +2072,18 @@ async function calcMatchups() {
     if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
     if (deck) query = query.eq('deck_archetype', deck);
 
-    if (filter === 'G1') query = query.eq('game_number', 'G1');
-    else if (filter === 'G23') query = query.eq('game_number', 'G23');
-    else if (filter === 'Pre') query = query.eq('pre_post', 'Pre');
-    else if (filter === 'Post') query = query.eq('pre_post', 'Post');
-    else if (filter === 'Pre_G1') query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
-    else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
+if (filter === 'G1') query = query.eq('game_number', 'G1');
+  else if (filter === 'G23') query = query.eq('game_number', 'G23');
+  else if (filter === 'Pre') query = query.eq('pre_post', 'Pre');
+  else if (filter === 'Post') query = query.eq('pre_post', 'Post');
+  else if (filter === 'Pre_G1') query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
+  else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
 
-    setProgress('m', 40);
+  const dateRange = getDateRange('m');
+  if (dateRange.from) query = query.gte('timestamp', dateRange.from);
+  if (dateRange.to) query = query.lte('timestamp', dateRange.to);
+
+  setProgress('m', 40);
     const { data: games, error } = await query.limit(50000);
     if (error) throw error;
 
