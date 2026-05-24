@@ -1413,7 +1413,7 @@ async function parseImport() {
         card = { card_name: data.name, quantity: p.qty, main_side: p.mainSide, preferred_image_url: imageUrl };
         state.importedCards.push(card);
       } else {
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 250));
         const fuzzyRes = await fetch('https://api.scryfall.com/cards/named?fuzzy=' + encodeURIComponent(p.name), { headers: { 'Accept': 'application/json' } });
         if (fuzzyRes.ok) {
           const data = await fuzzyRes.json();
@@ -1429,7 +1429,7 @@ async function parseImport() {
       (imageUrl ? '<img src="' + imageUrl + '" style="width:28px;height:39px;border-radius:3px;object-fit:cover;">' : '') +
       '<span style="flex:1;">' + p.qty + '× ' + (card ? card.card_name : p.name) + '</span>' +
       '<span style="font-size:11px;color:var(--text2);">' + p.mainSide + '</span></div>';
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 250));
   }
   document.getElementById('import-progress-fill').style.width = '100%';
   setTimeout(() => { document.getElementById('import-progress-wrap').style.display = 'none'; }, 500);
