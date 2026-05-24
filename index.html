@@ -987,6 +987,11 @@ async function signUp() {
 
 async function onSignedIn(user) {
   try {
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    state.user = user;
+  try {
     state.user = user;
     const { data: pilots } = await db.from('pilots').select('pilot_name,pilot_email').eq('auth_id', user.id).limit(1);
 if (!pilots || !pilots.length) {
