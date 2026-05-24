@@ -2085,30 +2085,63 @@ function renderChiResults(result, fromCache) {
     return a.card.localeCompare(b.card);
   };
   const renderTable = (rows, title) => {
-  if (!rows.length) return '<div style="color:var(--text2);font-size:14px;">No significant results found. This means either there is not enough data yet (each cell in the 2×2 contingency table needs at least 5 games) or no cards show a statistically detectable effect on win rate with the current data.</div>';
+    if (!rows.length) return '<div style="color:var(--text2);font-size:14px;">No significant results found. This means either there is not enough data yet (each cell in the 2×2 contingency table needs at least 5 games) or no cards show a statistically detectable effect on win rate with the current data.</div>';
     const sorted = [...rows].sort(sortFn);
-    return (title ? '<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">' + title + '</div>' : '') +
-      '<div style="overflow-x:auto;"><table class="sortable"><thead><tr>' +
-      '<th onclick="sortChiResults(\'name\')">Card</th>' +
-      '<th onclick="sortChiResults(\'chi\')">&#967;&#178;</th>' +
-      '<th onclick="sortChiResults(\'p\')">p-value</th>' +
-      '<th>Effect</th><th>Sig</th></tr></thead><tbody>' +
-      sorted.slice(0, 50).map(r => {
-        const sigClass = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
-        const sigLabel = r.p < 0.01 ? '**' : r.p < 0.05 ? '*' : 'ns';
+
+    // Group by card name
+    const grouped = {};
+    for (const r of sorted) {
+      if (!grouped[r.card]) grouped[r.card] = [];
+      grouped[r.card].push(r);
+    }
+
+    // Sort groups by best p-value within each card
+    const groupEntries = Object.entries(grouped).sort((a, b) => {
+      const bestA = Math.min(...a[1].map(r => r.p));
+      const bestB = Math.min(...b[1].map(r => r.p));
+      if (state.chiSortKey === 'p') return bestA - bestB;
+      if (state.chiSortKey === 'chi') return Math.max(...b[1].map(r => r.chi2)) - Math.max(...a[1].map(r => r.chi2));
+      return a[0].localeCompare(b[0]);
+    });
+
+    let html = (title ? '<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">' + title + '</div>' : '');
+    html += '<div style="overflow-x:auto;">';
+
+    for (const [cardName, cardRows] of groupEntries.slice(0, 50)) {
+      html += '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;">';
+
+      // Card header row
+      const bestRow = cardRows.reduce((a, b) => a.p < b.p ? a : b);
+      const sigClass = bestRow.p < 0.01 ? 'sig-high' : bestRow.p < 0.05 ? 'sig-med' : 'sig-low';
+      const sigLabel = bestRow.p < 0.01 ? '**' : bestRow.p < 0.05 ? '*' : 'ns';
+      html += '<div style="background:var(--surface2);padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div style="font-size:13px;font-weight:700;">' + cardName + '</div>' +
+        '<span class="' + sigClass + '" style="font-size:12px;">' + sigLabel + '</span>' +
+        '</div>';
+
+      // Sub-rows for each copy count
+      for (const r of cardRows.sort((a, b) => a.copyCount - b.copyCount)) {
         const dirClass = r.direction === 'positive' ? 'dir-pos' : 'dir-neg';
         const dirLabel = r.direction === 'positive' ? '▲ +' : '▼ −';
         const wrDiff = ((r.wrWith - r.wrWithout) * 100).toFixed(1);
-        return '<tr><td><div style="font-weight:600;font-size:12px;">' + r.card + '</div>' +
-          '<div class="chi-detail">' + r.copyCount + '× | ' + r.sampleWith + 'g with</div></td>' +
-          '<td style="white-space:nowrap;">' + r.chi2.toFixed(2) + '</td>' +
-          '<td style="white-space:nowrap;">' + (r.p < 0.0001 ? '&lt;0.0001' : r.p.toFixed(4)) + '</td>' +
-          '<td><span class="' + dirClass + '">' + dirLabel + Math.abs(wrDiff) + '%</span></td>' +
-          '<td><span class="' + sigClass + '">' + sigLabel + '</span></td></tr>';
-      }).join('') + '</tbody></table></div>' +
-      '<div style="font-size:11px;color:var(--text2);margin-top:8px;">' +
+        const rowSigClass = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
+        html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<div style="font-size:11px;color:var(--text2);min-width:40px;">' + r.copyCount + '×</div>' +
+          '<div style="font-size:11px;color:var(--text2);min-width:50px;">' + r.sampleWith + 'g with</div>' +
+          '<div style="font-size:11px;min-width:50px;">χ²&nbsp;' + r.chi2.toFixed(2) + '</div>' +
+          '<div style="font-size:11px;min-width:60px;">p&nbsp;' + (r.p < 0.0001 ? '&lt;0.0001' : r.p.toFixed(4)) + '</div>' +
+          '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(wrDiff) + '%</span></div>' +
+          '<span class="' + rowSigClass + '" style="font-size:11px;">' + (r.p < 0.01 ? '**' : r.p < 0.05 ? '*' : 'ns') + '</span>' +
+          '</div>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div>';
+    html += '<div style="font-size:11px;color:var(--text2);margin-top:8px;">' +
       '** p&lt;0.01 highly significant &nbsp;* p&lt;0.05 significant &nbsp;ns not significant<br>' +
       '▲ positive: win rate higher with card in hand &nbsp;▼ negative: win rate lower</div>';
+    return html;
   };
   if (result.scope === 'compare') {
     el.innerHTML = '<div class="compare-grid"><div>' + renderTable(result.myResults, 'My data') + '</div><div>' + renderTable(result.allResults, 'All data') + '</div></div>';
