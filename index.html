@@ -8,6 +8,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Mize</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  #archetype-suggestions {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-top: 6px;
+}
+#archetype-suggestions .archetype-suggestion-row:hover {
+  background: var(--surface2);
+}
 <style>
   :root {
     --bg: #0f0f0f;
@@ -1163,6 +1173,7 @@ if (!pilots || !pilots.length) {
     showScreen('screen-home');
   } catch(e) {
     showToast('Sign in error: ' + e.message, 'error');
+    loadArchetypeDefinitions(); // Load in background, don't await
     showScreen('screen-auth');
   }
 }
@@ -1448,6 +1459,164 @@ function parseDeckText(text) {
   return cards;
 }
 
+  // ── MTGO ARCHETYPE PARSER ─────────────────────────────────────────
+
+let archetypeDefinitions = null;
+let archetypeDefsLoading = false;
+
+async function loadArchetypeDefinitions() {
+  if (archetypeDefinitions) return archetypeDefinitions;
+  if (archetypeDefsLoading) {
+    // Wait for existing load to complete
+    while (archetypeDefsLoading) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+    return archetypeDefinitions;
+  }
+  archetypeDefsLoading = true;
+  try {
+    // Fetch list of archetype files from MTGOFormatData
+    const listRes = await fetch(
+      'https://api.github.com/repos/Badaro/MTGOFormatData/contents/Formats/Modern/Archetypes',
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (!listRes.ok) throw new Error('Could not fetch archetype list');
+    const files = await listRes.json();
+    const jsonFiles = files.filter(f => f.name.endsWith('.json'));
+
+    // Fetch all archetype definitions in parallel batches
+    const defs = [];
+    const batchSize = 10;
+    for (let i = 0; i < jsonFiles.length; i += batchSize) {
+      const batch = jsonFiles.slice(i, i + batchSize);
+      const results = await Promise.all(batch.map(async f => {
+        try {
+          const r = await fetch(f.download_url);
+          if (!r.ok) return null;
+          const data = await r.json();
+          return { name: f.name.replace('.json', ''), ...data };
+        } catch { return null; }
+      }));
+      results.forEach(r => { if (r) defs.push(r); });
+      await new Promise(r => setTimeout(r, 50));
+    }
+    archetypeDefinitions = defs;
+    console.log(`Loaded ${defs.length} archetype definitions from MTGOFormatData`);
+  } catch(e) {
+    console.error('Failed to load archetype definitions:', e);
+    archetypeDefinitions = [];
+  }
+  archetypeDefsLoading = false;
+  return archetypeDefinitions;
+}
+
+function testArchetypeConditions(conditions, mainboard, sideboard) {
+  if (!conditions || !conditions.length) return false;
+  const mbSet = {};
+  const sbSet = {};
+  for (const [card, qty] of Object.entries(mainboard || {})) {
+    mbSet[card.toLowerCase()] = qty;
+  }
+  for (const [card, qty] of Object.entries(sideboard || {})) {
+    sbSet[card.toLowerCase()] = qty;
+  }
+  const bothSet = { ...mbSet };
+  for (const [card, qty] of Object.entries(sbSet)) {
+    bothSet[card] = (bothSet[card] || 0) + qty;
+  }
+
+  for (const cond of conditions) {
+    const type = cond.Type;
+    const cards = (cond.Cards || []).map(c => c.toLowerCase());
+
+    if (type === 'InMainboard') {
+      if (!cards.every(c => mbSet[c] > 0)) return false;
+    } else if (type === 'InSideboard') {
+      if (!cards.every(c => sbSet[c] > 0)) return false;
+    } else if (type === 'InMainOrSideboard') {
+      if (!cards.every(c => bothSet[c] > 0)) return false;
+    } else if (type === 'OneOrMoreInMainboard') {
+      if (!cards.some(c => mbSet[c] > 0)) return false;
+    } else if (type === 'OneOrMoreInSideboard') {
+      if (!cards.some(c => sbSet[c] > 0)) return false;
+    } else if (type === 'OneOrMoreInMainOrSideboard') {
+      if (!cards.some(c => bothSet[c] > 0)) return false;
+    } else if (type === 'TwoOrMoreInMainboard') {
+      if (cards.filter(c => mbSet[c] > 0).length < 2) return false;
+    } else if (type === 'TwoOrMoreInSideboard') {
+      if (cards.filter(c => sbSet[c] > 0).length < 2) return false;
+    } else if (type === 'TwoOrMoreInMainOrSideboard') {
+      if (cards.filter(c => bothSet[c] > 0).length < 2) return false;
+    } else if (type === 'DoesNotContain') {
+      if (cards.some(c => bothSet[c] > 0)) return false;
+    } else if (type === 'DoesNotContainMainboard') {
+      if (cards.some(c => mbSet[c] > 0)) return false;
+    } else if (type === 'DoesNotContainSideboard') {
+      if (cards.some(c => sbSet[c] > 0)) return false;
+    }
+  }
+  return true;
+}
+
+function detectArchetypeExact(mainboard, sideboard) {
+  if (!archetypeDefinitions || !archetypeDefinitions.length) return [];
+  const matches = [];
+  for (const def of archetypeDefinitions) {
+    if (testArchetypeConditions(def.Conditions, mainboard, sideboard)) {
+      matches.push(def.name);
+    }
+  }
+  return matches;
+}
+
+function buildCardMaps(cards) {
+  // cards is array of {card_name, quantity, main_side}
+  const mainboard = {};
+  const sideboard = {};
+  for (const c of cards) {
+    const name = (c.card_name || '').toLowerCase();
+    if (c.main_side === 'Main') mainboard[name] = (mainboard[name] || 0) + (c.quantity || 1);
+    else sideboard[name] = (sideboard[name] || 0) + (c.quantity || 1);
+  }
+  return { mainboard, sideboard };
+}
+
+async function suggestArchetypesForDeck(cards) {
+  // Try exact matching first
+  const { mainboard, sideboard } = buildCardMaps(cards);
+  const exactMatches = detectArchetypeExact(mainboard, sideboard);
+  if (exactMatches.length > 0) {
+    return exactMatches.map(name => ({ name, score: 1.0, method: 'exact' }));
+  }
+
+  // Fall back to weighted overlap
+  const { data: refDecks } = await db.from('reference_decks')
+    .select('archetype_name,card_name,quantity,main_side');
+  if (!refDecks) return [];
+
+  const byArch = {};
+  for (const r of refDecks) {
+    if (!byArch[r.archetype_name]) byArch[r.archetype_name] = [];
+    byArch[r.archetype_name].push(r);
+  }
+
+  const pilotMainCards = new Set(Object.keys(mainboard));
+  const results = [];
+
+  for (const [arch, archCards] of Object.entries(byArch)) {
+    const refMainCards = new Set(
+      archCards.filter(c => c.main_side === 'Main').map(c => c.card_name.toLowerCase())
+    );
+    const intersection = [...pilotMainCards].filter(c => refMainCards.has(c)).length;
+    const pilotScore = pilotMainCards.size > 0 ? intersection / pilotMainCards.size : 0;
+    const refScore = refMainCards.size > 0 ? intersection / refMainCards.size : 0;
+    const combined = (pilotScore + refScore) / 2;
+    if (combined > 0.1) results.push({ name: arch, score: combined, method: 'overlap' });
+  }
+
+  return results.sort((a, b) => b.score - a.score);
+}
+
 async function parseImport() {
   const text = document.getElementById('import-text').value.trim();
   if (!text) { showToast('Please paste a deck list', 'error'); return; }
@@ -1583,42 +1752,32 @@ function buildReferenceIndex(refCards) {
   state.totalArchetypes = Object.keys(state.referenceDecks).length;
 }
 
-function suggestArchetypes() {
-  const mainCards = state.newDeckCards.filter(c => c.main_side === 'Main');
-  const pilotCards = {};
-  mainCards.forEach(c => { pilotCards[c.card_name] = c.quantity; });
-  const scores = Object.entries(state.referenceDecks).map(function(entry) {
-    const archetype = entry[0], refCards = entry[1];
-    let score = 0, totalWeight = 0, refMatchWeight = 0, refTotalWeight = 0;
-    Object.entries(pilotCards).forEach(function(pe) {
-      const card = pe[0], qty = pe[1];
-      if (refCards[card]) {
-        const d = 1 / (state.cardFrequency[card] || 1);
-        score += Math.min(qty, refCards[card]) * d;
-        totalWeight += d;
-      }
-    });
-    Object.entries(refCards).forEach(function(re) {
-      const card = re[0], qty = re[1];
-      const d = 1 / (state.cardFrequency[card] || 1);
-      refTotalWeight += qty * d;
-      if (pilotCards[card]) refMatchWeight += Math.min(qty, pilotCards[card]) * d;
-    });
-    const pilotScore = totalWeight > 0 ? score / totalWeight : 0;
-    const refScore = refTotalWeight > 0 ? refMatchWeight / refTotalWeight : 0;
-    return { archetype: archetype, score: (pilotScore + refScore) / 2 };
-  });
-  scores.sort((a, b) => b.score - a.score);
-  const top3 = scores.slice(0, 3);
-  const maxScore = top3[0] ? top3[0].score : 1;
-  document.getElementById('archetype-suggestions').innerHTML = top3.map((s, i) =>
-    '<div class="archetype-suggestion" id="suggestion-' + i + '" onclick="selectSuggestion(' + i + ',\'' + s.archetype.replace(/'/g, "\\'") + '\')">' +
-    '<div class="archetype-suggestion-name">' + s.archetype + '</div>' +
-    '<div class="archetype-suggestion-score">Match confidence: ' + Math.round(s.score / maxScore * 100) + '%</div>' +
-    '<div class="confidence-bar"><div class="confidence-fill" style="width:' + Math.round(s.score / maxScore * 100) + '%"></div></div></div>'
-  ).join('');
-  document.getElementById('new-deck-archetype-section').style.display = 'block';
-  document.getElementById('new-deck-notes-section').style.display = 'block';
+async function suggestArchetypes(cards) {
+  const suggestions = await suggestArchetypesForDeck(cards);
+  const container = document.getElementById('archetype-suggestions');
+  if (!container) return;
+
+  if (!suggestions.length) {
+    container.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">No matching archetypes found. You can enter a name manually.</div>';
+    return;
+  }
+
+  container.innerHTML = suggestions.map(s => `
+    <div class="archetype-suggestion-row" onclick="selectSuggestedArchetype('${s.name.replace(/'/g, "\\'")}')"
+         style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <span style="font-size:13px;font-weight:600;">${s.name}</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:6px;">${s.method === 'exact' ? '✓ exact match' : Math.round(s.score * 100) + '% overlap'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectSuggestedArchetype(name) {
+  const input = document.getElementById('deck-archetype-input');
+  if (input) input.value = name;
+  document.querySelectorAll('.archetype-suggestion-row').forEach(r => r.style.background = '');
+  event.currentTarget.style.background = 'var(--surface2)';
 }
 
 function selectSuggestion(idx, archetype) {
