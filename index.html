@@ -849,7 +849,7 @@ function showScreen(id) {
   window.scrollTo(0, 0);
   if (id === 'screen-my-decks') renderMyDecks();
   if (id === 'screen-analysis') onShowAnalysis();
-  if (id === 'screen-matchup') onShowMatchup();
+  if (id === 'screen-matchup') { try { onShowMatchup(); } catch(e) { console.error('matchup error:', e); } }
   if (id === 'screen-change-art') populateArtCardSelect();
   if (id === 'screen-home') loadRecentMatches();
   if (id === 'screen-edit-deck-notes') {
@@ -2036,13 +2036,22 @@ function renderChiResults(result, fromCache) {
 // ── MATCHUP MATRIX ─────────────────────────────────────────────────
 
 function onShowMatchup() {
-  const sel = document.getElementById('m-deck');
-  sel.innerHTML = '<option value="">All decks</option>' +
-    state.allDecks.map(d => '<option value="' + d.archetype_name + '">' + d.archetype_name + '</option>').join('');
-  if (matchupCache && (Date.now() - matchupCache.timestamp < CACHE_TTL_MS)) {
-    renderMatchupResults(matchupCache.data, '');
-    const el = document.getElementById('m-cache-info');
-    if (el) { const age = Math.round((Date.now() - matchupCache.timestamp) / 60000); el.textContent = 'Showing cached results (' + age + 'm ago). Recalculate to refresh.'; }
+  try {
+    const sel = document.getElementById('m-deck');
+    if (sel) {
+      sel.innerHTML = '<option value="">All decks</option>' +
+        state.allDecks.map(d => '<option value="' + d.archetype_name + '">' + d.archetype_name + '</option>').join('');
+    }
+    if (matchupCache && (Date.now() - matchupCache.timestamp < CACHE_TTL_MS)) {
+      renderMatchupResults(matchupCache.data, '');
+      const el = document.getElementById('m-cache-info');
+      if (el) {
+        const age = Math.round((Date.now() - matchupCache.timestamp) / 60000);
+        el.textContent = 'Showing cached results (' + age + 'm ago). Recalculate to refresh.';
+      }
+    }
+  } catch(e) {
+    console.error('onShowMatchup error:', e);
   }
 }
 
@@ -2216,11 +2225,12 @@ async function init() {
       showScreen('screen-auth');
     }
   } catch(e) {
+    console.error('init error:', e);
     showScreen('screen-auth');
   }
 
   db.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
+    if (event === 'SIGNED_IN' && session && !state.user) {
       await onSignedIn(session.user);
     } else if (event === 'SIGNED_OUT') {
       showScreen('screen-auth');
