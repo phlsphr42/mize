@@ -302,10 +302,11 @@
     <button class="btn-sm btn btn-secondary" onclick="signOut()" style="width:auto;">Sign out</button>
   </div>
   <button class="btn btn-primary" onclick="startNewMatch()">+ New match</button>
-  <button class="btn btn-secondary" onclick="showScreen('screen-my-decks')">My decks</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-my-decks')">My Decks</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-analysis')">Analysis</button>
-  <button class="btn btn-secondary" onclick="showScreen('screen-matchup')">Matchup matrix</button>
-  <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Matrix</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-matchup')">Matchup Matrix</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Meta Matchup Matrix</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-mtgo')">MTGO Meta</button>
   <hr class="divider">
   <div class="card-title">Recent matches</div>
   <div id="recent-matches"><div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div></div>
@@ -942,6 +943,47 @@
   <div id="mx-tooltip" style="display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:12px;z-index:500;max-width:200px;pointer-events:none;"></div>
 </div>
 
+  <!-- MTGO META -->
+<div id="screen-mtgo" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>MTGO Meta</h2>
+  </div>
+  <div class="card">
+    <div class="row">
+      <div>
+        <label class="label">Date range</label>
+        <select id="mtgo-date" onchange="loadMtgoData()">
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="180" selected>Last 6 months</option>
+          <option value="365">Last year</option>
+          <option value="all">All time</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Min appearances</label>
+        <select id="mtgo-min" onchange="loadMtgoData()">
+          <option value="3">3+</option>
+          <option value="5" selected>5+</option>
+          <option value="10">10+</option>
+          <option value="20">20+</option>
+        </select>
+      </div>
+    </div>
+    <div class="scope-tabs" style="margin-top:8px;">
+      <div class="scope-tab active" onclick="setMtgoTab('archetypes')" id="mtgo-tab-archetypes">Archetypes</div>
+      <div class="scope-tab" onclick="setMtgoTab('pilots')" id="mtgo-tab-pilots">Pilots</div>
+    </div>
+  </div>
+  <div id="mtgo-loading" style="display:none;text-align:center;padding:24px;color:var(--text2);">Loading...</div>
+  <div id="mtgo-results"></div>
+  <div style="font-size:11px;color:var(--text2);margin-top:8px;text-align:center;">
+    Data sourced from MTGO Challenge top 32 finishes via fbettega/MTG_decklistcache.
+    Updated daily.
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
@@ -1002,6 +1044,13 @@ function showScreen(id) {
     }
   }
   if (id === 'screen-matchup') { try { onShowMatchup(); } catch(e) { console.error('matchup error:', e); } }
+  if (id === 'screen-mtgo') {
+    mtgoCache = { archetypes: {}, pilots: {} };
+    mtgoTab = 'archetypes';
+    document.getElementById('mtgo-tab-archetypes').classList.add('active');
+    document.getElementById('mtgo-tab-pilots').classList.remove('active');
+    loadMtgoData();
+  }
   if (id === 'screen-matrix') {
     if (matrixCache && (Date.now() - matrixCache.timestamp < CACHE_TTL_MS)) {
       renderMatrix(matrixCache.archetypes, matrixCache.matchups, matrixCache.rateType, '');
@@ -1815,6 +1864,177 @@ function selectSuggestedArchetype(name) {
   return mismatches;
 }
 
+// ── MTGO META SCREEN ──────────────────────────────────────────────
+
+let mtgoTab = 'archetypes';
+let mtgoCache = { archetypes: {}, pilots: {} };
+
+function setMtgoTab(tab) {
+  mtgoTab = tab;
+  document.getElementById('mtgo-tab-archetypes').classList.toggle('active', tab === 'archetypes');
+  document.getElementById('mtgo-tab-pilots').classList.toggle('active', tab === 'pilots');
+  loadMtgoData();
+}
+
+async function loadMtgoData() {
+  const dateVal = document.getElementById('mtgo-date').value;
+  const minApp = parseInt(document.getElementById('mtgo-min').value);
+  const cacheKey = `${dateVal}_${minApp}`;
+
+  document.getElementById('mtgo-loading').style.display = 'block';
+  document.getElementById('mtgo-results').innerHTML = '';
+
+  try {
+    if (mtgoTab === 'archetypes') {
+      if (!mtgoCache.archetypes[cacheKey]) {
+        const now = new Date();
+        let dateFrom = '2000-01-01';
+        if (dateVal !== 'all') {
+          const d = new Date(now);
+          d.setDate(d.getDate() - parseInt(dateVal));
+          dateFrom = d.toISOString().split('T')[0];
+        }
+        const dateTo = now.toISOString().split('T')[0];
+
+        const { data, error } = await db.from('mtgo_archetype_summary')
+          .select('*')
+          .gte('date_from', dateFrom)
+          .lte('date_to', dateTo)
+          .gte('top32_appearances', minApp)
+          .order('meta_adjusted_score', { ascending: false })
+          .limit(200);
+
+        if (error) throw error;
+        mtgoCache.archetypes[cacheKey] = data || [];
+      }
+      renderMtgoArchetypes(mtgoCache.archetypes[cacheKey]);
+    } else {
+      if (!mtgoCache.pilots[cacheKey]) {
+        const now = new Date();
+        let dateFrom = '2000-01-01';
+        if (dateVal !== 'all') {
+          const d = new Date(now);
+          d.setDate(d.getDate() - parseInt(dateVal));
+          dateFrom = d.toISOString().split('T')[0];
+        }
+        const dateTo = now.toISOString().split('T')[0];
+
+        const { data, error } = await db.from('mtgo_pilot_summary')
+          .select('*')
+          .gte('date_from', dateFrom)
+          .lte('date_to', dateTo)
+          .gte('top32_appearances', minApp)
+          .order('performance_score', { ascending: false })
+          .limit(200);
+
+        if (error) throw error;
+        mtgoCache.pilots[cacheKey] = data || [];
+      }
+      renderMtgoPilots(mtgoCache.pilots[cacheKey]);
+    }
+  } catch(e) {
+    document.getElementById('mtgo-results').innerHTML =
+      '<div class="card" style="color:var(--danger);">Error loading data: ' + e.message + '</div>';
+  } finally {
+    document.getElementById('mtgo-loading').style.display = 'none';
+  }
+}
+
+function renderMtgoArchetypes(rows) {
+  const el = document.getElementById('mtgo-results');
+  if (!rows.length) {
+    el.innerHTML = '<div class="card" style="color:var(--text2);">No data found for this date range. Try a wider range or run the Colab notebook to import data.</div>';
+    return;
+  }
+
+  let html = '<div class="card" style="padding:0;overflow:hidden;">';
+  html += '<div style="overflow-x:auto;">';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  html += '<thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border);">' +
+    '<th style="padding:8px 6px;text-align:left;white-space:nowrap;">#</th>' +
+    '<th style="padding:8px 6px;text-align:left;white-space:nowrap;">Archetype</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T32</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Share</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T8%</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Pts</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">MWP</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Score</th>' +
+    '</tr></thead><tbody>';
+
+  rows.forEach((r, i) => {
+    const share = r.top32_share != null ? (r.top32_share * 100).toFixed(1) + '%' : '—';
+    const top8 = r.top8_rate != null ? (r.top8_rate * 100).toFixed(0) + '%' : '—';
+    const pts = r.avg_points != null ? r.avg_points.toFixed(1) : '—';
+    const mwp = r.avg_mwp != null ? (r.avg_mwp * 100).toFixed(1) + '%' : '—';
+    const score = r.meta_adjusted_score != null ? r.meta_adjusted_score.toFixed(3) : '—';
+    const bg = i % 2 === 0 ? '' : 'background:var(--surface2);';
+
+    html += `<tr style="${bg}border-bottom:1px solid var(--border);" onclick="showMtgoArchetypeDetail('${r.archetype_name.replace(/'/g, "\\'")}')">` +
+      `<td style="padding:7px 6px;color:var(--text2);">${i + 1}</td>` +
+      `<td style="padding:7px 6px;font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.archetype_name}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${r.top32_appearances}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${share}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${top8}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${pts}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${mwp}</td>` +
+      `<td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${score}</td>` +
+      `</tr>`;
+  });
+
+  html += '</tbody></table></div></div>';
+  html += '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Score = meta-adjusted performance. Tap a row for details.</div>';
+  el.innerHTML = html;
+}
+
+function renderMtgoPilots(rows) {
+  const el = document.getElementById('mtgo-results');
+  if (!rows.length) {
+    el.innerHTML = '<div class="card" style="color:var(--text2);">No data found for this date range.</div>';
+    return;
+  }
+
+  let html = '<div class="card" style="padding:0;overflow:hidden;">';
+  html += '<div style="overflow-x:auto;">';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  html += '<thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border);">' +
+    '<th style="padding:8px 6px;text-align:left;">#</th>' +
+    '<th style="padding:8px 6px;text-align:left;">Player</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T32</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T8</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Best</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Pts</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">MWP</th>' +
+    '<th style="padding:8px 6px;text-align:left;white-space:nowrap;">Primary</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Score</th>' +
+    '</tr></thead><tbody>';
+
+  rows.forEach((r, i) => {
+    const pts = r.avg_points != null ? r.avg_points.toFixed(1) : '—';
+    const mwp = r.avg_mwp != null ? (r.avg_mwp * 100).toFixed(1) + '%' : '—';
+    const score = r.performance_score != null ? r.performance_score.toFixed(3) : '—';
+    const bg = i % 2 === 0 ? '' : 'background:var(--surface2);';
+
+    html += `<tr style="${bg}border-bottom:1px solid var(--border);">` +
+      `<td style="padding:7px 6px;color:var(--text2);">${i + 1}</td>` +
+      `<td style="padding:7px 6px;font-weight:600;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.player_name}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${r.top32_appearances}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${r.top8_appearances}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${r.best_finish || '—'}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${pts}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${mwp}</td>` +
+      `<td style="padding:7px 6px;font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.primary_archetype || '—'}</td>` +
+      `<td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${score}</td>` +
+      `</tr>`;
+  });
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+}
+
+function showMtgoArchetypeDetail(archetype) {
+  showToast(archetype, 'info');
+}
+  
 function selectSuggestion(idx, archetype) {
   document.querySelectorAll('.archetype-suggestion').forEach(el => el.classList.remove('selected'));
   document.getElementById('suggestion-' + idx).classList.add('selected');
