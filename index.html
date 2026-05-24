@@ -295,6 +295,7 @@
   <button class="btn btn-secondary" onclick="showScreen('screen-my-decks')">My decks</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-analysis')">Analysis</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-matchup')">Matchup matrix</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Matrix</button>
   <hr class="divider">
   <div class="card-title">Recent matches</div>
   <div id="recent-matches"><div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div></div>
@@ -808,6 +809,82 @@
   <div id="m-results"><div style="color:var(--text2);font-size:14px;padding:8px 0;">Select filters and click Load matchups.</div></div>
 </div>
 
+  <!-- MATCHUP MATRIX GRID -->
+<div id="screen-matrix" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Matrix</h2>
+  </div>
+  <div class="card">
+    <div class="row">
+      <div>
+        <label class="label">Data scope</label>
+        <select id="mx-scope">
+          <option value="all">All data</option>
+          <option value="mine">My data</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Date range</label>
+        <select id="mx-date-preset" onchange="applyDatePreset('mx')">
+          <option value="all">All time</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="180">Last 6 months</option>
+          <option value="365">Last year</option>
+          <option value="custom">Custom range</option>
+        </select>
+      </div>
+    </div>
+    <div id="mx-date-custom" style="display:none;">
+      <div class="row">
+        <div>
+          <label class="label">From</label>
+          <input type="date" id="mx-date-from" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label class="label">To</label>
+          <input type="date" id="mx-date-to" style="margin-bottom:0;">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label class="label">Win rate type</label>
+        <select id="mx-rate-type" onchange="onMatrixRateTypeChange()">
+          <option value="game_overall">Game — Overall</option>
+          <option value="game_pre">Game — Preboard</option>
+          <option value="game_post">Game — Postboard</option>
+          <option value="match">Match</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Archetypes</label>
+        <select id="mx-scope-arch">
+          <option value="75">Top 75% of metagame</option>
+          <option value="all">All archetypes</option>
+        </select>
+      </div>
+    </div>
+    <input type="text" id="mx-search" placeholder="Search archetype..."
+           oninput="filterMatrix(this.value)" style="margin-bottom:8px;">
+    <div class="throttle-msg" id="throttle-mx"></div>
+    <div class="progress-bar-wrap" id="progress-mx">
+      <div class="progress-bar-fill" id="progress-mx-fill" style="width:0%"></div>
+    </div>
+    <button class="btn btn-primary" id="btn-calc-mx" onclick="calcMatrix()" style="margin-bottom:0;">
+      Load matrix
+    </button>
+    <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="mx-cache-info"></div>
+  </div>
+  <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5;">
+    Green = favourable for row deck. Tap a cell to see details.
+    Cells with fewer than 5 games show —.
+  </div>
+  <div id="mx-results" style="overflow-x:auto;"></div>
+  <div id="mx-tooltip" style="display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:12px;z-index:500;max-width:200px;pointer-events:none;"></div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
@@ -851,6 +928,13 @@ function showScreen(id) {
   if (id === 'screen-my-decks') renderMyDecks();
   if (id === 'screen-analysis') onShowAnalysis();
   if (id === 'screen-matchup') { try { onShowMatchup(); } catch(e) { console.error('matchup error:', e); } }
+  if (id === 'screen-matrix') {
+    if (matrixCache && (Date.now() - matrixCache.timestamp < CACHE_TTL_MS)) {
+      renderMatrix(matrixCache.archetypes, matrixCache.matchups, matrixCache.rateType, '');
+      const ci = document.getElementById('mx-cache-info');
+      if (ci) { const age = Math.round((Date.now() - matrixCache.timestamp) / 60000); ci.textContent = 'Showing cached results (' + age + 'm ago).'; }
+    }
+  }
   if (id === 'screen-change-art') populateArtCardSelect();
   if (id === 'screen-home') loadRecentMatches();
   if (id === 'screen-edit-deck-notes') {
@@ -2215,6 +2299,255 @@ function toggleRestMatchups(el) {
   el.textContent = el.textContent.replace(visible ? '▲' : '▼', visible ? '▼' : '▲');
 }
 
+// ── MATCHUP MATRIX GRID ────────────────────────────────────────────
+
+let matrixCache = null;
+let matrixLastCalc = 0;
+let matrixRawData = [];
+let matrixArchetypes = [];
+
+function onMatrixRateTypeChange() {
+  // Reset cache when rate type changes
+  matrixCache = null;
+}
+
+async function calcMatrix() {
+  const now = Date.now();
+  if (now - matrixLastCalc < THROTTLE_MS) {
+    const secs = Math.ceil((THROTTLE_MS - (now - matrixLastCalc)) / 1000);
+    const el = document.getElementById('throttle-mx');
+    el.textContent = 'Please wait ' + secs + 's before recalculating.';
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', THROTTLE_MS - (now - matrixLastCalc));
+    return;
+  }
+
+  const scope = document.getElementById('mx-scope').value;
+  const rateType = document.getElementById('mx-rate-type').value;
+  const archScope = document.getElementById('mx-scope-arch').value;
+
+  setProgress('mx', 10);
+  document.getElementById('btn-calc-mx').disabled = true;
+
+  try {
+    let query = db.from('raw_game_log')
+      .select('pilot_name,deck_archetype,opponent_archetype,game_result,match_result,pre_post,game_number')
+      .not('deck_archetype', 'is', null)
+      .not('opponent_archetype', 'is', null)
+      .not('game_result', 'is', null);
+
+    if (scope === 'mine') {
+      query = query.eq('pilot_name', state.pilot.pilot_name);
+    }
+
+    if (rateType === 'game_pre') {
+      query = query.eq('pre_post', 'Pre');
+    } else if (rateType === 'game_post') {
+      query = query.eq('pre_post', 'Post');
+    }
+
+    const dateRange = getDateRange('mx');
+    if (dateRange.from) query = query.gte('timestamp', dateRange.from);
+    if (dateRange.to) query = query.lte('timestamp', dateRange.to);
+
+    setProgress('mx', 40);
+    const { data: games, error } = await query.limit(50000);
+    if (error) throw error;
+
+    setProgress('mx', 60);
+
+    // Build matchup data — keyed by [deck_archetype][opponent_archetype]
+    const matchups = {};
+    const deckCounts = {};
+    const oppCounts = {};
+
+    for (const g of games || []) {
+      const deck = g.deck_archetype;
+      const opp = g.opponent_archetype;
+      if (deck === opp) continue; // skip mirror matches for now
+
+      if (!matchups[deck]) matchups[deck] = {};
+      if (!matchups[deck][opp]) matchups[deck][opp] = { gw: 0, gl: 0, mw: 0, ml: 0 };
+
+      if (g.game_result === 'Win') matchups[deck][opp].gw++;
+      else if (g.game_result === 'Loss') matchups[deck][opp].gl++;
+      if (g.match_result === 'Win') matchups[deck][opp].mw++;
+      else if (g.match_result === 'Loss') matchups[deck][opp].ml++;
+
+      deckCounts[deck] = (deckCounts[deck] || 0) + 1;
+      oppCounts[opp] = (oppCounts[opp] || 0) + 1;
+    }
+
+    setProgress('mx', 75);
+
+    // Determine which archetypes to show
+    const totalGames = (games || []).length;
+    const allDecks = Object.keys(deckCounts).sort((a, b) => deckCounts[b] - deckCounts[a]);
+    const allOpps = Object.keys(oppCounts).sort((a, b) => oppCounts[b] - oppCounts[a]);
+    const allArchetypes = [...new Set([...allDecks, ...allOpps])].sort((a, b) => {
+      const countA = (deckCounts[a] || 0) + (oppCounts[a] || 0);
+      const countB = (deckCounts[b] || 0) + (oppCounts[b] || 0);
+      return countB - countA;
+    });
+
+    let topArchetypes = allArchetypes;
+    if (archScope === '75') {
+      let cumulative = 0;
+      topArchetypes = [];
+      for (const arch of allArchetypes) {
+        topArchetypes.push(arch);
+        cumulative += (deckCounts[arch] || 0) + (oppCounts[arch] || 0);
+        if (totalGames > 0 && cumulative / (totalGames * 2) >= 0.75) break;
+      }
+    }
+
+    matrixArchetypes = topArchetypes;
+    matrixRawData = matchups;
+
+    matrixCache = { archetypes: topArchetypes, matchups, timestamp: Date.now(), rateType };
+    matrixLastCalc = Date.now();
+    setProgress('mx', 100);
+    renderMatrix(topArchetypes, matchups, rateType, '');
+
+    const ci = document.getElementById('mx-cache-info');
+    if (ci) ci.textContent = '';
+
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    setProgress('mx', 0);
+    document.getElementById('btn-calc-mx').disabled = false;
+  }
+}
+
+function filterMatrix(query) {
+  if (!matrixCache) return;
+  const q = query.toLowerCase().trim();
+  const rateType = document.getElementById('mx-rate-type').value;
+  if (!q) {
+    renderMatrix(matrixArchetypes, matrixRawData, rateType, '');
+    return;
+  }
+  // Filter to archetypes matching query, but keep all archetypes as columns/rows
+  // Highlight matching rows/columns
+  renderMatrix(matrixArchetypes, matrixRawData, rateType, q);
+}
+
+function wilsonCell(wins, total) {
+  if (total === 0) return null;
+  const w = wilsonInterval(wins, total);
+  return { mid: w.mid, low: w.low, high: w.high, total };
+}
+
+function cellColor(mid, total) {
+  if (total < 5) return 'var(--surface2)';
+  const opacity = total < 20 ? 0.4 : total < 50 ? 0.7 : 1.0;
+  if (mid >= 60) return `rgba(76,175,80,${opacity})`;
+  if (mid >= 55) return `rgba(76,175,80,${opacity * 0.6})`;
+  if (mid <= 40) return `rgba(244,67,54,${opacity})`;
+  if (mid <= 45) return `rgba(244,67,54,${opacity * 0.6})`;
+  return `rgba(100,100,100,${opacity * 0.3})`;
+}
+
+function renderMatrix(archetypes, matchups, rateType, searchQuery) {
+  const el = document.getElementById('mx-results');
+  if (!archetypes.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:14px;padding:8px 0;">No data available. Click Load matrix to fetch data.</div>';
+    return;
+  }
+
+  const q = searchQuery.toLowerCase();
+  const highlighted = q ? archetypes.filter(a => a.toLowerCase().includes(q)) : [];
+
+  const cellSize = '52px';
+  const labelWidth = '120px';
+
+  let html = '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+  html += '<table style="border-collapse:collapse;font-size:11px;min-width:max-content;">';
+
+  // Header row
+  html += '<thead><tr>';
+  html += '<th style="width:' + labelWidth + ';min-width:' + labelWidth + ';position:sticky;left:0;background:var(--bg);z-index:10;text-align:left;padding:4px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text2);">vs →</th>';
+  for (const opp of archetypes) {
+    const isHL = highlighted.includes(opp);
+    html += '<th style="width:' + cellSize + ';min-width:' + cellSize + ';text-align:center;padding:2px;border-bottom:1px solid var(--border);' +
+      (isHL ? 'background:rgba(200,168,75,0.15);' : '') + '">' +
+      '<div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;color:var(--text2);max-height:80px;overflow:hidden;white-space:nowrap;">' +
+      opp + '</div></th>';
+  }
+  html += '</tr></thead>';
+
+  // Data rows
+  html += '<tbody>';
+  for (const deck of archetypes) {
+    const isHLRow = highlighted.includes(deck);
+    html += '<tr>';
+    html += '<td style="position:sticky;left:0;background:var(--bg);z-index:5;padding:3px 6px;border-bottom:1px solid var(--surface2);font-size:10px;font-weight:600;white-space:nowrap;max-width:' + labelWidth + ';overflow:hidden;text-overflow:ellipsis;' +
+      (isHLRow ? 'color:var(--accent);' : 'color:var(--text);') + '">' +
+      deck + '</td>';
+
+    for (const opp of archetypes) {
+      if (deck === opp) {
+        html += '<td style="background:var(--surface2);text-align:center;border-bottom:1px solid var(--surface2);width:' + cellSize + ';">—</td>';
+        continue;
+      }
+
+      const cell = matchups[deck] && matchups[deck][opp] ? matchups[deck][opp] : null;
+      let wins = 0, total = 0;
+
+      if (cell) {
+        if (rateType === 'match') {
+          wins = cell.mw;
+          total = cell.mw + cell.ml;
+        } else {
+          wins = cell.gw;
+          total = cell.gw + cell.gl;
+        }
+      }
+
+      const w = wilsonCell(wins, total);
+      const bg = w && total >= 5 ? cellColor(w.mid, total) : 'var(--surface2)';
+      const textColor = w && total >= 5 && (w.mid >= 55 || w.mid <= 45) ? '#fff' : 'var(--text2)';
+      const displayText = w && total >= 5 ? w.mid + '%' : '—';
+      const isHL = highlighted.includes(deck) || highlighted.includes(opp);
+
+      const tooltipData = w && total >= 5
+        ? `data-tip="${deck} vs ${opp}: ${w.mid}% (${w.low}%–${w.high}%) | ${wins}W-${total - wins}L (${total}g)"`
+        : `data-tip="${deck} vs ${opp}: insufficient data (${total}g)"`;
+
+      html += '<td ' + tooltipData + ' onclick="showMatrixTooltip(this,event)" ' +
+        'style="text-align:center;padding:2px;border-bottom:1px solid var(--surface2);width:' + cellSize + ';height:28px;background:' + bg + ';' +
+        (isHL ? 'outline:1px solid var(--accent);' : '') + '">' +
+        '<span style="font-size:10px;font-weight:600;color:' + textColor + ';">' + displayText + '</span></td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+
+  // Legend
+  html += '<div style="display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap;">' +
+    '<div style="font-size:10px;color:var(--text2);">Confidence:</div>' +
+    '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);"><div style="width:12px;height:12px;background:rgba(76,175,80,0.4);border-radius:2px;"></div>Low (&lt;20g)</div>' +
+    '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);"><div style="width:12px;height:12px;background:rgba(76,175,80,0.7);border-radius:2px;"></div>Medium (20-49g)</div>' +
+    '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);"><div style="width:12px;height:12px;background:rgba(76,175,80,1.0);border-radius:2px;"></div>High (50g+)</div>' +
+    '</div>';
+
+  el.innerHTML = html;
+}
+
+function showMatrixTooltip(cell, event) {
+  const tip = document.getElementById('mx-tooltip');
+  const text = cell.getAttribute('data-tip');
+  if (!text) return;
+  tip.textContent = text;
+  tip.style.display = 'block';
+  const x = Math.min(event.clientX + 10, window.innerWidth - 220);
+  const y = Math.min(event.clientY + 10, window.innerHeight - 80);
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+  setTimeout(() => tip.style.display = 'none', 3000);
+}
+  
 // ── INIT ───────────────────────────────────────────────────────────
 
 async function init() {
