@@ -1037,6 +1037,7 @@ let matchupRawData = [];
 // ── UTILITIES ──────────────────────────────────────────────────────
 
 function showScreen(id) {
+  logEvent('screen_view', { screen: id });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
@@ -1241,6 +1242,7 @@ if (adminBtn) adminBtn.style.display = state.pilot.pilot_name === 'thnkr' ? '' :
     populateAnalysisFilters();
     await loadRecentMatches();
     showScreen('screen-home');
+    logEvent('sign_in');
   } catch(e) {
     showToast('Sign in error: ' + e.message, 'error');
     loadArchetypeDefinitions(); // Load in background, don't await
@@ -1999,6 +2001,20 @@ async function loadAdminData() {
       html += '</table></div>';
     }
 
+    async function logEvent(eventType, eventData = {}) {
+  try {
+    if (!state.pilot) return;
+    await db.from('app_events').insert({
+      pilot_name: state.pilot.pilot_name,
+      event_type: eventType,
+      event_data: eventData,
+      created_at: new Date().toISOString()
+    });
+  } catch(e) {
+    // Fail silently — logging should never break the app
+  }
+}
+
     // Top archetypes (last 30d)
     if (topArchetypes.length) {
       html += '<div class="card"><div class="card-title">Most played archetypes (last 30d)</div>';
@@ -2007,6 +2023,28 @@ async function loadAdminData() {
         html += `<tr style="border-bottom:1px solid var(--border);">
           <td style="padding:5px 0;font-weight:600;">${arch}</td>
           <td style="padding:5px 0;text-align:right;color:var(--accent);">${count} games</td>
+        </tr>`;
+      }
+      html += '</table></div>';
+    }
+
+    // Recent app events
+    const eventsRes = await db.from('app_events')
+      .select('pilot_name,event_type,event_data,created_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (eventsRes.data && eventsRes.data.length) {
+      html += '<div class="card"><div class="card-title">Recent activity</div>';
+      html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+      for (const e of eventsRes.data) {
+        const time = e.created_at ? e.created_at.slice(0, 16).replace('T', ' ') : '';
+        const detail = e.event_data ? Object.values(e.event_data).join(' · ') : '';
+        html += `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:5px 0;font-weight:600;min-width:80px;">${e.pilot_name || '—'}</td>
+          <td style="padding:5px 0;color:var(--accent);">${e.event_type}</td>
+          <td style="padding:5px 0;color:var(--text2);font-size:11px;">${detail}</td>
+          <td style="padding:5px 0;text-align:right;color:var(--text2);font-size:11px;white-space:nowrap;">${time}</td>
         </tr>`;
       }
       html += '</table></div>';
@@ -2236,6 +2274,7 @@ async function saveNewDeck() {
   const { error: cardsErr } = await db.from('decklist_cards').insert(rows);
   if (cardsErr) { showToast('Deck saved but cards failed: ' + cardsErr.message, 'error'); return; }
   showToast('Deck saved!');
+  logEvent('deck_imported', { archetype: state.newDeckArchetype });
   await loadAllDecks();
   populateAnalysisFilters();
   showScreen('screen-my-decks');
@@ -2387,6 +2426,7 @@ game_result: gameResultValue, match_result: matchResult,
   document.getElementById('result-icon').textContent = gameResultValue === 'Win' ? '🏆' : '💀';
   document.getElementById('btn-next-game').style.display = state.matchEnd === 'Yes' ? 'none' : 'block';
   showToast('Game submitted!');
+  logEvent('game_submitted', { deck: state.matchDeck.archetype_name, opponent: state.opponent, result: state.gameResult });
   showScreen('screen-after-game');
 }
 
