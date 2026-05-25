@@ -2024,7 +2024,8 @@ async function loadScryfallBulk() {
   if (scryfallCards) return scryfallCards;
   showToast('Loading card database...', 'info');
   try {
-    const indexRes = await fetch('https://api.scryfall.com/bulk-data/default-cards');
+    // Use oracle-cards instead of default-cards — ~10MB instead of ~100MB
+    const indexRes = await fetch('https://api.scryfall.com/bulk-data/oracle-cards');
     const index = await indexRes.json();
     const bulkRes = await fetch(index.download_uri);
     scryfallCards = await bulkRes.json();
