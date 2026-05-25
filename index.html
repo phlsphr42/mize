@@ -227,10 +227,12 @@
   content: ' ▾'; float: right; color: var(--text2);
 }
 .custom-select-dropdown {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+  position: fixed; z-index: 1000;
   background: var(--surface2); border: 1px solid var(--accent);
   border-radius: var(--radius-sm); overflow: hidden;
   box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  width: calc(480px - 64px);
+  max-width: calc(100vw - 64px);
 }
 .custom-select-search {
   width: 100%; padding: 10px 12px; background: var(--surface);
@@ -3458,10 +3460,15 @@ function renderCustomSelectOptions(id, search) {
 
 function toggleCustomSelect(id) {
   const dropdown = document.getElementById(id + '-dropdown');
+  const display = document.getElementById(id + '-display');
   const isOpen = dropdown.style.display !== 'none';
   // Close all open dropdowns first
   document.querySelectorAll('.custom-select-dropdown').forEach(d => d.style.display = 'none');
   if (!isOpen) {
+    // Position the dropdown below the display element
+    const rect = display.getBoundingClientRect();
+    dropdown.style.top = (rect.bottom + 4) + 'px';
+    dropdown.style.left = rect.left + 'px';
     dropdown.style.display = 'block';
     const search = dropdown.querySelector('.custom-select-search');
     if (search) { search.value = ''; renderCustomSelectOptions(id, ''); search.focus(); }
