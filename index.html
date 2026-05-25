@@ -2267,10 +2267,39 @@ async function suggestArchetypes(cards) {
 }
 
 function selectSuggestedArchetype(name) {
-  const input = document.getElementById('deck-archetype-input');
-  if (input) input.value = name;
-  document.querySelectorAll('.archetype-suggestion-row').forEach(r => r.style.background = '');
-  event.currentTarget.style.background = 'var(--surface2)';
+  state.newDeckArchetype = name;
+  document.querySelectorAll('.archetype-suggestion-row').forEach(r => {
+    r.style.background = '';
+    r.style.color = '';
+  });
+  if (event.currentTarget) {
+    event.currentTarget.style.background = 'var(--surface2)';
+    event.currentTarget.style.color = 'var(--accent)';
+  }
+  document.getElementById('new-deck-notes-section').style.display = 'block';
+  document.getElementById('archetype-custom-section').style.display = 'none';
+  document.getElementById('custom-archetype-input').value = '';
+}
+
+
+  async function confirmImport() {
+  if (!state.importedCards || !state.importedCards.length) return;
+
+  state.newDeckCards = state.importedCards.map(c => ({
+    card_name: c.card_name,
+    quantity: c.quantity,
+    main_side: c.main_side,
+    preferred_image_url: c.preferred_image_url
+  }));
+  state.newDeckArchetype = null;
+
+  showScreen('screen-new-deck');
+  renderNewDeckCards();
+
+  if (state.newDeckCards.filter(c => c.main_side === 'Main').length >= 3) {
+    document.getElementById('new-deck-archetype-section').style.display = 'block';
+    await suggestArchetypes(state.newDeckCards);
+  }
 }
 
    async function scanExistingDecks() {
