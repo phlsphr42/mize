@@ -2016,6 +2016,97 @@ async function suggestArchetypesForDeck(cards) {
   return results.sort((a, b) => b.score - a.score);
 }
 
+// ── Scryfall bulk data cache ──
+let scryfallCards = null;
+let scryfallCardMap = null;
+
+async function loadScryfallBulk() {
+  if (scryfallCards) return scryfallCards;
+  showToast('Loading card database...', 'info');
+  // Fetch the bulk data index to get the current download URL
+  const indexRes = await fetch('https://api.scryfall.com/bulk-data/default-cards');
+  const index = await indexRes.json();
+  const bulkRes = await fetch(index.download_uri);
+  scryfallCards = await bulkRes.json();
+  // Build a lookup map by name (lowercase)
+  scryfallCardMap = {};
+  for (const c of scryfallCards) {
+    const key = c.name.toLowerCase();
+    // Keep only the first (most recent) printing per name
+    if (!scryfallCardMap[key]) scryfallCardMap[key] = c;
+  }
+  showToast('Card database loaded', 'success');
+  return scryfallCards;
+}
+
+function scryfallLookup(name) {
+  if (!scryfallCardMap) return null;
+  return scryfallCardMap[name.toLowerCase()] || null;
+}
+
+function scryfallSearch(query, legalModern = true) {
+  if (!scryfallCards) return [];
+  const q = query.toLowerCase();
+  return scryfallCards
+    .filter(c => {
+      if (legalModern && c.legalities?.modern !== 'legal') return false;
+      return c.name.toLowerCase().includes(q);
+    })
+    .slice(0, 10);
+}
+
+function getCardImage(c) {
+  return c.image_uris
+    ? c.image_uris.normal
+    : (c.card_faces?.[0]?.image_uris?.normal || '');
+}
+
+async function searchCards(query) {
+  const el = document.getElementById('card-search-results');
+  if (query.length < 2) { el.innerHTML = ''; return; }
+  try {
+    await loadScryfallBulk();
+    const results = scryfallSearch(query, true);
+    el.innerHTML = results.map(c => {
+      const img = getCardImage(c);
+      const d = JSON.stringify({ card_name: c.name, card_type: c.type_line, mana_cost: c.mana_cost || '', default_image_url: img }).replace(/"/g, '&quot;');
+      return '<div onclick="selectCard(' + d + ')" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">' +
+        c.name + '<span style="color:var(--text2);font-size:12px;margin-left:8px;">' + (c.mana_cost || '') + '</span></div>';
+    }).join('');
+  } catch(e) { el.innerHTML = ''; console.error('searchCards:', e); }
+}
+
+async function loadArtOptions() {
+  const cardName = document.getElementById('art-card-select').value;
+  if (!cardName) { document.getElementById('art-options-wrap').style.display = 'none'; return; }
+  state.artCardName = cardName;
+  state.artSelectedUrl = null;
+  document.getElementById('art-options-wrap').style.display = 'block';
+  document.getElementById('art-loading').style.display = 'block';
+  document.getElementById('art-options').innerHTML = '';
+  try {
+    await loadScryfallBulk();
+    const nameLower = cardName.toLowerCase();
+    // Get all printings of this card
+    const printings = scryfallCards
+      .filter(c => c.name.toLowerCase() === nameLower && getCardImage(c))
+      .map(c => ({ id: c.id, set: c.set_name, collector: c.collector_number, imageUrl: getCardImage(c) }));
+    state.artPrintings = printings;
+    document.getElementById('art-loading').style.display = 'none';
+    const el = document.getElementById('art-options');
+    const currentCard = (state.currentDeck?.cards || []).find(c => c.card_name === cardName);
+    el.innerHTML = printings.map((p, i) =>
+      '<div class="art-option ' + (currentCard && currentCard.preferred_image_url === p.imageUrl ? 'selected' : '') + '" id="art-opt-' + i + '" onclick="selectArt(' + i + ')">' +
+      '<img src="' + p.imageUrl + '" alt="' + p.set + '" loading="lazy">' +
+      '<div style="font-size:10px;color:var(--text2);padding:2px 4px;text-align:center;">' + p.set + '</div></div>'
+    ).join('');
+    if (currentCard?.preferred_image_url) state.artSelectedUrl = currentCard.preferred_image_url;
+  } catch(e) {
+    document.getElementById('art-loading').style.display = 'none';
+    showToast('Error loading printings', 'error');
+  }
+}
+
 async function parseImport() {
   const text = document.getElementById('import-text').value.trim();
   if (!text) { showToast('Please paste a deck list', 'error'); return; }
@@ -2026,38 +2117,52 @@ async function parseImport() {
   document.getElementById('import-missing-section').style.display = 'none';
   document.getElementById('btn-confirm-import').style.display = 'none';
   document.getElementById('import-progress-wrap').style.display = 'block';
-  document.getElementById('import-status-msg').textContent = 'Validating ' + parsed.length + ' cards with Scryfall...';
+  document.getElementById('import-status-msg').textContent = 'Loading card database...';
   state.importedCards = [];
   state.importMissing = [];
+
+  try {
+    await loadScryfallBulk();
+  } catch(e) {
+    showToast('Failed to load card database', 'error');
+    document.getElementById('import-progress-wrap').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('import-status-msg').textContent = 'Validating ' + parsed.length + ' cards...';
   const previewEl = document.getElementById('import-preview-list');
+
   for (let i = 0; i < parsed.length; i++) {
     const p = parsed[i];
     document.getElementById('import-progress-fill').style.width = Math.round((i / parsed.length) * 100) + '%';
     let card = null, imageUrl = '', status = 'ok';
-    try {
-      const path = p.setCode && p.collector
-        ? '/cards/' + p.setCode.toLowerCase() + '/' + p.collector
-        : '/cards/named?exact=' + encodeURIComponent(p.name);
-      let data = null;
-      try {
-        data = await scryfallFetch(path);
-      } catch(e) {
-        await new Promise(r => setTimeout(r, 250));
-        data = await scryfallFetch('/cards/named?fuzzy=' + encodeURIComponent(p.name));
-        status = 'warn';
-      }
-      imageUrl = data.image_uris ? data.image_uris.normal : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.normal : '');
-      card = { card_name: data.name, quantity: p.qty, main_side: p.mainSide, preferred_image_url: imageUrl };
+
+    // Exact match first, then fuzzy (starts-with)
+    let match = scryfallLookup(p.name);
+    if (!match) {
+      // Try starts-with fuzzy
+      const q = p.name.toLowerCase();
+      match = scryfallCards.find(c => c.name.toLowerCase().startsWith(q)) || null;
+      if (match) status = 'warn';
+    }
+
+    if (match) {
+      imageUrl = getCardImage(match);
+      card = { card_name: match.name, quantity: p.qty, main_side: p.mainSide, preferred_image_url: imageUrl };
       state.importedCards.push(card);
-    } catch(e) { status = 'err'; state.importMissing.push(p.name); }
+    } else {
+      status = 'err';
+      state.importMissing.push(p.name);
+    }
+
     const icon = status === 'ok' ? '✓' : status === 'warn' ? '~' : '✗';
     const iconClass = 'import-status-' + (status === 'ok' ? 'ok' : status === 'warn' ? 'warn' : 'err');
     previewEl.innerHTML += '<div class="import-preview-item"><span class="' + iconClass + '">' + icon + '</span>' +
       (imageUrl ? '<img src="' + imageUrl + '" style="width:28px;height:39px;border-radius:3px;object-fit:cover;">' : '') +
       '<span style="flex:1;">' + p.qty + '× ' + (card ? card.card_name : p.name) + '</span>' +
       '<span style="font-size:11px;color:var(--text2);">' + p.mainSide + '</span></div>';
-    await new Promise(r => setTimeout(r, 250));
   }
+
   document.getElementById('import-progress-fill').style.width = '100%';
   setTimeout(() => { document.getElementById('import-progress-wrap').style.display = 'none'; }, 500);
   document.getElementById('import-status-msg').textContent = state.importedCards.length + ' cards validated, ' + state.importMissing.length + ' not found.';
@@ -2067,16 +2172,6 @@ async function parseImport() {
   }
   if (state.importedCards.length > 0) document.getElementById('btn-confirm-import').style.display = 'block';
 }
-function confirmImport() {
-  state.newDeckCards = [...state.importedCards];
-  state.newDeckArchetype = null;
-  document.getElementById('new-deck-archetype-section').style.display = 'none';
-  document.getElementById('new-deck-notes-section').style.display = 'none';
-  showScreen('screen-new-deck');
-  renderNewDeckCards();
-  if (state.newDeckCards.filter(c => c.main_side === 'Main').length >= 3) suggestArchetypes();
-}
-
 // ── NEW DECK ───────────────────────────────────────────────────────
 
 function startNewDeck() {
@@ -2907,26 +3002,8 @@ function nextGame() {
 
 // ── CARD SEARCH ────────────────────────────────────────────────────
 
-async function scryfallFetch(path) {
-  const url = 'https://corsproxy.io/?' + encodeURIComponent('https://api.scryfall.com' + path);
-  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-  if (!res.ok) throw new Error('Scryfall error: ' + res.status);
-  return res.json();
-}
+
   
-async function searchCards(query) {
-  const el = document.getElementById('card-search-results');
-  if (query.length < 2) { el.innerHTML = ''; return; }
-  try {
-    const data = await scryfallFetch('/cards/search?q=' + encodeURIComponent(query) + '+legal%3Amodern&unique=cards&order=name&limit=10');
-    el.innerHTML = (data.data || []).map(c => {
-      const img = c.image_uris ? c.image_uris.normal : (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris ? c.card_faces[0].image_uris.normal : '');
-      const d = JSON.stringify({ card_name: c.name, card_type: c.type_line, mana_cost: c.mana_cost || '', default_image_url: img }).replace(/"/g, '&quot;');
-      return '<div onclick="selectCard(' + d + ')" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">' +
-        c.name + '<span style="color:var(--text2);font-size:12px;margin-left:8px;">' + (c.mana_cost || '') + '</span></div>';
-    }).join('');
-  } catch(e) { el.innerHTML = ''; }
-}
 
 function selectCard(card) {
   document.getElementById('add-card-name').textContent = card.card_name;
