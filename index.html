@@ -699,6 +699,12 @@
       </div>
     </div>
     <div class="row">
+  <div>
+    <label class="label">Opponent</label>
+    <select id="b-opponent"><option value="">All opponents</option></select>
+  </div>
+</div>
+    <div class="row">
       <div>
         <label class="label">Date range</label>
         <select id="b-date-preset" onchange="applyDatePreset('b')">
@@ -754,6 +760,12 @@
         <select id="c-deck"><option value="">All decks</option></select>
       </div>
     </div>
+    <div class="row">
+  <div>
+    <label class="label">Opponent</label>
+    <select id="c-opponent"><option value="">All opponents</option></select>
+  </div>
+</div>
     <div class="row">
       <div>
         <label class="label">Date range</label>
@@ -2897,11 +2909,70 @@ function onShowAnalysis() {
   if (isCacheValid('c')) renderChiResults(state.cache.c.data, true);
 }
 
-function populateAnalysisFilters() {
-  const deckOpts = '<option value="">All decks</option>' +
-    state.allDecks.map(d => '<option value="' + d.archetype_name + '">' + d.archetype_name + '</option>').join('');
-  document.getElementById('b-deck').innerHTML = deckOpts;
-  document.getElementById('c-deck').innerHTML = deckOpts;
+async function populateAnalysisFilters() {
+  console.log('myDecks sample:', state.myDecks);
+  // Keep existing deck list from state for user's own decks
+  const myArchetypes = new Set(
+    (state.myDecks || []).map(d => d.archetype)
+  );
+
+  try {
+    // Get all decks with 5+ games community-wide
+    const { data: deckData } = await db.from('raw_game_log')
+      .select('deck_archetype')
+      .not('deck_archetype', 'is', null);
+
+    const deckCounts = {};
+    (deckData || []).forEach(r => {
+      deckCounts[r.deck_archetype] = (deckCounts[r.deck_archetype] || 0) + 1;
+    });
+    const qualifiedDecks = Object.entries(deckCounts)
+      .filter(([, count]) => count >= 5)
+      .map(([name]) => name)
+      .sort();
+
+    // Get all opponent archetypes with 5+ games
+    const { data: oppData } = await db.from('raw_game_log')
+      .select('opponent_archetype')
+      .not('opponent_archetype', 'is', null);
+
+    const oppCounts = {};
+    (oppData || []).forEach(r => {
+      oppCounts[r.opponent_archetype] = (oppCounts[r.opponent_archetype] || 0) + 1;
+    });
+    const qualifiedOpps = Object.entries(oppCounts)
+      .filter(([, count]) => count >= 5)
+      .map(([name]) => name)
+      .sort();
+
+    // Build deck options — mark community decks with ⊕
+    const deckOpts = '<option value="">All decks</option>' +
+      qualifiedDecks.map(d => {
+        const isOwn = myArchetypes.has(d);
+        return '<option value="' + d + '">' + d + (isOwn ? '' : ' ⊕') + '</option>';
+      }).join('');
+
+    // Build opponent options
+    const oppOpts = '<option value="">All opponents</option>' +
+      qualifiedOpps.map(o => '<option value="' + o + '">' + o + '</option>').join('');
+
+    document.getElementById('b-deck').innerHTML = deckOpts;
+    document.getElementById('c-deck').innerHTML = deckOpts;
+    document.getElementById('b-opponent').innerHTML = oppOpts;
+    document.getElementById('c-opponent').innerHTML = oppOpts;
+
+  } catch(e) {
+    // Fallback to state.allDecks if the query fails
+    const deckOpts = '<option value="">All decks</option>' +
+      (state.allDecks || []).map(d =>
+        '<option value="' + d.archetype_name + '">' + d.archetype_name + '</option>'
+      ).join('');
+    document.getElementById('b-deck').innerHTML = deckOpts;
+    document.getElementById('c-deck').innerHTML = deckOpts;
+    document.getElementById('b-opponent').innerHTML = '<option value="">All opponents</option>';
+    document.getElementById('c-opponent').innerHTML = '<option value="">All opponents</option>';
+    console.error('populateAnalysisFilters:', e);
+  }
 }
 
 function applyDatePreset(panel) {
@@ -2932,38 +3003,32 @@ function getDateRange(panel) {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
-async function fetchSummaryData(scope, filter, deck, panel) {
+async function fetchSummaryData(scope, filter, deck, panel, opponent) {
   let query = db.from('raw_game_log')
     .select('pilot_name,deck_archetype,game_number,pre_post,opponent_archetype,card1,card2,card3,card4,card5,card6,card7,game_result')
     .not('game_result', 'is', null);
-
   if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
   if (deck) query = query.eq('deck_archetype', deck);
-
-if (filter === 'G1') query = query.eq('game_number', 'G1');
-  else if (filter === 'G23') query = query.eq('game_number', 'G23');
-  else if (filter === 'Pre') query = query.eq('pre_post', 'Pre');
+  if (opponent) query = query.eq('opponent_archetype', opponent);
+  if (filter === 'G1')        query = query.eq('game_number', 'G1');
+  else if (filter === 'G23')  query = query.eq('game_number', 'G23');
+  else if (filter === 'Pre')  query = query.eq('pre_post', 'Pre');
   else if (filter === 'Post') query = query.eq('pre_post', 'Post');
-  else if (filter === 'Pre_G1') query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
+  else if (filter === 'Pre_G1')   query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
   else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
-
   if (panel) {
     const dateRange = getDateRange(panel);
     if (dateRange.from) query = query.gte('timestamp', dateRange.from);
-    if (dateRange.to) query = query.lte('timestamp', dateRange.to);
+    if (dateRange.to)   query = query.lte('timestamp', dateRange.to);
   }
-
   const { data, error } = await query.limit(50000);
   if (error) throw error;
   const games = data || [];
-
   const cardCounts = {};
   const allCards = new Set();
-
   for (const g of games) {
     const isWin = g.game_result === 'Win';
-    const hand = [g.card1,g.card2,g.card3,g.card4,g.card5,g.card6,g.card7]
-      .filter(c => c && c.trim());
+    const hand = [g.card1,g.card2,g.card3,g.card4,g.card5,g.card6,g.card7].filter(c => c && c.trim());
     const counts = {};
     for (const card of hand) {
       counts[card] = (counts[card] || 0) + 1;
@@ -2976,7 +3041,6 @@ if (filter === 'G1') query = query.eq('game_number', 'G1');
       cardCounts[card][count].total += 1;
     }
   }
-
   for (const g of games) {
     const isWin = g.game_result === 'Win';
     const hand = new Set([g.card1,g.card2,g.card3,g.card4,g.card5,g.card6,g.card7].filter(c => c && c.trim()));
@@ -2989,38 +3053,31 @@ if (filter === 'G1') query = query.eq('game_number', 'G1');
       }
     }
   }
-
   const rows = [];
   for (const [card, copies] of Object.entries(cardCounts)) {
     for (const [copyCount, stats] of Object.entries(copies)) {
-      rows.push({
-        card_name: card,
-        copy_count: parseInt(copyCount),
-        wins: stats.wins,
-        total: stats.total,
-        win_rate: stats.total > 0 ? stats.wins / stats.total : 0
-      });
+      rows.push({ card_name: card, copy_count: parseInt(copyCount), wins: stats.wins, total: stats.total, win_rate: stats.total > 0 ? stats.wins / stats.total : 0 });
     }
   }
   return rows;
 }
-
 async function calcBayesian() {
   if (!checkThrottle('b')) return;
-  const filter = document.getElementById('b-filter').value;
-  const deck = document.getElementById('b-deck').value;
-  const scope = state.scopeB;
+  const filter   = document.getElementById('b-filter').value;
+  const deck     = document.getElementById('b-deck').value;
+  const opponent = document.getElementById('b-opponent').value;
+  const scope    = state.scopeB;
   setProgress('b', 10);
   document.getElementById('btn-calc-b').disabled = true;
   try {
     let myData = [], allData = [];
-    if (scope === 'mine' || scope === 'compare') { setProgress('b', 20); myData = await fetchSummaryData('mine', filter, deck, 'b'); }
-    if (scope === 'all' || scope === 'compare') { setProgress('b', 50); allData = await fetchSummaryData('all', filter, deck); }
+    if (scope === 'mine'    || scope === 'compare') { setProgress('b', 20); myData  = await fetchSummaryData('mine', filter, deck, 'b', opponent); }
+    if (scope === 'all'     || scope === 'compare') { setProgress('b', 50); allData = await fetchSummaryData('all',  filter, deck, 'b', opponent); }
     setProgress('b', 80);
     const M = 20;
-    const myScores = scope !== 'all' ? computeBayesianScores(myData, M) : [];
+    const myScores  = scope !== 'all'  ? computeBayesianScores(myData,  M) : [];
     const allScores = scope !== 'mine' ? computeBayesianScores(allData, M) : [];
-    const result = { scope, myScores, allScores, filter, deck };
+    const result = { scope, myScores, allScores, filter, deck, opponent };
     state.cache.b = { data: result, timestamp: Date.now() };
     state.lastCalc.b = Date.now();
     setProgress('b', 100);
@@ -3029,27 +3086,60 @@ async function calcBayesian() {
   finally { setProgress('b', 0); document.getElementById('btn-calc-b').disabled = false; }
 }
 
+async function calcChiSquared() {
+  if (!checkThrottle('c')) return;
+  const filter   = document.getElementById('c-filter').value;
+  const deck     = document.getElementById('c-deck').value;
+  const opponent = document.getElementById('c-opponent').value;
+  const scope    = state.scopeC;
+  setProgress('c', 10);
+  document.getElementById('btn-calc-c').disabled = true;
+  try {
+    let myData = [], allData = [];
+    if (scope === 'mine'    || scope === 'compare') { setProgress('c', 20); myData  = await fetchSummaryData('mine', filter, deck, 'c', opponent); }
+    if (scope === 'all'     || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all',  filter, deck, 'c', opponent); }
+    setProgress('c', 80);
+    const myResults  = scope !== 'all'  ? computeChiSquared(myData)  : [];
+    const allResults = scope !== 'mine' ? computeChiSquared(allData) : [];
+    const result = { scope, myResults, allResults, filter, deck, opponent };
+    state.cache.c = { data: result, timestamp: Date.now() };
+    state.lastCalc.c = Date.now();
+    setProgress('c', 100);
+    renderChiResults(result, false);
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  finally { setProgress('c', 0); document.getElementById('btn-calc-c').disabled = false; }
+}
+
 function computeBayesianScores(rows, M) {
   const byCard = {};
-  rows.forEach(r => { if (!byCard[r.card_name]) byCard[r.card_name] = {}; byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total }; });
-  const totalWins = rows.filter(r => r.copy_count === 0).reduce((s, r) => s + r.wins, 0);
+  rows.forEach(r => {
+    if (!byCard[r.card_name]) byCard[r.card_name] = {};
+    byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total };
+  });
+  const totalWins  = rows.filter(r => r.copy_count === 0).reduce((s, r) => s + r.wins,  0);
   const totalGames = rows.filter(r => r.copy_count === 0).reduce((s, r) => s + r.total, 0);
   const wBar = totalGames > 0 ? totalWins / totalGames : 0.5;
-  return Object.entries(byCard).map(function(entry) {
-    const card = entry[0], copies = entry[1];
+
+  return Object.entries(byCard).map(([card, copies]) => {
     const base = copies[0] || { wins: 0, total: 0 };
     if (base.total === 0) return null;
     const shrunkBase = (base.wins + M * wBar) / (base.total + M);
+    const wrBase = base.total > 0 ? base.wins / base.total : 0;
     let wSum = 0, wTot = 0, sampleSize = 0;
+    const copyRows = [];
+
     for (let k = 1; k <= 4; k++) {
       const cd = copies[k];
       if (!cd || cd.total === 0) continue;
       const shrunk = (cd.wins + M * wBar) / (cd.total + M);
       const w = cd.total * k;
-      wSum += (shrunk - shrunkBase) * w; wTot += w; sampleSize += cd.total;
+      wSum += (shrunk - shrunkBase) * w;
+      wTot += w;
+      sampleSize += cd.total;
+      copyRows.push({ k, total: cd.total, wrWith: cd.wins / cd.total, delta: (cd.wins / cd.total) - wrBase });
     }
     if (wTot === 0) return null;
-    return { card: card, score: wSum / wTot, sampleSize: sampleSize };
+    return { card, score: wSum / wTot, sampleSize, copyRows };
   }).filter(Boolean).sort((a, b) => b.score - a.score);
 }
 
@@ -3057,47 +3147,60 @@ function renderBayesianResults(result, fromCache) {
   setCacheInfo('b', fromCache);
   const el = document.getElementById('b-results');
   if (!result) { el.innerHTML = ''; return; }
-  const renderList = (scores, title) => {
-    if (!scores.length) return '<div style="color:var(--text2);font-size:14px;">No data available. Run the Colab calculation notebook first.</div>';
-    return (title ? '<div class="card-title" style="margin-bottom:8px;">' + title + '</div>' : '') +
-      scores.slice(0, 50).map(s => {
-        const cls = s.score > 0.01 ? 'score-pos' : s.score < -0.01 ? 'score-neg' : 'score-neu';
-        const sign = s.score > 0 ? '+' : '';
-        return '<div class="result-row"><div class="result-row-name">' + s.card + '</div>' +
-          '<div style="font-size:11px;color:var(--text2);">' + s.sampleSize + 'g</div>' +
-          '<span class="score-badge ' + cls + '">' + sign + s.score.toFixed(4) + '</span></div>';
-      }).join('');
-  };
-  if (result.scope === 'compare') {
-    el.innerHTML = '<div class="compare-grid"><div><div class="compare-col-header">My data</div>' + renderList(result.myScores, '') + '</div>' +
-      '<div><div class="compare-col-header">All data</div>' + renderList(result.allScores, '') + '</div></div>';
-  } else {
-    const scores = result.scope === 'mine' ? result.myScores : result.allScores;
-    el.innerHTML = '<div class="card" style="padding:12px;">' + renderList(scores, '') + '</div>';
-  }
-}
 
-async function calcChiSquared() {
-  if (!checkThrottle('c')) return;
-  const filter = document.getElementById('c-filter').value;
-  const deck = document.getElementById('c-deck').value;
-  const scope = state.scopeC;
-  setProgress('c', 10);
-  document.getElementById('btn-calc-c').disabled = true;
-  try {
-    let myData = [], allData = [];
-    if (scope === 'mine' || scope === 'compare') { setProgress('c', 20); myData = await fetchSummaryData('mine', filter, deck, 'c'); }
-    if (scope === 'all' || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all', filter, deck, 'c'); }
-    setProgress('c', 80);
-    const myResults = scope !== 'all' ? computeChiSquared(myData) : [];
-    const allResults = scope !== 'mine' ? computeChiSquared(allData) : [];
-    const result = { scope, myResults, allResults, filter, deck };
-    state.cache.c = { data: result, timestamp: Date.now() };
-    state.lastCalc.c = Date.now();
-    setProgress('c', 100);
-    renderChiResults(result, false);
-  } catch(e) { showToast('Error: ' + e.message, 'error'); }
-  finally { setProgress('c', 0); document.getElementById('btn-calc-c').disabled = false; }
+  const renderList = (scores, title, isCommunity) => {
+    if (!scores.length) return '<div style="color:var(--text2);font-size:14px;">No data available.</div>';
+    let html = '';
+    if (title) html += '<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">' + title + '</div>';
+    if (isCommunity) html += '<div style="font-size:11px;color:var(--warning);margin-bottom:8px;">⚠ Community data — all pilots</div>';
+
+    for (const s of scores.slice(0, 50)) {
+      const cls  = s.score > 0.01 ? 'score-pos' : s.score < -0.01 ? 'score-neg' : 'score-neu';
+      const sign = s.score > 0 ? '+' : '';
+
+      // Build copy-count breakdown from raw scores data if available
+      const copyRows = s.copyRows || [];
+
+      html += '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;">';
+      // Header
+      html += '<div style="background:var(--surface2);padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div style="font-size:13px;font-weight:700;">' + s.card + '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span style="font-size:11px;color:var(--text2);">' + s.sampleSize + 'g</span>' +
+          '<span class="score-badge ' + cls + '">' + sign + s.score.toFixed(4) + '</span>' +
+        '</div>' +
+      '</div>';
+
+      // Copy breakdown rows
+      for (const cr of copyRows) {
+        const dirClass = cr.delta >= 0 ? 'dir-pos' : 'dir-neg';
+        const dirLabel = cr.delta >= 0 ? '▲ +' : '▼ −';
+        html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<div style="font-size:11px;color:var(--text2);min-width:24px;">' + cr.k + '×</div>' +
+          '<div style="font-size:11px;color:var(--text2);min-width:50px;">' + cr.total + 'g with</div>' +
+          '<div style="font-size:11px;color:var(--text2);">WR ' + (cr.wrWith * 100).toFixed(1) + '%</div>' +
+          '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(cr.delta * 100).toFixed(1) + '%</span></div>' +
+        '</div>';
+      }
+      html += '</div>';
+    }
+    html += '<div style="font-size:11px;color:var(--text2);margin-top:8px;">Score = Bayesian-shrunk win rate delta vs baseline (no card in hand). Higher = better with card.</div>';
+    return html;
+  };
+
+  const deckIsOwnedByUser = result.deck && state.myDecks && state.myDecks.some(d => d.archetype === result.deck);
+  const communityAll  = !deckIsOwnedByUser;
+
+  if (result.scope === 'compare') {
+    el.innerHTML = '<div class="compare-grid">' +
+      '<div>' + renderList(result.myScores,  'My data',   false) + '</div>' +
+      '<div>' + renderList(result.allScores, 'All data',  true)  + '</div>' +
+    '</div>';
+  } else {
+    const scores    = result.scope === 'mine' ? result.myScores : result.allScores;
+    const isCommunity = result.scope === 'all' || communityAll;
+    el.innerHTML = '<div class="card" style="padding:12px;">' + renderList(scores, '', isCommunity) + '</div>';
+  }
 }
 
 function computeChiSquared(rows) {
