@@ -1050,6 +1050,246 @@ let matchupRawData = [];
   }
 }
 
+  async function loadAdminScreen() {
+  // Show progress
+  document.getElementById('progress-admin').style.display = 'block';
+  document.getElementById('progress-admin-fill').style.width = '10%';
+
+  try {
+    const now = new Date();
+    const dayAgo   = new Date(now - 86400000).toISOString();
+    const weekAgo  = new Date(now - 7*86400000).toISOString();
+    const monthAgo = new Date(now - 30*86400000).toISOString();
+
+    // ── Fetch all analytics events (last 90 days for performance) ──
+    const ninetyAgo = new Date(now - 90*86400000).toISOString();
+    const { data: events, error: evErr } = await supabase
+      .from('analytics_events')
+      .select('pilot_name, event_type, event_data, created_at')
+      .gte('created_at', ninetyAgo)
+      .order('created_at', { ascending: false });
+
+    document.getElementById('progress-admin-fill').style.width = '40%';
+
+    if (evErr) throw evErr;
+
+    // ── Fetch profiles for total user count ──
+    const { data: profiles, error: profErr } = await supabase
+      .from('profiles')
+      .select('pilot_name, created_at');
+
+    document.getElementById('progress-admin-fill').style.width = '70%';
+
+    if (profErr) throw profErr;
+
+    // ── Fetch total games ──
+    const { count: totalGames } = await supabase
+      .from('games')
+      .select('id', { count: 'exact', head: true });
+
+    document.getElementById('progress-admin-fill').style.width = '90%';
+
+    // ── Derived metrics ──
+    const allPilots = new Set(events.map(e => e.pilot_name).filter(Boolean));
+    const dauPilots = new Set(events.filter(e => e.created_at >= dayAgo).map(e => e.pilot_name).filter(Boolean));
+    const wauPilots = new Set(events.filter(e => e.created_at >= weekAgo).map(e => e.pilot_name).filter(Boolean));
+    const mauPilots = new Set(events.filter(e => e.created_at >= monthAgo).map(e => e.pilot_name).filter(Boolean));
+
+    // Screen view counts
+    const screenViews = {};
+    events.filter(e => e.event_type === 'screen_view').forEach(e => {
+      const screen = e.event_data?.screen || 'unknown';
+      screenViews[screen] = (screenViews[screen] || 0) + 1;
+    });
+    const sortedScreens = Object.entries(screenViews).sort((a,b) => b[1]-a[1]);
+
+    // Event type breakdown
+    const eventTypes = {};
+    events.forEach(e => {
+      eventTypes[e.event_type] = (eventTypes[e.event_type] || 0) + 1;
+    });
+    const sortedEvents = Object.entries(eventTypes).sort((a,b) => b[1]-a[1]);
+
+    // Per-pilot stats
+    const pilotStats = {};
+    events.forEach(e => {
+      const p = e.pilot_name || 'anonymous';
+      if (!pilotStats[p]) pilotStats[p] = { screens: 0, signIns: 0, games: 0, lastSeen: e.created_at };
+      if (e.event_type === 'screen_view') pilotStats[p].screens++;
+      if (e.event_type === 'sign_in') pilotStats[p].signIns++;
+      if (new Date(e.created_at) > new Date(pilotStats[p].lastSeen)) pilotStats[p].lastSeen = e.created_at;
+    });
+
+    // Add game counts from games table per pilot (approximate from events)
+    const gameEvents = events.filter(e => e.event_type === 'game_submitted');
+    gameEvents.forEach(e => {
+      const p = e.pilot_name || 'anonymous';
+      if (pilotStats[p]) pilotStats[p].games++;
+    });
+
+    const sortedPilots = Object.entries(pilotStats).sort((a,b) =>
+      new Date(b[1].lastSeen) - new Date(a[1].lastSeen)
+    );
+
+    // New users per day (last 14 days)
+    const newUsersByDay = {};
+    profiles.forEach(p => {
+      const day = p.created_at?.slice(0,10);
+      if (day) newUsersByDay[day] = (newUsersByDay[day] || 0) + 1;
+    });
+
+    document.getElementById('progress-admin-fill').style.width = '100%';
+    setTimeout(() => document.getElementById('progress-admin').style.display = 'none', 400);
+
+    // ── Render: Overview ──
+    document.getElementById('admin-panel-overview').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        ${statCard('Total Users', profiles.length, '👤')}
+        ${statCard('Total Games', totalGames ?? '—', '🃏')}
+        ${statCard('DAU', dauPilots.size, '📅', 'Active today')}
+        ${statCard('WAU', wauPilots.size, '📆', 'Active 7d')}
+        ${statCard('MAU', mauPilots.size, '📊', 'Active 30d')}
+        ${statCard('Events (90d)', events.length, '⚡')}
+      </div>
+      <div class="card">
+        <div class="card-title">New registrations (last 14 days)</div>
+        ${sparkBar(newUsersByDay, 14)}
+      </div>
+      <div class="card">
+        <div class="card-title">Stickiness (DAU/MAU)</div>
+        <div style="font-size:28px;font-weight:700;color:var(--accent);text-align:center;padding:8px 0;">
+          ${mauPilots.size > 0 ? Math.round(dauPilots.size/mauPilots.size*100) : 0}%
+        </div>
+        <div style="font-size:12px;color:var(--text2);text-align:center;">Higher = more habitual daily use</div>
+      </div>
+    `;
+
+    // ── Render: Users ──
+    document.getElementById('admin-panel-users').innerHTML = `
+      <div class="card">
+        <div class="card-title">All pilots — last active first</div>
+        <table class="sortable">
+          <thead><tr>
+            <th>Pilot</th><th>Last seen</th><th>Sign-ins</th><th>Screens</th><th>Games</th>
+          </tr></thead>
+          <tbody>
+            ${sortedPilots.map(([name, s]) => `
+              <tr>
+                <td style="color:var(--accent);font-weight:600;">${name}</td>
+                <td style="color:var(--text2);">${relTime(s.lastSeen)}</td>
+                <td style="text-align:center;">${s.signIns}</td>
+                <td style="text-align:center;">${s.screens}</td>
+                <td style="text-align:center;">${s.games}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    // ── Render: Features ──
+    const maxScreens = sortedScreens[0]?.[1] || 1;
+    document.getElementById('admin-panel-features').innerHTML = `
+      <div class="card">
+        <div class="card-title">Screen views (90d)</div>
+        ${sortedScreens.map(([screen, count]) => `
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px;">
+              <span style="color:var(--text);">${screen.replace('screen-','')}</span>
+              <span style="color:var(--accent);font-weight:600;">${count}</span>
+            </div>
+            <div style="background:var(--surface2);border-radius:3px;height:6px;">
+              <div style="width:${Math.round(count/maxScreens*100)}%;height:6px;background:var(--accent);border-radius:3px;"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">Event type breakdown (90d)</div>
+        ${sortedEvents.map(([type, count]) => `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--surface2);font-size:13px;">
+            <span style="color:var(--accent);">${type}</span>
+            <span>${count}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    // ── Render: Activity (recent 100 events) ──
+    document.getElementById('admin-panel-activity').innerHTML = `
+      <div class="card">
+        <div class="card-title">Recent activity</div>
+        ${events.slice(0,100).map(e => `
+          <div style="display:grid;grid-template-columns:80px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid var(--surface2);font-size:12px;align-items:center;">
+            <span style="color:var(--accent);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.pilot_name || '—'}</span>
+            <span>
+              <span style="color:var(--accent2);">${e.event_type}</span>
+              ${e.event_data?.screen ? `<span style="color:var(--text2);"> ${e.event_data.screen}</span>` : ''}
+            </span>
+            <span style="color:var(--text2);white-space:nowrap;">${shortTime(e.created_at)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+  } catch(err) {
+    document.getElementById('progress-admin').style.display = 'none';
+    ['overview','users','features','activity'].forEach(tab => {
+      document.getElementById(`admin-panel-${tab}`).innerHTML =
+        `<div class="card" style="color:var(--danger);">Error: ${err.message}</div>`;
+    });
+  }
+}
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('#admin-tabs .analysis-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('[id^="admin-panel-"]').forEach(p => p.classList.remove('active'));
+  document.getElementById(`admin-tab-${tab}`).classList.add('active');
+  document.getElementById(`admin-panel-${tab}`).classList.add('active');
+}
+
+function statCard(label, value, icon, sub='') {
+  return `<div class="card" style="text-align:center;padding:14px 8px;margin-bottom:0;">
+    <div style="font-size:22px;margin-bottom:2px;">${icon}</div>
+    <div style="font-size:24px;font-weight:700;color:var(--accent);">${value}</div>
+    <div style="font-size:11px;color:var(--text2);margin-top:2px;">${label}</div>
+    ${sub ? `<div style="font-size:10px;color:var(--text2);">${sub}</div>` : ''}
+  </div>`;
+}
+
+function sparkBar(byDay, days) {
+  const today = new Date();
+  const entries = [];
+  for (let i = days-1; i >= 0; i--) {
+    const d = new Date(today - i*86400000).toISOString().slice(0,10);
+    entries.push({ d, v: byDay[d] || 0 });
+  }
+  const max = Math.max(...entries.map(e=>e.v), 1);
+  return `<div style="display:flex;align-items:flex-end;gap:3px;height:48px;padding-top:4px;">
+    ${entries.map(e => `
+      <div title="${e.d}: ${e.v}" style="flex:1;background:${e.v>0?'var(--accent)':'var(--surface2)'};
+        border-radius:2px 2px 0 0;height:${Math.max(e.v/max*100,e.v>0?8:2)}%;min-height:2px;"></div>
+    `).join('')}
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-top:4px;">
+    <span>${entries[0].d.slice(5)}</span><span>today</span>
+  </div>`;
+}
+
+function relTime(iso) {
+  const diff = Date.now() - new Date(iso);
+  const m = Math.floor(diff/60000);
+  if (m < 2) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m/60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
+}
+
+function shortTime(iso) {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})} ${d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`;
+}
 
 function showScreen(id) {
   logEvent('screen_view', { screen: id });
@@ -1906,16 +2146,15 @@ function selectSuggestedArchetype(name) {
 
 async function loadAdminData() {
   if (state.pilot.pilot_name !== 'thnkr') return;
-  const el = document.getElementById('admin-results');
-  el.innerHTML = '<div style="color:var(--text2);text-align:center;padding:24px;">Loading...</div>';
-  setProgress('admin', 20);
+  setProgress('admin', 10);
 
   try {
     const now = new Date();
-    const day7 = new Date(now - 7 * 86400000).toISOString();
+    const day1  = new Date(now - 86400000).toISOString();
+    const day7  = new Date(now - 7  * 86400000).toISOString();
     const day30 = new Date(now - 30 * 86400000).toISOString();
+    const day90 = new Date(now - 90 * 86400000).toISOString();
 
-    // Fetch all data in parallel
     const [
       pilotsRes,
       totalGamesRes,
@@ -1924,7 +2163,8 @@ async function loadAdminData() {
       recentPilotsRes,
       topPilotsRes,
       topArchRes,
-      dailyRes
+      dailyRes,
+      eventsRes
     ] = await Promise.all([
       db.from('pilots').select('pilot_name,created_at', { count: 'exact' }),
       db.from('raw_game_log').select('id', { count: 'exact', head: true }),
@@ -1933,147 +2173,285 @@ async function loadAdminData() {
       db.from('pilots').select('pilot_name,created_at').order('created_at', { ascending: false }).limit(10),
       db.from('raw_game_log').select('pilot_name').gte('timestamp', day30),
       db.from('raw_game_log').select('deck_archetype').gte('timestamp', day30).not('deck_archetype', 'is', null),
-      db.from('raw_game_log').select('timestamp').gte('timestamp', day30).not('migration_flag', 'eq', 'MIGRATED')
+      db.from('raw_game_log').select('timestamp').gte('timestamp', day30).not('migration_flag', 'eq', 'MIGRATED'),
+      db.from('app_events').select('pilot_name,event_type,event_data,created_at')
+        .gte('created_at', day90).order('created_at', { ascending: false })
     ]);
 
-    setProgress('admin', 80);
+    setProgress('admin', 70);
 
-    // Process top pilots
+    // ── Game stats ──
     const pilotCounts = {};
     for (const r of topPilotsRes.data || []) {
       pilotCounts[r.pilot_name] = (pilotCounts[r.pilot_name] || 0) + 1;
     }
-    const topPilots = Object.entries(pilotCounts)
-      .sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const topPilots = Object.entries(pilotCounts).sort((a,b) => b[1]-a[1]).slice(0,10);
 
-    // Process top archetypes
     const archCounts = {};
     for (const r of topArchRes.data || []) {
       archCounts[r.deck_archetype] = (archCounts[r.deck_archetype] || 0) + 1;
     }
-    const topArchetypes = Object.entries(archCounts)
-      .sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const topArchetypes = Object.entries(archCounts).sort((a,b) => b[1]-a[1]).slice(0,10);
 
-    // Process daily games (last 30 days, non-migrated only)
     const dailyCounts = {};
     for (const r of dailyRes.data || []) {
-      const day = r.timestamp.slice(0, 10);
-      dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+      const d = r.timestamp.slice(0,10);
+      dailyCounts[d] = (dailyCounts[d] || 0) + 1;
     }
-    const dailyEntries = Object.entries(dailyCounts).sort((a, b) => a[0].localeCompare(b[0]));
+    const dailyEntries = Object.entries(dailyCounts).sort((a,b) => a[0].localeCompare(b[0]));
     const maxDaily = Math.max(...dailyEntries.map(e => e[1]), 1);
 
+    // ── Event / user stats ──
+    const events = eventsRes.data || [];
+    const dauSet = new Set(events.filter(e => e.created_at >= day1).map(e => e.pilot_name).filter(Boolean));
+    const wauSet = new Set(events.filter(e => e.created_at >= day7).map(e => e.pilot_name).filter(Boolean));
+    const mauSet = new Set(events.filter(e => e.created_at >= day30).map(e => e.pilot_name).filter(Boolean));
+
+    const screenViews = {};
+    events.filter(e => e.event_type === 'screen_view').forEach(e => {
+      const s = (e.event_data?.screen || 'unknown').replace('screen-','');
+      screenViews[s] = (screenViews[s] || 0) + 1;
+    });
+    const sortedScreens = Object.entries(screenViews).sort((a,b) => b[1]-a[1]);
+    const maxScreen = sortedScreens[0]?.[1] || 1;
+
+    const eventTypeCounts = {};
+    events.forEach(e => { eventTypeCounts[e.event_type] = (eventTypeCounts[e.event_type] || 0) + 1; });
+    const sortedEventTypes = Object.entries(eventTypeCounts).sort((a,b) => b[1]-a[1]);
+
+    const pilotStats = {};
+    events.forEach(e => {
+      const p = e.pilot_name || '—';
+      if (!pilotStats[p]) pilotStats[p] = { screens: 0, signIns: 0, lastSeen: e.created_at };
+      if (e.event_type === 'screen_view') pilotStats[p].screens++;
+      if (e.event_type === 'sign_in')     pilotStats[p].signIns++;
+      if (e.created_at > pilotStats[p].lastSeen) pilotStats[p].lastSeen = e.created_at;
+    });
+    const sortedPilotStats = Object.entries(pilotStats).sort((a,b) => b[1].lastSeen.localeCompare(a[1].lastSeen));
+
+    const newUsersByDay = {};
+    (pilotsRes.data || []).forEach(p => {
+      const d = p.created_at?.slice(0,10);
+      if (d) newUsersByDay[d] = (newUsersByDay[d] || 0) + 1;
+    });
+
     setProgress('admin', 100);
+    setTimeout(() => setProgress('admin', 0), 400);
 
-    // Render
-    let html = '';
+    // ── Helper: relative time ──
+    function relTime(iso) {
+      const m = Math.floor((Date.now() - new Date(iso)) / 60000);
+      if (m < 2)   return 'just now';
+      if (m < 60)  return m + 'm ago';
+      const h = Math.floor(m/60);
+      if (h < 24)  return h + 'h ago';
+      return Math.floor(h/24) + 'd ago';
+    }
 
-    // Stat cards
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">';
-    const stats = [
-      { label: 'Total pilots', value: pilotsRes.count || 0 },
-      { label: 'Total games', value: (totalGamesRes.count || 0).toLocaleString() },
-      { label: 'Games (7d)', value: games7Res.count || 0 },
-      { label: 'Games (30d)', value: games30Res.count || 0 },
-    ];
-    for (const s of stats) {
-      html += `<div class="card" style="text-align:center;padding:12px;">
-        <div style="font-size:24px;font-weight:700;color:var(--accent);">${s.value}</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:2px;">${s.label}</div>
+    // ── Helper: spark bar for last N days ──
+    function sparkBar(byDay, days) {
+      const entries = [];
+      for (let i = days-1; i >= 0; i--) {
+        const d = new Date(now - i*86400000).toISOString().slice(0,10);
+        entries.push([d, byDay[d] || 0]);
+      }
+      const mx = Math.max(...entries.map(e=>e[1]), 1);
+      return `<div style="display:flex;align-items:flex-end;gap:2px;height:52px;">
+        ${entries.map(([d,v]) => `<div title="${d}: ${v}"
+          style="flex:1;background:${v>0?'var(--accent)':'var(--surface2)'};border-radius:2px 2px 0 0;
+          height:${Math.max(v/mx*100, v>0?6:2)}%;min-height:2px;opacity:0.85;"></div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-top:3px;">
+        <span>${entries[0][0].slice(5)}</span><span>today</span>
       </div>`;
     }
-    html += '</div>';
 
-    // Daily games chart (last 30 days, live games only)
-    if (dailyEntries.length) {
-      html += '<div class="card"><div class="card-title">Games per day (last 30d, live only)</div>';
-      html += '<div style="display:flex;align-items:flex-end;gap:2px;height:60px;margin-top:8px;">';
-      for (const [day, count] of dailyEntries) {
-        const pct = Math.round((count / maxDaily) * 100);
-        const shortDay = day.slice(5);
-        html += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;" title="${day}: ${count} games">
-          <div style="width:100%;background:var(--accent);border-radius:2px 2px 0 0;height:${pct}%;min-height:2px;opacity:0.8;"></div>
-        </div>`;
-      }
-      html += '</div>';
-      html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-top:2px;">';
-      if (dailyEntries.length) {
-        html += `<span>${dailyEntries[0][0].slice(5)}</span><span>${dailyEntries[dailyEntries.length-1][0].slice(5)}</span>`;
-      }
-      html += '</div></div>';
-    }
+    // ══════════════════════════════════════════
+    // BUILD TABS
+    // ══════════════════════════════════════════
+    const container = document.getElementById('admin-results');
+    container.innerHTML = `
+      <div class="analysis-tabs" id="admin-tabs" style="margin-bottom:12px;">
+        <div class="analysis-tab active"  onclick="adminTab('overview')"  id="atab-overview">Overview</div>
+        <div class="analysis-tab"         onclick="adminTab('users')"     id="atab-users">Users</div>
+        <div class="analysis-tab"         onclick="adminTab('features')"  id="atab-features">Features</div>
+        <div class="analysis-tab"         onclick="adminTab('activity')"  id="atab-activity">Activity</div>
+      </div>
+      <div id="apanel-overview"></div>
+      <div id="apanel-users"    style="display:none;"></div>
+      <div id="apanel-features" style="display:none;"></div>
+      <div id="apanel-activity" style="display:none;"></div>
+    `;
 
-    // Top pilots (last 30d)
-    if (topPilots.length) {
-      html += '<div class="card"><div class="card-title">Most active pilots (last 30d)</div>';
-      html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-      for (const [name, count] of topPilots) {
-        html += `<tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:5px 0;font-weight:600;">${name}</td>
-          <td style="padding:5px 0;text-align:right;color:var(--accent);">${count} games</td>
-        </tr>`;
-      }
-      html += '</table></div>';
-    }
+    // ── OVERVIEW ──
+    document.getElementById('apanel-overview').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${pilotsRes.count || 0}</div>
+          <div style="font-size:11px;color:var(--text2);">Total pilots</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${(totalGamesRes.count||0).toLocaleString()}</div>
+          <div style="font-size:11px;color:var(--text2);">Total games</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${dauSet.size}</div>
+          <div style="font-size:11px;color:var(--text2);">DAU (today)</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${wauSet.size}</div>
+          <div style="font-size:11px;color:var(--text2);">WAU (7d)</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${mauSet.size}</div>
+          <div style="font-size:11px;color:var(--text2);">MAU (30d)</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${mauSet.size > 0 ? Math.round(dauSet.size/mauSet.size*100) : 0}%</div>
+          <div style="font-size:11px;color:var(--text2);">DAU/MAU</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${games7Res.count || 0}</div>
+          <div style="font-size:11px;color:var(--text2);">Games (7d)</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${games30Res.count || 0}</div>
+          <div style="font-size:11px;color:var(--text2);">Games (30d)</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">New pilots (last 14 days)</div>
+        ${sparkBar(newUsersByDay, 14)}
+      </div>
+      <div class="card">
+        <div class="card-title">Games per day (last 30d, live only)</div>
+        ${dailyEntries.length ? `
+          <div style="display:flex;align-items:flex-end;gap:2px;height:60px;margin-top:8px;">
+            ${dailyEntries.map(([day,count]) => `
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;" title="${day}: ${count}">
+                <div style="width:100%;background:var(--accent);border-radius:2px 2px 0 0;
+                  height:${Math.round(count/maxDaily*100)}%;min-height:2px;opacity:0.8;"></div>
+              </div>`).join('')}
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-top:2px;">
+            <span>${dailyEntries[0][0].slice(5)}</span>
+            <span>${dailyEntries[dailyEntries.length-1][0].slice(5)}</span>
+          </div>` : '<div style="color:var(--text2);font-size:13px;">No data</div>'}
+      </div>
+    `;
 
-    // Top archetypes (last 30d)
-    if (topArchetypes.length) {
-      html += '<div class="card"><div class="card-title">Most played archetypes (last 30d)</div>';
-      html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-      for (const [arch, count] of topArchetypes) {
-        html += `<tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:5px 0;font-weight:600;">${arch}</td>
-          <td style="padding:5px 0;text-align:right;color:var(--accent);">${count} games</td>
-        </tr>`;
-      }
-      html += '</table></div>';
-    }
+    // ── USERS ──
+    document.getElementById('apanel-users').innerHTML = `
+      <div class="card">
+        <div class="card-title">Most active pilots (last 30d)</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+          ${topPilots.map(([name,count]) => `
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:5px 0;font-weight:600;">${name}</td>
+              <td style="padding:5px 0;text-align:right;color:var(--accent);">${count} games</td>
+            </tr>`).join('')}
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Pilot sessions (90d) — last active first</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+          <thead><tr>
+            <th style="padding:4px 0;color:var(--text2);font-weight:600;">Pilot</th>
+            <th style="padding:4px 0;color:var(--text2);font-weight:600;text-align:center;">Sign-ins</th>
+            <th style="padding:4px 0;color:var(--text2);font-weight:600;text-align:center;">Screens</th>
+            <th style="padding:4px 0;color:var(--text2);font-weight:600;text-align:right;">Last seen</th>
+          </tr></thead>
+          <tbody>
+            ${sortedPilotStats.map(([name,s]) => `
+              <tr style="border-bottom:1px solid var(--surface2);">
+                <td style="padding:5px 0;color:var(--accent);font-weight:600;">${name}</td>
+                <td style="padding:5px 0;text-align:center;">${s.signIns}</td>
+                <td style="padding:5px 0;text-align:center;">${s.screens}</td>
+                <td style="padding:5px 0;text-align:right;color:var(--text2);">${relTime(s.lastSeen)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Recently registered pilots</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+          ${(recentPilotsRes.data||[]).map(p => `
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:5px 0;font-weight:600;">${p.pilot_name}</td>
+              <td style="padding:5px 0;text-align:right;color:var(--text2);">${p.created_at?.slice(0,10)||'—'}</td>
+            </tr>`).join('')}
+        </table>
+      </div>
+    `;
 
-    // Recent app events
-    const eventsRes = await db.from('app_events')
-      .select('pilot_name,event_type,event_data,created_at')
-      .order('created_at', { ascending: false })
-      .limit(20);
+    // ── FEATURES ──
+    document.getElementById('apanel-features').innerHTML = `
+      <div class="card">
+        <div class="card-title">Screen views (90d)</div>
+        ${sortedScreens.map(([screen,count]) => `
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px;">
+              <span>${screen}</span>
+              <span style="color:var(--accent);font-weight:600;">${count}</span>
+            </div>
+            <div style="background:var(--surface2);border-radius:3px;height:6px;">
+              <div style="width:${Math.round(count/maxScreen*100)}%;height:6px;background:var(--accent);border-radius:3px;"></div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">Event type breakdown (90d)</div>
+        ${sortedEventTypes.map(([type,count]) => `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--surface2);font-size:13px;">
+            <span style="color:var(--accent);">${type}</span>
+            <span>${count}</span>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">Most played archetypes (last 30d)</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+          ${topArchetypes.map(([arch,count]) => `
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:5px 0;font-weight:600;">${arch}</td>
+              <td style="padding:5px 0;text-align:right;color:var(--accent);">${count} games</td>
+            </tr>`).join('')}
+        </table>
+      </div>
+    `;
 
-    if (eventsRes.data && eventsRes.data.length) {
-      html += '<div class="card"><div class="card-title">Recent activity</div>';
-      html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-      for (const e of eventsRes.data) {
-        const time = e.created_at ? e.created_at.slice(0, 16).replace('T', ' ') : '';
-        const detail = e.event_data ? Object.values(e.event_data).join(' · ') : '';
-        html += `<tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:5px 0;font-weight:600;min-width:80px;">${e.pilot_name || '—'}</td>
-          <td style="padding:5px 0;color:var(--accent);">${e.event_type}</td>
-          <td style="padding:5px 0;color:var(--text2);font-size:11px;">${detail}</td>
-          <td style="padding:5px 0;text-align:right;color:var(--text2);font-size:11px;white-space:nowrap;">${time}</td>
-        </tr>`;
-      }
-      html += '</table></div>';
-    }
-
-    // Recently registered pilots
-    if (recentPilotsRes.data && recentPilotsRes.data.length) {
-      html += '<div class="card"><div class="card-title">Recently registered pilots</div>';
-      html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-      for (const p of recentPilotsRes.data) {
-        const date = p.created_at ? p.created_at.slice(0, 10) : 'unknown';
-        html += `<tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:5px 0;font-weight:600;">${p.pilot_name}</td>
-          <td style="padding:5px 0;text-align:right;color:var(--text2);">${date}</td>
-        </tr>`;
-      }
-      html += '</table></div>';
-    }
-
-    el.innerHTML = html;
+    // ── ACTIVITY ──
+    document.getElementById('apanel-activity').innerHTML = `
+      <div class="card">
+        <div class="card-title">Recent activity (last 100 events)</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+          ${events.slice(0,100).map(e => {
+            const detail = e.event_data ? Object.values(e.event_data).join(' · ') : '';
+            const time = e.created_at?.slice(0,16).replace('T',' ') || '';
+            return `<tr style="border-bottom:1px solid var(--surface2);">
+              <td style="padding:5px 0;font-weight:600;color:var(--accent);min-width:70px;">${e.pilot_name||'—'}</td>
+              <td style="padding:5px 0;color:var(--accent2);">${e.event_type}</td>
+              <td style="padding:5px 0;color:var(--text2);font-size:11px;">${detail}</td>
+              <td style="padding:5px 0;text-align:right;color:var(--text2);font-size:11px;white-space:nowrap;">${time}</td>
+            </tr>`;
+          }).join('')}
+        </table>
+      </div>
+    `;
 
   } catch(e) {
-    el.innerHTML = `<div class="card" style="color:var(--danger);">Error loading admin data: ${e.message}</div>`;
+    document.getElementById('admin-results').innerHTML =
+      `<div class="card" style="color:var(--danger);">Error: ${e.message}</div>`;
   } finally {
     setProgress('admin', 0);
   }
 }
 
+window.adminTab = function(tab) {
+  ['overview','users','features','activity'].forEach(t => {
+    document.getElementById('atab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
+  });
+};
 // ── MTGO META SCREEN ──────────────────────────────────────────────
 
 let mtgoTab = 'archetypes';
