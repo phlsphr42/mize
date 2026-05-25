@@ -1879,7 +1879,8 @@ function setMtgoTab(tab) {
 async function loadMtgoData() {
   const dateVal = document.getElementById('mtgo-date').value;
   const minApp = parseInt(document.getElementById('mtgo-min').value);
-  const cacheKey = `${dateVal}_${minApp}`;
+  const cacheKey = `${windowDays}_${minApp}`;
+  const windowDays = dateVal === 'all' ? 0 : parseInt(dateVal);
 
   document.getElementById('mtgo-loading').style.display = 'block';
   document.getElementById('mtgo-results').innerHTML = '';
@@ -1896,13 +1897,12 @@ async function loadMtgoData() {
         }
         const dateTo = now.toISOString().split('T')[0];
 
-        const { data, error } = await db.from('mtgo_archetype_summary')
-          .select('*')
-          .gte('date_from', dateFrom)
-          .lte('date_to', dateTo)
-          .gte('top32_appearances', minApp)
-          .order('meta_adjusted_score', { ascending: false })
-          .limit(200);
+const { data, error } = await db.from('mtgo_archetype_summary')
+  .select('*')
+  .eq('date_from', dateFrom)
+  .gte('top32_appearances', minApp)
+  .order('meta_adjusted_score', { ascending: false })
+  .limit(200);
 
         if (error) throw error;
         mtgoCache.archetypes[cacheKey] = data || [];
@@ -1910,22 +1910,24 @@ async function loadMtgoData() {
       renderMtgoArchetypes(mtgoCache.archetypes[cacheKey]);
     } else {
       if (!mtgoCache.pilots[cacheKey]) {
-        const now = new Date();
-        let dateFrom = '2000-01-01';
-        if (dateVal !== 'all') {
-          const d = new Date(now);
-          d.setDate(d.getDate() - parseInt(dateVal));
-          dateFrom = d.toISOString().split('T')[0];
-        }
+const now = new Date();
+let dateFrom = '2000-01-01';
+if (dateVal !== 'all') {
+  const days = parseInt(dateVal);
+  const d = new Date(now);
+  d.setDate(d.getDate() - days);
+  // Round to nearest day to match Colab-computed dates
+  dateFrom = d.toISOString().split('T')[0];
+}
+const dateTo = now.toISOString().split('T')[0];
         const dateTo = now.toISOString().split('T')[0];
 
-        const { data, error } = await db.from('mtgo_pilot_summary')
-          .select('*')
-          .gte('date_from', dateFrom)
-          .lte('date_to', dateTo)
-          .gte('top32_appearances', minApp)
-          .order('performance_score', { ascending: false })
-          .limit(200);
+const { data, error } = await db.from('mtgo_pilot_summary')
+  .select('*')
+  .eq('window_days', windowDays)
+  .gte('top32_appearances', minApp)
+  .order('performance_score', { ascending: false })
+  .limit(200);
 
         if (error) throw error;
         mtgoCache.pilots[cacheKey] = data || [];
