@@ -14,6 +14,13 @@ const sbHeaders = {
   'Prefer': 'resolution=ignore-duplicates,return=minimal'
 };
 
+const sbHeadersUpsert = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json',
+  'Prefer': 'resolution=merge-duplicates,return=minimal'
+};
+
 const ghHeaders = {
   'Accept': 'application/json',
   'User-Agent': 'Mize-Scraper',
@@ -23,17 +30,31 @@ const ghHeaders = {
 // ── SUPABASE HELPERS ───────────────────────────────────────────────
 
 async function sbGet(table, params = '') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { headers: sbHeaders });
-  if (!res.ok) { console.error(`sbGet error ${res.status}: ${table}`); return []; }
-  return res.json();
+  const all_rows = [];
+  const limit = 1000;
+  let offset = 0;
+  while (true) {
+    const sep = params.includes('?') ? '&' : '?';
+    const url = `${SUPABASE_URL}/rest/v1/${table}${params}${sep}limit=${limit}&offset=${offset}`;
+    const res = await fetch(url, { headers: sbHeaders });
+    if (!res.ok) { console.error(`sbGet error ${res.status}: ${table}`); break; }
+    const batch = await res.json();
+    if (!batch || !batch.length) break;
+    all_rows.push(...batch);
+    if (batch.length < limit) break;
+    offset += limit;
+    await sleep(50);
+  }
+  return all_rows;
 }
 
-async function sbInsert(table, rows, batchSize = 300) {
+async function sbInsert(table, rows, batchSize = 300, upsert = false) {
   let total = 0;
+  const hdrs = upsert ? sbHeadersUpsert : sbHeaders;
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize);
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-      method: 'POST', headers: sbHeaders, body: JSON.stringify(batch)
+      method: 'POST', headers: hdrs, body: JSON.stringify(batch)
     });
     if (res.status >= 200 && res.status < 300) total += batch.length;
     else console.error(`Insert error ${table} batch ${i}: ${res.status} ${await res.text()}`);
@@ -325,8 +346,8 @@ async function main() {
 
   console.log(`New events: ${newEventRows.length}, new results: ${newResultRows.length}`);
 
-  if (newEventRows.length) {
-    await sbInsert('mtgo_events', newEventRows);
+if (newEventRows.length) {
+    await sbInsert('mtgo_events', newEventRows, 300, true);
     await sbInsert('mtgo_results', newResultRows);
   } else {
     console.log('No new events found. Summaries will still be recomputed.');
