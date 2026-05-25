@@ -2,12 +2,14 @@ name: MTGO Scraper
 
 on:
   schedule:
-    - cron: '0 10 * * *'  # Runs daily at 10am UTC
-  workflow_dispatch:  # Also allows manual trigger from GitHub Actions tab
+    - cron: '0 10 * * *'
+  workflow_dispatch:
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -15,12 +17,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install dependencies
         run: npm install node-fetch
 
-- name: Run MTGO scraper
+      - name: Run MTGO scraper
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
