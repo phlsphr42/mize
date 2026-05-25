@@ -2195,6 +2195,8 @@ function showAddCardScreen(context) {
     showScreen(context === 'new-deck' ? 'screen-new-deck' : 'screen-deck-detail');
   };
   showScreen('screen-add-card');
+  showScreen('screen-add-card');
+loadScryfallBulk(); // start loading in background
 }
 
 async function addCardToDeck() {
