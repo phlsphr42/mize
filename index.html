@@ -2977,10 +2977,10 @@ async function populateAnalysisFilters() {
   );
 
   try {
-    // Get all decks with 5+ games community-wide
-    const { data: deckData } = await db.from('raw_game_log')
-      .select('deck_archetype')
-      .not('deck_archetype', 'is', null);
+const { data: deckData } = await db.from('raw_game_log')
+  .select('deck_archetype')
+  .not('deck_archetype', 'is', null)
+  .limit(100000);
 
     const deckCounts = {};
     (deckData || []).forEach(r => {
@@ -2991,10 +2991,10 @@ async function populateAnalysisFilters() {
       .map(([name]) => name)
       .sort();
 
-    // Get all opponent archetypes with 5+ games
-    const { data: oppData } = await db.from('raw_game_log')
-      .select('opponent_archetype')
-      .not('opponent_archetype', 'is', null);
+const { data: oppData } = await db.from('raw_game_log')
+  .select('opponent_archetype')
+  .not('opponent_archetype', 'is', null)
+  .limit(100000);
 
     const oppCounts = {};
     (oppData || []).forEach(r => {
