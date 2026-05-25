@@ -2977,33 +2977,17 @@ async function populateAnalysisFilters() {
   );
 
   try {
-const { data: deckData } = await db.from('raw_game_log')
-  .select('deck_archetype')
-  .not('deck_archetype', 'is', null)
-  .limit(100000);
+    // Query the database views for distinct archetypes with 5+ games
+    const { data: deckData, error: deckErr } = await db.from('distinct_deck_archetypes')
+      .select('deck_archetype');
+    if (deckErr) throw deckErr;
 
-    const deckCounts = {};
-    (deckData || []).forEach(r => {
-      deckCounts[r.deck_archetype] = (deckCounts[r.deck_archetype] || 0) + 1;
-    });
-    const qualifiedDecks = Object.entries(deckCounts)
-      .filter(([, count]) => count >= 5)
-      .map(([name]) => name)
-      .sort();
+    const { data: oppData, error: oppErr } = await db.from('distinct_opponent_archetypes')
+      .select('opponent_archetype');
+    if (oppErr) throw oppErr;
 
-const { data: oppData } = await db.from('raw_game_log')
-  .select('opponent_archetype')
-  .not('opponent_archetype', 'is', null)
-  .limit(100000);
-
-    const oppCounts = {};
-    (oppData || []).forEach(r => {
-      oppCounts[r.opponent_archetype] = (oppCounts[r.opponent_archetype] || 0) + 1;
-    });
-    const qualifiedOpps = Object.entries(oppCounts)
-      .filter(([, count]) => count >= 5)
-      .map(([name]) => name)
-      .sort();
+    const qualifiedDecks = (deckData || []).map(r => r.deck_archetype).sort();
+    const qualifiedOpps  = (oppData  || []).map(r => r.opponent_archetype).sort();
 
     // Build the options arrays for the custom dropdowns
     const deckOptions = [{ value: '', label: 'All decks' }].concat(
@@ -3022,7 +3006,7 @@ const { data: oppData } = await db.from('raw_game_log')
     setCustomSelectOptions('c-opponent', oppOptions);
 
   } catch(e) {
-    // If the query fails, fall back to just the user's own decks
+    // If the view query fails, fall back to just the user's own decks
     const fallback = [{ value: '', label: 'All decks' }].concat(
       (state.allDecks || []).map(d => ({ value: d.archetype_name, label: d.archetype_name }))
     );
@@ -3031,15 +3015,6 @@ const { data: oppData } = await db.from('raw_game_log')
     setCustomSelectOptions('b-opponent', [{ value: '', label: 'All opponents' }]);
     setCustomSelectOptions('c-opponent', [{ value: '', label: 'All opponents' }]);
     console.error('populateAnalysisFilters:', e);
-  }
-}
-function applyDatePreset(panel) {
-  const preset = document.getElementById(panel + '-date-preset').value;
-  const customDiv = document.getElementById(panel + '-date-custom');
-  if (preset === 'custom') {
-    customDiv.style.display = 'block';
-  } else {
-    customDiv.style.display = 'none';
   }
 }
 
