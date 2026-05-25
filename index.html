@@ -875,8 +875,11 @@
       <div class="toggle-btn" onclick="sortChiResults('name')" id="sort-name">Name</div>
     </div>
   </div>
-  <div id="c-results"></div>
+<div id="c-results"></div>
+    </div>
+  </div>
 </div>
+
 <!-- MATCHUP MATRIX -->
 <div id="screen-matchup" class="screen">
   <div class="header">
@@ -942,7 +945,7 @@
   <div id="m-results"><div style="color:var(--text2);font-size:14px;padding:8px 0;">Select filters and click Load matchups.</div></div>
 </div>
 
-  <!-- MATCHUP MATRIX GRID -->
+<!-- MATCHUP MATRIX GRID -->
 <div id="screen-matrix" class="screen">
   <div class="header">
     <button class="back-btn" onclick="showScreen('screen-home')">←</button>
@@ -1005,9 +1008,7 @@
     <div class="progress-bar-wrap" id="progress-mx">
       <div class="progress-bar-fill" id="progress-mx-fill" style="width:0%"></div>
     </div>
-    <button class="btn btn-primary" id="btn-calc-mx" onclick="calcMatrix()" style="margin-bottom:0;">
-      Load matrix
-    </button>
+    <button class="btn btn-primary" id="btn-calc-mx" onclick="calcMatrix()" style="margin-bottom:0;">Load matrix</button>
     <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="mx-cache-info"></div>
   </div>
   <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5;">
@@ -1018,7 +1019,7 @@
   <div id="mx-tooltip" style="display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:12px;z-index:500;max-width:200px;pointer-events:none;"></div>
 </div>
 
-  <!-- MTGO META -->
+<!-- MTGO META -->
 <div id="screen-mtgo" class="screen">
   <div class="header">
     <button class="back-btn" onclick="showScreen('screen-home')">←</button>
@@ -1072,6 +1073,7 @@
     <div style="color:var(--text2);text-align:center;padding:24px;">Loading...</div>
   </div>
 </div>
+</body>
   
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
