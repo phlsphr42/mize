@@ -716,7 +716,7 @@
     <div class="analysis-tab active" onclick="switchAnalysisTab('bayesian')">Bayesian</div>
     <div class="analysis-tab" onclick="switchAnalysisTab('chisq')">Chi-squared</div>
   </div>
-  <div id="panel-bayesian" class="analysis-panel active">
+<div id="panel-bayesian" class="analysis-panel active">
   <div class="card">
     <div class="row">
       <div>
@@ -752,7 +752,45 @@
         <input type="hidden" id="b-opponent" value="">
       </div>
     </div>
-    <!-- leave the rest of the bayesian panel unchanged -->
+    <div class="row">
+      <div>
+        <label class="label">Date range</label>
+        <select id="b-date-preset" onchange="applyDatePreset('b')">
+          <option value="all">All time</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="180">Last 6 months</option>
+          <option value="365">Last year</option>
+          <option value="custom">Custom range</option>
+        </select>
+      </div>
+    </div>
+    <div id="b-date-custom" style="display:none;">
+      <div class="row">
+        <div>
+          <label class="label">From</label>
+          <input type="date" id="b-date-from" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label class="label">To</label>
+          <input type="date" id="b-date-to" style="margin-bottom:0;">
+        </div>
+      </div>
+    </div>
+    <div class="scope-tabs">
+      <div class="scope-tab active" onclick="setScopeB('mine')" id="scope-b-mine">My data</div>
+      <div class="scope-tab" onclick="setScopeB('all')" id="scope-b-all">All data</div>
+      <div class="scope-tab" onclick="setScopeB('compare')" id="scope-b-compare">Compare</div>
+    </div>
+    <div class="throttle-msg" id="throttle-b"></div>
+    <div class="progress-bar-wrap" id="progress-b">
+      <div class="progress-bar-fill" id="progress-b-fill" style="width:0%"></div>
+    </div>
+    <button class="btn btn-primary" id="btn-calc-b" onclick="calcBayesian()" style="margin-bottom:0;">Calculate scores</button>
+    <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="b-cache-info"></div>
+  </div>
+  <div id="b-results"></div>
+</div>
 
 <div id="panel-chisq" class="analysis-panel">
   <div class="card">
@@ -835,11 +873,8 @@
       <div class="toggle-btn" onclick="sortChiResults('name')" id="sort-name">Name</div>
     </div>
   </div>
-<div id="c-results"></div>
-    </div>
-  </div>
+  <div id="c-results"></div>
 </div>
-
 <!-- MATCHUP MATRIX -->
 <div id="screen-matchup" class="screen">
   <div class="header">
