@@ -307,6 +307,7 @@
   <button class="btn btn-secondary" onclick="showScreen('screen-matchup')">Matchup Matrix</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Meta Matchup Matrix</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-mtgo')">MTGO Meta</button>
+  <button class="btn btn-secondary" id="btn-admin" style="display:none;" onclick="showScreen('screen-admin')">Admin</button>
   <hr class="divider">
   <div class="card-title">Recent matches</div>
   <div id="recent-matches"><div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div></div>
@@ -984,6 +985,20 @@
   </div>
 </div>
 
+<!-- ADMIN -->
+<div id="screen-admin" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Admin</h2>
+  </div>
+  <div class="progress-bar-wrap" id="progress-admin">
+    <div class="progress-bar-fill" id="progress-admin-fill" style="width:0%"></div>
+  </div>
+  <div id="admin-results">
+    <div style="color:var(--text2);text-align:center;padding:24px;">Loading...</div>
+  </div>
+</div>
+  
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
@@ -1044,6 +1059,10 @@ function showScreen(id) {
     }
   }
   if (id === 'screen-matchup') { try { onShowMatchup(); } catch(e) { console.error('matchup error:', e); } }
+  if (id === 'screen-admin') {
+    if (state.pilot && state.pilot.pilot_name === 'thnkr') loadAdminData();
+    else showScreen('screen-home');
+  }
   if (id === 'screen-mtgo') {
     mtgoCache = { archetypes: {}, pilots: {} };
     mtgoTab = 'archetypes';
@@ -1203,6 +1222,8 @@ if (!pilots || !pilots.length) {
     }
     state.pilot = pilots[0];
     document.getElementById('home-pilot-name').textContent = state.pilot.pilot_name;
+    const adminBtn = document.getElementById('btn-admin');
+if (adminBtn) adminBtn.style.display = state.pilot.pilot_name === 'thnkr' ? '' : 'none';
     try {
       const [arcRes, refRes] = await Promise.all([
         db.from('opponent_archetypes').select('canonical_name').order('canonical_name'),
@@ -1862,6 +1883,156 @@ function selectSuggestedArchetype(name) {
     });
   }
   return mismatches;
+}
+
+  // ── ADMIN SCREEN ──────────────────────────────────────────────────
+
+async function loadAdminData() {
+  if (state.pilot.pilot_name !== 'thnkr') return;
+  const el = document.getElementById('admin-results');
+  el.innerHTML = '<div style="color:var(--text2);text-align:center;padding:24px;">Loading...</div>';
+  setProgress('admin', 20);
+
+  try {
+    const now = new Date();
+    const day7 = new Date(now - 7 * 86400000).toISOString();
+    const day30 = new Date(now - 30 * 86400000).toISOString();
+
+    // Fetch all data in parallel
+    const [
+      pilotsRes,
+      totalGamesRes,
+      games7Res,
+      games30Res,
+      recentPilotsRes,
+      topPilotsRes,
+      topArchRes,
+      dailyRes
+    ] = await Promise.all([
+      db.from('pilots').select('pilot_name,created_at', { count: 'exact' }),
+      db.from('raw_game_log').select('id', { count: 'exact', head: true }),
+      db.from('raw_game_log').select('id', { count: 'exact', head: true }).gte('timestamp', day7),
+      db.from('raw_game_log').select('id', { count: 'exact', head: true }).gte('timestamp', day30),
+      db.from('pilots').select('pilot_name,created_at').order('created_at', { ascending: false }).limit(10),
+      db.from('raw_game_log').select('pilot_name').gte('timestamp', day30),
+      db.from('raw_game_log').select('deck_archetype').gte('timestamp', day30).not('deck_archetype', 'is', null),
+      db.from('raw_game_log').select('timestamp').gte('timestamp', day30).not('migration_flag', 'eq', 'MIGRATED')
+    ]);
+
+    setProgress('admin', 80);
+
+    // Process top pilots
+    const pilotCounts = {};
+    for (const r of topPilotsRes.data || []) {
+      pilotCounts[r.pilot_name] = (pilotCounts[r.pilot_name] || 0) + 1;
+    }
+    const topPilots = Object.entries(pilotCounts)
+      .sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+    // Process top archetypes
+    const archCounts = {};
+    for (const r of topArchRes.data || []) {
+      archCounts[r.deck_archetype] = (archCounts[r.deck_archetype] || 0) + 1;
+    }
+    const topArchetypes = Object.entries(archCounts)
+      .sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+    // Process daily games (last 30 days, non-migrated only)
+    const dailyCounts = {};
+    for (const r of dailyRes.data || []) {
+      const day = r.timestamp.slice(0, 10);
+      dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+    }
+    const dailyEntries = Object.entries(dailyCounts).sort((a, b) => a[0].localeCompare(b[0]));
+    const maxDaily = Math.max(...dailyEntries.map(e => e[1]), 1);
+
+    setProgress('admin', 100);
+
+    // Render
+    let html = '';
+
+    // Stat cards
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">';
+    const stats = [
+      { label: 'Total pilots', value: pilotsRes.count || 0 },
+      { label: 'Total games', value: (totalGamesRes.count || 0).toLocaleString() },
+      { label: 'Games (7d)', value: games7Res.count || 0 },
+      { label: 'Games (30d)', value: games30Res.count || 0 },
+    ];
+    for (const s of stats) {
+      html += `<div class="card" style="text-align:center;padding:12px;">
+        <div style="font-size:24px;font-weight:700;color:var(--accent);">${s.value}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;">${s.label}</div>
+      </div>`;
+    }
+    html += '</div>';
+
+    // Daily games chart (last 30 days, live games only)
+    if (dailyEntries.length) {
+      html += '<div class="card"><div class="card-title">Games per day (last 30d, live only)</div>';
+      html += '<div style="display:flex;align-items:flex-end;gap:2px;height:60px;margin-top:8px;">';
+      for (const [day, count] of dailyEntries) {
+        const pct = Math.round((count / maxDaily) * 100);
+        const shortDay = day.slice(5);
+        html += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;" title="${day}: ${count} games">
+          <div style="width:100%;background:var(--accent);border-radius:2px 2px 0 0;height:${pct}%;min-height:2px;opacity:0.8;"></div>
+        </div>`;
+      }
+      html += '</div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-top:2px;">';
+      if (dailyEntries.length) {
+        html += `<span>${dailyEntries[0][0].slice(5)}</span><span>${dailyEntries[dailyEntries.length-1][0].slice(5)}</span>`;
+      }
+      html += '</div></div>';
+    }
+
+    // Top pilots (last 30d)
+    if (topPilots.length) {
+      html += '<div class="card"><div class="card-title">Most active pilots (last 30d)</div>';
+      html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+      for (const [name, count] of topPilots) {
+        html += `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:5px 0;font-weight:600;">${name}</td>
+          <td style="padding:5px 0;text-align:right;color:var(--accent);">${count} games</td>
+        </tr>`;
+      }
+      html += '</table></div>';
+    }
+
+    // Top archetypes (last 30d)
+    if (topArchetypes.length) {
+      html += '<div class="card"><div class="card-title">Most played archetypes (last 30d)</div>';
+      html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+      for (const [arch, count] of topArchetypes) {
+        html += `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:5px 0;font-weight:600;">${arch}</td>
+          <td style="padding:5px 0;text-align:right;color:var(--accent);">${count} games</td>
+        </tr>`;
+      }
+      html += '</table></div>';
+    }
+
+    // Recently registered pilots
+    if (recentPilotsRes.data && recentPilotsRes.data.length) {
+      html += '<div class="card"><div class="card-title">Recently registered pilots</div>';
+      html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+      for (const p of recentPilotsRes.data) {
+        const date = p.created_at ? p.created_at.slice(0, 10) : 'unknown';
+        html += `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:5px 0;font-weight:600;">${p.pilot_name}</td>
+          <td style="padding:5px 0;text-align:right;color:var(--text2);">${date}</td>
+        </tr>`;
+      }
+      html += '</table></div>';
+    }
+
+    el.innerHTML = html;
+
+  } catch(e) {
+    el.innerHTML = `<div class="card" style="color:var(--danger);">Error loading admin data: ${e.message}</div>`;
+  } finally {
+    setProgress('admin', 0);
+  }
 }
 
 // ── MTGO META SCREEN ──────────────────────────────────────────────
