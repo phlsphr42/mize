@@ -1798,11 +1798,7 @@ async function loadArtOptions() {
   document.getElementById('art-loading').style.display = 'block';
   document.getElementById('art-options').innerHTML = '';
   try {
-    const res = await fetch(
-      'https://api.scryfall.com/cards/search?q=!"' + encodeURIComponent(cardName) + '"&unique=prints&order=released',
-      { headers: { 'Accept': 'application/json' } }
-    );
-    const data = await res.json();
+    const data = await scryfallFetch('/cards/search?q=!"' + encodeURIComponent(cardName) + '"&unique=prints&order=released');
     state.artPrintings = (data.data || []).map(c => ({
       id: c.id, set: c.set_name, collector: c.collector_number,
       imageUrl: c.image_uris ? c.image_uris.normal : (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris ? c.card_faces[0].image_uris.normal : '')
@@ -2039,25 +2035,20 @@ async function parseImport() {
     document.getElementById('import-progress-fill').style.width = Math.round((i / parsed.length) * 100) + '%';
     let card = null, imageUrl = '', status = 'ok';
     try {
-      let url = p.setCode && p.collector
-        ? 'https://api.scryfall.com/cards/' + p.setCode.toLowerCase() + '/' + p.collector
-        : 'https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(p.name);
-      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (res.ok) {
-        const data = await res.json();
-        imageUrl = data.image_uris ? data.image_uris.normal : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.normal : '');
-        card = { card_name: data.name, quantity: p.qty, main_side: p.mainSide, preferred_image_url: imageUrl };
-        state.importedCards.push(card);
-      } else {
+      const path = p.setCode && p.collector
+        ? '/cards/' + p.setCode.toLowerCase() + '/' + p.collector
+        : '/cards/named?exact=' + encodeURIComponent(p.name);
+      let data = null;
+      try {
+        data = await scryfallFetch(path);
+      } catch(e) {
         await new Promise(r => setTimeout(r, 250));
-        const fuzzyRes = await fetch('https://api.scryfall.com/cards/named?fuzzy=' + encodeURIComponent(p.name), { headers: { 'Accept': 'application/json' } });
-        if (fuzzyRes.ok) {
-          const data = await fuzzyRes.json();
-          imageUrl = data.image_uris ? data.image_uris.normal : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.normal : '');
-          card = { card_name: data.name, quantity: p.qty, main_side: p.mainSide, preferred_image_url: imageUrl };
-          state.importedCards.push(card); status = 'warn';
-        } else { status = 'err'; state.importMissing.push(p.name); }
+        data = await scryfallFetch('/cards/named?fuzzy=' + encodeURIComponent(p.name));
+        status = 'warn';
       }
+      imageUrl = data.image_uris ? data.image_uris.normal : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.normal : '');
+      card = { card_name: data.name, quantity: p.qty, main_side: p.mainSide, preferred_image_url: imageUrl };
+      state.importedCards.push(card);
     } catch(e) { status = 'err'; state.importMissing.push(p.name); }
     const icon = status === 'ok' ? '✓' : status === 'warn' ? '~' : '✗';
     const iconClass = 'import-status-' + (status === 'ok' ? 'ok' : status === 'warn' ? 'warn' : 'err');
@@ -2076,7 +2067,6 @@ async function parseImport() {
   }
   if (state.importedCards.length > 0) document.getElementById('btn-confirm-import').style.display = 'block';
 }
-
 function confirmImport() {
   state.newDeckCards = [...state.importedCards];
   state.newDeckArchetype = null;
@@ -2917,16 +2907,18 @@ function nextGame() {
 
 // ── CARD SEARCH ────────────────────────────────────────────────────
 
+async function scryfallFetch(path) {
+  const url = 'https://corsproxy.io/?' + encodeURIComponent('https://api.scryfall.com' + path);
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) throw new Error('Scryfall error: ' + res.status);
+  return res.json();
+}
+  
 async function searchCards(query) {
   const el = document.getElementById('card-search-results');
   if (query.length < 2) { el.innerHTML = ''; return; }
   try {
-    const res = await fetch(
-      'https://api.scryfall.com/cards/search?q=' + encodeURIComponent(query) + '+legal%3Amodern&unique=cards&order=name&limit=10',
-      { headers: { 'Accept': 'application/json' } }
-    );
-    if (!res.ok) { el.innerHTML = ''; return; }
-    const data = await res.json();
+    const data = await scryfallFetch('/cards/search?q=' + encodeURIComponent(query) + '+legal%3Amodern&unique=cards&order=name&limit=10');
     el.innerHTML = (data.data || []).map(c => {
       const img = c.image_uris ? c.image_uris.normal : (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris ? c.card_faces[0].image_uris.normal : '');
       const d = JSON.stringify({ card_name: c.name, card_type: c.type_line, mana_cost: c.mana_cost || '', default_image_url: img }).replace(/"/g, '&quot;');
