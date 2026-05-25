@@ -2910,7 +2910,7 @@ function onShowAnalysis() {
 }
 
 async function populateAnalysisFilters() {
-  console.log('myDecks sample:', state.myDecks);
+console.log('allDecks sample:', state.allDecks);
   // Keep existing deck list from state for user's own decks
   const myArchetypes = new Set(
     (state.myDecks || []).map(d => d.archetype)
