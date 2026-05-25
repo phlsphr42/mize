@@ -20,8 +20,9 @@ jobs:
       - name: Install dependencies
         run: npm install node-fetch
 
-      - name: Run MTGO scraper
+- name: Run MTGO scraper
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/mtgo-scraper.js
