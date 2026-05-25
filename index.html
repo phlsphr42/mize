@@ -2912,9 +2912,9 @@ function onShowAnalysis() {
 async function populateAnalysisFilters() {
 console.log('allDecks sample:', state.allDecks);
   // Keep existing deck list from state for user's own decks
-  const myArchetypes = new Set(
-    (state.myDecks || []).map(d => d.archetype)
-  );
+const myArchetypes = new Set(
+  (state.allDecks || []).map(d => d.archetype_name)
+);
 
   try {
     // Get all decks with 5+ games community-wide
