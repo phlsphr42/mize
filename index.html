@@ -2023,20 +2023,22 @@ let scryfallCardMap = null;
 async function loadScryfallBulk() {
   if (scryfallCards) return scryfallCards;
   showToast('Loading card database...', 'info');
-  // Fetch the bulk data index to get the current download URL
-  const indexRes = await fetch('https://api.scryfall.com/bulk-data/default-cards');
-  const index = await indexRes.json();
-  const bulkRes = await fetch(index.download_uri);
-  scryfallCards = await bulkRes.json();
-  // Build a lookup map by name (lowercase)
-  scryfallCardMap = {};
-  for (const c of scryfallCards) {
-    const key = c.name.toLowerCase();
-    // Keep only the first (most recent) printing per name
-    if (!scryfallCardMap[key]) scryfallCardMap[key] = c;
+  try {
+    const indexRes = await fetch('https://api.scryfall.com/bulk-data/default-cards');
+    const index = await indexRes.json();
+    const bulkRes = await fetch(index.download_uri);
+    scryfallCards = await bulkRes.json();
+    scryfallCardMap = {};
+    for (const c of scryfallCards) {
+      const key = c.name.toLowerCase();
+      if (!scryfallCardMap[key]) scryfallCardMap[key] = c;
+    }
+    showToast('Card database loaded', 'success');
+    return scryfallCards;
+  } catch(e) {
+    console.error('loadScryfallBulk:', e);
+    throw e;
   }
-  showToast('Card database loaded', 'success');
-  return scryfallCards;
 }
 
 function scryfallLookup(name) {
