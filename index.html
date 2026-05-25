@@ -1036,6 +1036,21 @@ let matchupRawData = [];
 
 // ── UTILITIES ──────────────────────────────────────────────────────
 
+      async function logEvent(eventType, eventData = {}) {
+  try {
+    if (!state.pilot) return;
+    await db.from('app_events').insert({
+      pilot_name: state.pilot.pilot_name,
+      event_type: eventType,
+      event_data: eventData,
+      created_at: new Date().toISOString()
+    });
+  } catch(e) {
+    // Fail silently — logging should never break the app
+  }
+}
+
+
 function showScreen(id) {
   logEvent('screen_view', { screen: id });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -2000,20 +2015,6 @@ async function loadAdminData() {
       }
       html += '</table></div>';
     }
-
-    async function logEvent(eventType, eventData = {}) {
-  try {
-    if (!state.pilot) return;
-    await db.from('app_events').insert({
-      pilot_name: state.pilot.pilot_name,
-      event_type: eventType,
-      event_data: eventData,
-      created_at: new Date().toISOString()
-    });
-  } catch(e) {
-    // Fail silently — logging should never break the app
-  }
-}
 
     // Top archetypes (last 30d)
     if (topArchetypes.length) {
