@@ -266,7 +266,7 @@
 
 <!-- AUTH -->
 <div id="screen-auth" class="screen">
-  <div class="auth-logo"><h1>MIZE</h1><p>MTG opening hand tracker</p></div>
+  <div class="auth-logo"><h1>MIZE</h1><p>MTG Data Analysis Tool</p></div>
   <div class="auth-tabs">
     <div class="auth-tab active" onclick="switchAuthTab('login')">Sign in</div>
     <div class="auth-tab" onclick="switchAuthTab('register')">Register</div>
@@ -339,10 +339,10 @@
   </div>
   <button class="btn btn-primary" onclick="startNewMatch()">+ New match</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-my-decks')">My Decks</button>
-  <button class="btn btn-secondary" onclick="showScreen('screen-analysis')">Analysis</button>
-  <button class="btn btn-secondary" onclick="showScreen('screen-matchup')">Matchup Matrix</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-analysis')">Opening Hand Analysis</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-matchup')">My Matchups</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Meta Matchup Matrix</button>
-  <button class="btn btn-secondary" onclick="showScreen('screen-mtgo')">MTGO Meta</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-mtgo')">MTGO Deck Rankings</button>
   <button class="btn btn-secondary" id="btn-admin" style="display:none;" onclick="showScreen('screen-admin')">Admin</button>
   <hr class="divider">
   <div class="card-title">Recent matches</div>
@@ -712,7 +712,7 @@
 <div id="screen-analysis" class="screen">
   <div class="header">
     <button class="back-btn" onclick="showScreen('screen-home')">←</button>
-    <h2>Analysis</h2>
+    <h2>Opening Hand Analysis</h2>
   </div>
   <div class="analysis-tabs">
     <div class="analysis-tab active" onclick="switchAnalysisTab('bayesian')">Bayesian</div>
@@ -884,7 +884,7 @@
 <div id="screen-matchup" class="screen">
   <div class="header">
     <button class="back-btn" onclick="showScreen('screen-home')">←</button>
-    <h2>Matchup matrix</h2>
+    <h2>My Matchups</h2>
   </div>
   <div class="card">
     <div class="row">
@@ -949,7 +949,7 @@
 <div id="screen-matrix" class="screen">
   <div class="header">
     <button class="back-btn" onclick="showScreen('screen-home')">←</button>
-    <h2>Matrix</h2>
+    <h2>Meta Matchup Matrix</h2>
   </div>
   <div class="card">
     <div class="row">
@@ -1023,7 +1023,7 @@
 <div id="screen-mtgo" class="screen">
   <div class="header">
     <button class="back-btn" onclick="showScreen('screen-home')">←</button>
-    <h2>MTGO Meta</h2>
+    <h2>MTGO Deck Rankings</h2>
   </div>
   <div class="card">
     <div class="row">
