@@ -1060,6 +1060,15 @@
   </div>
 </div>
 
+  <!-- MTGO ARCHETYPE DETAIL -->
+<div id="screen-mtgo-detail" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-mtgo')">←</button>
+    <h2 id="mtgo-detail-title" style="font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></h2>
+  </div>
+  <div id="mtgo-detail-content"></div>
+</div>
+
 <!-- ADMIN -->
 <div id="screen-admin" class="screen">
   <div class="header">
@@ -2711,6 +2720,14 @@ function renderMtgoArchetypes(rows) {
   const maxScore = Math.max(...rows.map(r => r.meta_adjusted_score || 0));
   const totalAppearances = rows.reduce((s, r) => s + (r.top32_appearances || 0), 0);
 
+  // Field average MWP (weighted by appearances)
+  const totalMwpWeight = rows.reduce((s, r) => s + (r.avg_mwp || 0) * r.top32_appearances, 0);
+  const totalApps = rows.reduce((s, r) => s + r.top32_appearances, 0);
+  const fieldAvgMwp = totalApps > 0 ? totalMwpWeight / totalApps : 0.5;
+
+  // Store rows on window for detail lookup
+  window.mtgoArchetypeRows = rows;
+
   function confidence(appearances) {
     if (appearances >= 100) return { label: 'High', color: '#4caf50', title: 'High confidence: 100+ appearances' };
     if (appearances >= 20)  return { label: 'Med',  color: '#ff9800', title: 'Medium confidence: 20-99 appearances' };
@@ -2718,10 +2735,10 @@ function renderMtgoArchetypes(rows) {
   }
 
   let html = `<div class="card" style="font-size:12px;color:var(--text2);margin-bottom:4px;">
-    ${rows.length} archetypes · ${totalAppearances.toLocaleString()} total top 32 finishes
+    ${rows.length} archetypes · ${totalAppearances.toLocaleString()} total top 32 finishes ·
+    Field avg MWP: ${(fieldAvgMwp * 100).toFixed(1)}%
   </div>`;
 
-  // Legend
   html += `<div class="card" style="padding:10px 12px;margin-bottom:4px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
     <span style="font-size:11px;color:var(--text2);font-weight:600;">Confidence:</span>
     <span style="font-size:11px;"><span style="color:#4caf50;font-weight:700;">&#9632;</span> High (100+ games)</span>
@@ -2739,38 +2756,46 @@ function renderMtgoArchetypes(rows) {
     '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T32</th>' +
     '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Share</th>' +
     '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T8%</th>' +
-    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Pts</th>' +
+    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">vs Field</th>' +
     '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">MWP</th>' +
     '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Score</th>' +
     '</tr></thead><tbody>';
 
   rows.forEach((r, i) => {
-    const share    = r.top32_share != null ? (r.top32_share * 100).toFixed(1) + '%' : '—';
-    const top8     = r.top8_rate   != null ? (r.top8_rate   * 100).toFixed(0) + '%' : '—';
-    const pts      = r.avg_points  != null ?  r.avg_points.toFixed(1)               : '—';
-    const mwp      = r.avg_mwp     != null ? (r.avg_mwp     * 100).toFixed(1) + '%' : '—';
+    const share     = r.top32_share != null ? (r.top32_share * 100).toFixed(1) + '%' : '—';
+    const top8      = r.top8_rate   != null ? (r.top8_rate   * 100).toFixed(0) + '%' : '—';
+    const mwp       = r.avg_mwp     != null ? (r.avg_mwp     * 100).toFixed(1) + '%' : '—';
     const normScore = maxScore > 0 ? ((r.meta_adjusted_score / maxScore) * 100).toFixed(1) : '—';
-    const conf     = confidence(r.top32_appearances);
-    const bg       = i % 2 === 0 ? '' : 'background:var(--surface2);';
+    const conf      = confidence(r.top32_appearances);
+    const bg        = i % 2 === 0 ? '' : 'background:var(--surface2);';
 
-    html += `<tr style="${bg}border-bottom:1px solid var(--border);cursor:pointer;" onclick="showMtgoArchetypeDetail('${r.archetype_name.replace(/'/g, "\\'")}')">` +
+    // Delta vs field
+    let deltaHtml = '—';
+    if (r.avg_mwp != null) {
+      const delta = (r.avg_mwp - fieldAvgMwp) * 100;
+      const sign  = delta >= 0 ? '▲' : '▼';
+      const color = delta >= 0 ? 'var(--success)' : 'var(--danger)';
+      deltaHtml = `<span style="color:${color};font-weight:700;">${sign} ${Math.abs(delta).toFixed(1)}%</span>`;
+    }
+
+    html += `<tr style="${bg}border-bottom:1px solid var(--border);cursor:pointer;"
+      onclick="showMtgoArchetypeDetail('${r.archetype_name.replace(/'/g, "\\'")}')">` +
       `<td style="padding:7px 6px;color:var(--text2);">${i + 1}</td>` +
-      `<td style="padding:7px 6px;font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.archetype_name}</td>` +
+      `<td style="padding:7px 6px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.archetype_name}</td>` +
       `<td style="padding:7px 6px;text-align:center;">` +
         `<span title="${conf.title}" style="font-size:10px;font-weight:700;color:${conf.color};` +
-        `background:${conf.color}22;border-radius:4px;padding:2px 6px;white-space:nowrap;">` +
-        `${conf.label}</span></td>` +
+        `background:${conf.color}22;border-radius:4px;padding:2px 6px;">${conf.label}</span></td>` +
       `<td style="padding:7px 6px;text-align:right;">${r.top32_appearances}</td>` +
       `<td style="padding:7px 6px;text-align:right;">${share}</td>` +
       `<td style="padding:7px 6px;text-align:right;">${top8}</td>` +
-      `<td style="padding:7px 6px;text-align:right;">${pts}</td>` +
+      `<td style="padding:7px 6px;text-align:right;">${deltaHtml}</td>` +
       `<td style="padding:7px 6px;text-align:right;">${mwp}</td>` +
       `<td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${normScore}</td>` +
       `</tr>`;
   });
 
   html += '</tbody></table></div></div>';
-  html += '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Score rewards decks performing above their meta share. High confidence = larger sample size. Tap a row for details.</div>';
+  html += '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Score rewards decks performing above their meta share. vs Field = MWP delta vs weighted field average. Tap a row for details.</div>';
   el.innerHTML = html;
 }
 
@@ -2829,7 +2854,80 @@ function renderMtgoPilots(rows) {
 }
 
 function showMtgoArchetypeDetail(archetype) {
-  showToast(archetype, 'info');
+  const rows = window.mtgoArchetypeRows || [];
+  const r = rows.find(x => x.archetype_name === archetype);
+  if (!r) return;
+
+  const totalApps = rows.reduce((s, x) => s + x.top32_appearances, 0);
+  const totalMwpWeight = rows.reduce((s, x) => s + (x.avg_mwp || 0) * x.top32_appearances, 0);
+  const fieldAvgMwp = totalApps > 0 ? totalMwpWeight / totalApps : 0.5;
+  const delta = r.avg_mwp != null ? (r.avg_mwp - fieldAvgMwp) * 100 : null;
+  const rank = rows.findIndex(x => x.archetype_name === archetype) + 1;
+  const maxScore = Math.max(...rows.map(x => x.meta_adjusted_score || 0));
+  const normScore = maxScore > 0 ? ((r.meta_adjusted_score / maxScore) * 100).toFixed(1) : '—';
+
+  function confidence(appearances) {
+    if (appearances >= 100) return { label: 'High confidence', color: '#4caf50' };
+    if (appearances >= 20)  return { label: 'Medium confidence', color: '#ff9800' };
+    return { label: 'Low confidence — small sample', color: '#f44336' };
+  }
+  const conf = confidence(r.top32_appearances);
+
+  function statRow(label, value, sub) {
+    return `<div style="display:flex;justify-content:space-between;align-items:center;
+      padding:10px 0;border-bottom:1px solid var(--surface2);">
+      <div>
+        <div style="font-size:13px;color:var(--text2);">${label}</div>
+        ${sub ? `<div style="font-size:11px;color:var(--text2);margin-top:2px;">${sub}</div>` : ''}
+      </div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);">${value}</div>
+    </div>`;
+  }
+
+  document.getElementById('mtgo-detail-title').textContent = archetype;
+
+  document.getElementById('mtgo-detail-content').innerHTML = `
+    <div class="card" style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:12px;color:var(--text2);">Rank #${rank} of ${rows.length}</span>
+        <span style="font-size:11px;font-weight:700;color:${conf.color};">${conf.label}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:var(--text2);">Opportunity score</span>
+        <span style="font-size:28px;font-weight:700;color:var(--accent);">${normScore}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;">
+        Score rewards decks performing above their meta share weight.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Performance</div>
+      ${statRow('Match win %', r.avg_mwp != null ? (r.avg_mwp * 100).toFixed(1) + '%' : '—', 'Win rate across all matches')}
+      ${delta != null ? statRow('vs Field average',
+        `<span style="color:${delta >= 0 ? 'var(--success)' : 'var(--danger)'};">` +
+        `${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta).toFixed(1)}%</span>`,
+        `Field avg: ${(fieldAvgMwp * 100).toFixed(1)}%`) : ''}
+      ${statRow('Game win %', r.avg_gwp != null ? (r.avg_gwp * 100).toFixed(1) + '%' : '—', 'Win rate at the individual game level')}
+      ${statRow('Top 8 conversion', r.top8_rate != null ? (r.top8_rate * 100).toFixed(1) + '%' : '—', 'Of top 32 finishes, how many made top 8')}
+      ${statRow('Avg points', r.avg_points != null ? r.avg_points.toFixed(2) : '—', 'Average match points earned per event')}
+      ${statRow('Opp. MWP', r.avg_omwp != null ? (r.avg_omwp * 100).toFixed(1) + '%' : '—', 'Strength of schedule — opponents\' average win rate')}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Metagame presence</div>
+      ${statRow('Top 32 appearances', r.top32_appearances.toLocaleString(), 'Total finishes in the top 32')}
+      ${statRow('Top 8 appearances', r.top8_appearances != null ? r.top8_appearances.toLocaleString() : '—', 'Total finishes in the top 8')}
+      ${statRow('Meta share', r.top32_share != null ? (r.top32_share * 100).toFixed(2) + '%' : '—', 'Share of all top 32 finishes')}
+      ${statRow('Avg finish', r.avg_finish != null ? r.avg_finish.toFixed(1) : '—', 'Average finishing position')}
+    </div>
+
+    <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:4px;">
+      Data from MTGO Challenge top 32 finishes. Updated periodically.
+    </div>
+  `;
+
+  showScreen('screen-mtgo-detail');
 }
   
 function selectSuggestion(idx, archetype) {
