@@ -1,0 +1,82 @@
+name: mymtgo Daily Import
+
+on:
+  schedule:
+    # Runs at 11:30 PM UTC every day
+    - cron: '30 23 * * *'
+  # Also allows manual trigger from the GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Date to import (YYYY-MM-DD). Leave blank for today.'
+        required: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch and import games from mymtgo
+        env:
+          SUPABASE_URL: https://vkgtqunhsalquihlgkxp.supabase.co
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MYMTGO_API_KEY: ${{ secrets.MYMTGO_API_KEY }}
+          # Replace this URL once the developer confirms the endpoint format
+          MYMTGO_ENDPOINT: https://api.mymtgo.com/games/daily
+        run: |
+          # Determine the date to fetch
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            FETCH_DATE="${{ github.event.inputs.date }}"
+          else
+            FETCH_DATE=$(date -u +%Y-%m-%d)
+          fi
+          
+          echo "Fetching games for date: $FETCH_DATE"
+          
+          # Fetch games from mymtgo
+          GAMES=$(curl -s -f \
+            -H "Authorization: Bearer $MYMTGO_API_KEY" \
+            -H "Accept: application/json" \
+            "${MYMTGO_ENDPOINT}?date=${FETCH_DATE}")
+          
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to fetch games from mymtgo"
+            exit 1
+          fi
+          
+          GAME_COUNT=$(echo $GAMES | python3 -c "import sys,json; data=json.load(sys.stdin); print(len(data.get('games', data if isinstance(data, list) else [])))")
+          echo "Fetched $GAME_COUNT games from mymtgo"
+          
+          # Wrap in { "games": [...] } if the API returns a bare array
+          PAYLOAD=$(echo $GAMES | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          if isinstance(data, list):
+              print(json.dumps({'games': data}))
+          elif 'games' in data:
+              print(json.dumps(data))
+          else:
+              print(json.dumps({'games': [data]}))
+          ")
+          
+          # Send to Mize import function
+          RESULT=$(curl -s -f \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            -d "$PAYLOAD" \
+            "${SUPABASE_URL}/rest/v1/rpc/import_mymtgo_games")
+          
+          echo "Import result: $RESULT"
+          
+          # Extract counts for summary
+          IMPORTED=$(echo $RESULT | python3 -c "import sys,json; print(json.load(sys.stdin).get('imported', 0))")
+          SKIPPED=$(echo $RESULT | python3 -c "import sys,json; print(json.load(sys.stdin).get('skipped', 0))")
+          ERRORS=$(echo $RESULT | python3 -c "import sys,json; print(json.load(sys.stdin).get('errors', 0))")
+          
+          echo "✓ Imported: $IMPORTED | Skipped (duplicates): $SKIPPED | Errors: $ERRORS"
+          
+          if [ "$ERRORS" -gt "0" ]; then
+            echo "WARNING: $ERRORS records failed to import"
+            echo $RESULT | python3 -c "import sys,json; [print(e) for e in json.load(sys.stdin).get('error_details', [])]"
+          fi
