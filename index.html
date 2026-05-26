@@ -2708,13 +2708,25 @@ function renderMtgoArchetypes(rows) {
     return;
   }
 
-  // Normalise meta_adjusted_score to 0-100
   const maxScore = Math.max(...rows.map(r => r.meta_adjusted_score || 0));
-  const totalEvents = Math.max(...rows.map(r => r.event_count || 0));
   const totalAppearances = rows.reduce((s, r) => s + (r.top32_appearances || 0), 0);
 
+  function confidence(appearances) {
+    if (appearances >= 100) return { label: 'High', color: '#4caf50', title: 'High confidence: 100+ appearances' };
+    if (appearances >= 20)  return { label: 'Med',  color: '#ff9800', title: 'Medium confidence: 20-99 appearances' };
+    return                         { label: 'Low',  color: '#f44336', title: 'Low confidence: fewer than 20 appearances — treat with caution' };
+  }
+
   let html = `<div class="card" style="font-size:12px;color:var(--text2);margin-bottom:4px;">
-    ${rows.length} archetypes · ${totalAppearances} total top 32 finishes
+    ${rows.length} archetypes · ${totalAppearances.toLocaleString()} total top 32 finishes
+  </div>`;
+
+  // Legend
+  html += `<div class="card" style="padding:10px 12px;margin-bottom:4px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:11px;color:var(--text2);font-weight:600;">Confidence:</span>
+    <span style="font-size:11px;"><span style="color:#4caf50;font-weight:700;">&#9632;</span> High (100+ games)</span>
+    <span style="font-size:11px;"><span style="color:#ff9800;font-weight:700;">&#9632;</span> Med (20–99 games)</span>
+    <span style="font-size:11px;"><span style="color:#f44336;font-weight:700;">&#9632;</span> Low (&lt;20 games)</span>
   </div>`;
 
   html += '<div class="card" style="padding:0;overflow:hidden;">';
@@ -2723,6 +2735,7 @@ function renderMtgoArchetypes(rows) {
   html += '<thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border);">' +
     '<th style="padding:8px 6px;text-align:left;white-space:nowrap;">#</th>' +
     '<th style="padding:8px 6px;text-align:left;white-space:nowrap;">Archetype</th>' +
+    '<th style="padding:8px 6px;text-align:center;white-space:nowrap;">Conf.</th>' +
     '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T32</th>' +
     '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Share</th>' +
     '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T8%</th>' +
@@ -2732,18 +2745,21 @@ function renderMtgoArchetypes(rows) {
     '</tr></thead><tbody>';
 
   rows.forEach((r, i) => {
-    const share = r.top32_share != null ? (r.top32_share * 100).toFixed(1) + '%' : '—';
-    const top8 = r.top8_rate != null ? (r.top8_rate * 100).toFixed(0) + '%' : '—';
-    const pts = r.avg_points != null ? r.avg_points.toFixed(1) : '—';
-    const mwp = r.avg_mwp != null ? (r.avg_mwp * 100).toFixed(1) + '%' : '—';
-    const normScore = maxScore > 0
-      ? ((r.meta_adjusted_score / maxScore) * 100).toFixed(1)
-      : '—';
-    const bg = i % 2 === 0 ? '' : 'background:var(--surface2);';
+    const share    = r.top32_share != null ? (r.top32_share * 100).toFixed(1) + '%' : '—';
+    const top8     = r.top8_rate   != null ? (r.top8_rate   * 100).toFixed(0) + '%' : '—';
+    const pts      = r.avg_points  != null ?  r.avg_points.toFixed(1)               : '—';
+    const mwp      = r.avg_mwp     != null ? (r.avg_mwp     * 100).toFixed(1) + '%' : '—';
+    const normScore = maxScore > 0 ? ((r.meta_adjusted_score / maxScore) * 100).toFixed(1) : '—';
+    const conf     = confidence(r.top32_appearances);
+    const bg       = i % 2 === 0 ? '' : 'background:var(--surface2);';
 
-    html += `<tr style="${bg}border-bottom:1px solid var(--border);" onclick="showMtgoArchetypeDetail('${r.archetype_name.replace(/'/g, "\\'")}')">` +
+    html += `<tr style="${bg}border-bottom:1px solid var(--border);cursor:pointer;" onclick="showMtgoArchetypeDetail('${r.archetype_name.replace(/'/g, "\\'")}')">` +
       `<td style="padding:7px 6px;color:var(--text2);">${i + 1}</td>` +
-      `<td style="padding:7px 6px;font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.archetype_name}</td>` +
+      `<td style="padding:7px 6px;font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.archetype_name}</td>` +
+      `<td style="padding:7px 6px;text-align:center;">` +
+        `<span title="${conf.title}" style="font-size:10px;font-weight:700;color:${conf.color};` +
+        `background:${conf.color}22;border-radius:4px;padding:2px 6px;white-space:nowrap;">` +
+        `${conf.label}</span></td>` +
       `<td style="padding:7px 6px;text-align:right;">${r.top32_appearances}</td>` +
       `<td style="padding:7px 6px;text-align:right;">${share}</td>` +
       `<td style="padding:7px 6px;text-align:right;">${top8}</td>` +
@@ -2754,7 +2770,7 @@ function renderMtgoArchetypes(rows) {
   });
 
   html += '</tbody></table></div></div>';
-  html += '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Score normalised to 100 = best performing archetype. Tap a row for details.</div>';
+  html += '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Score rewards decks performing above their meta share. High confidence = larger sample size. Tap a row for details.</div>';
   el.innerHTML = html;
 }
 
