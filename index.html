@@ -3466,7 +3466,7 @@ async function calcChiSquared() {
     if (scope === 'mine'    || scope === 'compare') { setProgress('c', 20); myData  = await fetchSummaryData('mine', filter, deck, 'c', opponent); }
     if (scope === 'all'     || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all',  filter, deck, 'c', opponent); }
     setProgress('c', 80);
-    const myResults  = scope !== 'all'  ? (myData)  : [];
+const myResults  = scope !== 'all'  ? computeChiSquared(myData)  : [];
     const allResults = scope !== 'mine' ? computeChiSquared(allData) : [];
     const result = { scope, myResults, allResults, filter, deck, opponent };
     state.cache.c = { data: result, timestamp: Date.now() };
