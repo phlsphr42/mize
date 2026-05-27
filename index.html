@@ -715,10 +715,9 @@
     <h2>Opening Hand Analysis</h2>
   </div>
   <div class="analysis-tabs">
-    <div class="analysis-tab active" onclick="switchAnalysisTab('bayesian')">Bayesian</div>
-    <div class="analysis-tab" onclick="switchAnalysisTab('chisq')">Chi-squared</div>
-  </div>
-<div id="panel-bayesian" class="analysis-panel active">
+<div class="analysis-tab" onclick="switchAnalysisTab('bayesian')">Bayesian</div>
+<div class="analysis-tab active" onclick="switchAnalysisTab('chisq')">Chi-squared</div>
+<div id="panel-bayesian" class="analysis-panel">
   <div class="card">
     <div class="row">
       <div>
@@ -794,7 +793,7 @@
   <div id="b-results"></div>
 </div>
 
-<div id="panel-chisq" class="analysis-panel">
+<div id="panel-chisq" class="analysis-panel active">
   <div class="card">
     <div class="row">
       <div>
@@ -1093,7 +1092,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const THROTTLE_MS = 60000;
+const THROTTLE_MS = 10000;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 let state = {
@@ -3572,7 +3571,10 @@ function renderBayesianResults(result, fromCache) {
 
 function computeChiSquared(rows) {
   const byCard = {};
-  rows.forEach(r => { if (!byCard[r.card_name]) byCard[r.card_name] = {}; byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total }; });
+  rows.forEach(r => {
+    if (!byCard[r.card_name]) byCard[r.card_name] = {};
+    byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total };
+  });
   const results = [];
   Object.entries(byCard).forEach(function(entry) {
     const card = entry[0], copies = entry[1];
@@ -3584,21 +3586,39 @@ function computeChiSquared(rows) {
       if (!cd || cd.total === 0) continue;
       const a = cd.wins, b = cd.total - cd.wins, n = a + b + c + d;
       if (n === 0) continue;
-      const e1 = (a+c)*(a+b)/n, e2 = (a+c)*(c+d)/n, e3 = (b+d)*(a+b)/n, e4 = (b+d)*(c+d)/n;
-      if (e1 < 5 || e2 < 5 || e3 < 5 || e4 < 5) continue;
-      const chi2 = n * Math.pow(a*d - b*c, 2) / ((a+b)*(c+d)*(a+c)*(b+d));
-      const p = 1 - chi2CDF(chi2, 1);
-      const wrWith = cd.total > 0 ? cd.wins / cd.total : 0;
+      const e1 = (a+c)*(a+b)/n, e2 = (a+c)*(c+d)/n,
+            e3 = (b+d)*(a+b)/n, e4 = (b+d)*(c+d)/n;
+      const wrWith    = cd.total   > 0 ? cd.wins   / cd.total   : 0;
       const wrWithout = base.total > 0 ? base.wins / base.total : 0;
-      results.push({ card: card, copyCount: k, chi2: chi2, p: p, direction: wrWith > wrWithout ? 'positive' : 'negative', wrWith: wrWith, wrWithout: wrWithout, sampleWith: cd.total, sampleWithout: base.total });
+
+      // Check if minimum sample size is met (all expected cells >= 5)
+      const insufficientData = e1 < 5 || e2 < 5 || e3 < 5 || e4 < 5;
+
+      if (insufficientData) {
+        // Include the card but flag it
+        results.push({
+          card: card, copyCount: k,
+          chi2: null, p: null,
+          direction: wrWith > wrWithout ? 'positive' : 'negative',
+          wrWith: wrWith, wrWithout: wrWithout,
+          sampleWith: cd.total, sampleWithout: base.total,
+          insufficientData: true
+        });
+      } else {
+        const chi2 = n * Math.pow(a*d - b*c, 2) / ((a+b)*(c+d)*(a+c)*(b+d));
+        const p = 1 - chi2CDF(chi2, 1);
+        results.push({
+          card: card, copyCount: k,
+          chi2: chi2, p: p,
+          direction: wrWith > wrWithout ? 'positive' : 'negative',
+          wrWith: wrWith, wrWithout: wrWithout,
+          sampleWith: cd.total, sampleWithout: base.total,
+          insufficientData: false
+        });
+      }
     }
   });
   return results;
-}
-
-function chi2CDF(x, df) {
-  if (x < 0) return 0;
-  return regularisedGamma(df / 2, x / 2);
 }
 
 function regularisedGamma(a, x) {
@@ -3666,11 +3686,13 @@ function renderChiResults(result, fromCache) {
     }
 
     // Sort groups by best p-value within each card
-    const groupEntries = Object.entries(grouped).sort((a, b) => {
-      const bestA = Math.min(...a[1].map(r => r.p));
-      const bestB = Math.min(...b[1].map(r => r.p));
+const groupEntries = Object.entries(grouped).sort((a, b) => {
+      const bestA = Math.min(...a[1].filter(r => !r.insufficientData).map(r => r.p).concat([Infinity]));
+      const bestB = Math.min(...b[1].filter(r => !r.insufficientData).map(r => r.p).concat([Infinity]));
       if (state.chiSortKey === 'p') return bestA - bestB;
-      if (state.chiSortKey === 'chi') return Math.max(...b[1].map(r => r.chi2)) - Math.max(...a[1].map(r => r.chi2));
+      const maxChi2A = Math.max(...a[1].filter(r => !r.insufficientData).map(r => r.chi2).concat([0]));
+      const maxChi2B = Math.max(...b[1].filter(r => !r.insufficientData).map(r => r.chi2).concat([0]));
+      if (state.chiSortKey === 'chi') return maxChi2B - maxChi2A;
       return a[0].localeCompare(b[0]);
     });
 
@@ -3681,28 +3703,43 @@ function renderChiResults(result, fromCache) {
       html += '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;">';
 
       // Card header row
-      const bestRow = cardRows.reduce((a, b) => a.p < b.p ? a : b);
-      const sigClass = bestRow.p < 0.01 ? 'sig-high' : bestRow.p < 0.05 ? 'sig-med' : 'sig-low';
-      const sigLabel = bestRow.p < 0.01 ? '**' : bestRow.p < 0.05 ? '*' : 'ns';
+const sufficientRows = cardRows.filter(r => !r.insufficientData);
+      const bestRow = sufficientRows.length > 0
+        ? sufficientRows.reduce((a, b) => a.p < b.p ? a : b)
+        : cardRows[0];
+      const sigClass = bestRow.insufficientData ? 'sig-low'
+        : bestRow.p < 0.01 ? 'sig-high' : bestRow.p < 0.05 ? 'sig-med' : 'sig-low';
+      const sigLabel = bestRow.insufficientData ? '⚠'
+        : bestRow.p < 0.01 ? '**' : bestRow.p < 0.05 ? '*' : 'ns';
       html += '<div style="background:var(--surface2);padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">' +
         '<div style="font-size:13px;font-weight:700;">' + cardName + '</div>' +
         '<span class="' + sigClass + '" style="font-size:12px;">' + sigLabel + '</span>' +
         '</div>';
 
       // Sub-rows for each copy count
-      for (const r of cardRows.sort((a, b) => a.copyCount - b.copyCount)) {
+for (const r of cardRows.sort((a, b) => a.copyCount - b.copyCount)) {
         const dirClass = r.direction === 'positive' ? 'dir-pos' : 'dir-neg';
         const dirLabel = r.direction === 'positive' ? '▲ +' : '▼ −';
         const wrDiff = ((r.wrWith - r.wrWithout) * 100).toFixed(1);
-        const rowSigClass = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
-        html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-          '<div style="font-size:11px;color:var(--text2);min-width:40px;">' + r.copyCount + '×</div>' +
-          '<div style="font-size:11px;color:var(--text2);min-width:50px;">' + r.sampleWith + 'g with</div>' +
-          '<div style="font-size:11px;min-width:50px;">χ²&nbsp;' + r.chi2.toFixed(2) + '</div>' +
-          '<div style="font-size:11px;min-width:60px;">p&nbsp;' + (r.p < 0.0001 ? '&lt;0.0001' : r.p.toFixed(4)) + '</div>' +
-          '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(wrDiff) + '%</span></div>' +
-          '<span class="' + rowSigClass + '" style="font-size:11px;">' + (r.p < 0.01 ? '**' : r.p < 0.05 ? '*' : 'ns') + '</span>' +
-          '</div>';
+
+        if (r.insufficientData) {
+          html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;opacity:0.6;">' +
+            '<div style="font-size:11px;color:var(--text2);min-width:40px;">' + r.copyCount + '×</div>' +
+            '<div style="font-size:11px;color:var(--text2);min-width:50px;">' + r.sampleWith + 'g with</div>' +
+            '<div style="font-size:11px;color:var(--warning);">⚠ insufficient data</div>' +
+            '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(wrDiff) + '%</span></div>' +
+            '</div>';
+        } else {
+          const rowSigClass = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
+          html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+            '<div style="font-size:11px;color:var(--text2);min-width:40px;">' + r.copyCount + '×</div>' +
+            '<div style="font-size:11px;color:var(--text2);min-width:50px;">' + r.sampleWith + 'g with</div>' +
+            '<div style="font-size:11px;min-width:50px;">χ²&nbsp;' + r.chi2.toFixed(2) + '</div>' +
+            '<div style="font-size:11px;min-width:60px;">p&nbsp;' + (r.p < 0.0001 ? '&lt;0.0001' : r.p.toFixed(4)) + '</div>' +
+            '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(wrDiff) + '%</span></div>' +
+            '<span class="' + rowSigClass + '" style="font-size:11px;">' + (r.p < 0.01 ? '**' : r.p < 0.05 ? '*' : 'ns') + '</span>' +
+            '</div>';
+        }
       }
       html += '</div>';
     }
