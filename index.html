@@ -340,7 +340,6 @@
   <button class="btn btn-primary" onclick="startNewMatch()">+ New match</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-my-decks')">My Decks</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-analysis')">Opening Hand Analysis</button>
-  <button class="btn btn-secondary" onclick="showScreen('screen-matchup')">My Matchups</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Meta Matchup Matrix</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-mtgo')">MTGO Deck Rankings</button>
   <button class="btn btn-secondary" id="btn-admin" style="display:none;" onclick="showScreen('screen-admin')">Admin</button>
@@ -890,85 +889,6 @@
   </div>
 </div>
 
-<!-- MATCHUP MATRIX -->
-<div id="screen-matchup" class="screen">
-  <div class="header">
-    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
-    <h2>My Matchups</h2>
-  </div>
-  <div class="card">
-    <div class="row">
-      <div>
-        <label class="label">Your deck</label>
-        <select id="m-deck"><option value="">All decks</option></select>
-      </div>
-      <div>
-        <label class="label">Data scope</label>
-        <select id="m-scope">
-          <option value="all">All data</option>
-          <option value="mine">My data</option>
-        </select>
-      </div>
-    </div>
-<div class="row">
-      <div>
-        <label class="label">Format</label>
-        <select id="m-format" onchange="onMatchupFormatChange()">
-          <option value="">All formats</option>
-          <option value="Modern">Modern</option>
-          <option value="Legacy">Legacy</option>
-          <option value="Pioneer">Pioneer</option>
-          <option value="Standard">Standard</option>
-          <option value="Pauper">Pauper</option>
-          <option value="Vintage">Vintage</option>
-          <option value="Premodern">Premodern</option>
-        </select>
-      </div>
-      <div>
-        <label class="label">Game filter</label>
-        <select id="m-filter">
-          <option value="Overall">Overall</option>
-          <option value="Pre">Preboard</option>
-          <option value="Post">Postboard</option>
-        </select>
-      </div>
-</div>
-      <div>
-        <label class="label">Date range</label>
-        <select id="m-date-preset" onchange="applyDatePreset('m')">
-          <option value="all">All time</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
-          <option value="180">Last 6 months</option>
-          <option value="365">Last year</option>
-          <option value="custom">Custom range</option>
-        </select>
-      </div>
-    </div>
-    <div id="m-date-custom" style="display:none;">
-      <div class="row">
-        <div>
-          <label class="label">From</label>
-          <input type="date" id="m-date-from" style="margin-bottom:0;">
-        </div>
-        <div>
-          <label class="label">To</label>
-          <input type="date" id="m-date-to" style="margin-bottom:0;">
-        </div>
-      </div>
-    </div>
-    <input type="text" id="m-search" placeholder="Search opponent archetype..."
-           oninput="filterMatchupResults(this.value)" style="margin-bottom:8px;">
-    <div class="throttle-msg" id="throttle-m"></div>
-    <div class="progress-bar-wrap" id="progress-m">
-      <div class="progress-bar-fill" id="progress-m-fill" style="width:0%"></div>
-    </div>
-    <button class="btn btn-primary" id="btn-calc-m" onclick="calcMatchups()" style="margin-bottom:0;">Load matchups</button>
-    <div style="font-size:11px;color:var(--text2);margin-top:4px;text-align:center;" id="m-cache-info"></div>
-  </div>
-  <div id="m-results"><div style="color:var(--text2);font-size:14px;padding:8px 0;">Select filters and click Load matchups.</div></div>
-</div>
-
 <!-- MATCHUP MATRIX GRID -->
 <div id="screen-matrix" class="screen">
   <div class="header">
@@ -1166,10 +1086,6 @@ let state = {
   cache: { b: null, c: null },
   lastCalc: { b: 0, c: 0 }
 };
-
-let matchupCache = null;
-let matchupLastCalc = 0;
-let matchupRawData = [];
 
 // ── UTILITIES ──────────────────────────────────────────────────────
 
@@ -1451,7 +1367,6 @@ function showScreen(id) {
       document.getElementById('opponent-prefill-section').style.display = 'none';
     }
   }
-  if (id === 'screen-matchup') { try { onShowMatchup(); } catch(e) { console.error('matchup error:', e); } }
   if (id === 'screen-admin') {
     if (state.pilot && state.pilot.pilot_name === 'thnkr') loadAdminData();
     else showScreen('screen-home');
@@ -2870,13 +2785,6 @@ let pilotQuery = db.from('mtgo_pilot_summary')
   }
 }
 
-  function onMatchupFormatChange() {
-  matchupCache = null;
-  matchupLastCalc = 0;
-  document.getElementById('m-results').innerHTML =
-    '<div style="color:var(--text2);font-size:14px;padding:8px 0;">Select filters and click Load matchups.</div>';
-}
-
 function onMatrixFormatChange() {
   matrixCache = null;
   matrixLastCalc = 0;
@@ -3925,26 +3833,6 @@ function renderChiResults(result, fromCache) {
 
 // ── MATCHUP MATRIX ─────────────────────────────────────────────────
 
-function onShowMatchup() {
-  try {
-    const sel = document.getElementById('m-deck');
-    if (sel) {
-      sel.innerHTML = '<option value="">All decks</option>' +
-        state.allDecks.map(d => '<option value="' + d.archetype_name + '">' + d.archetype_name + '</option>').join('');
-    }
-    if (matchupCache && (Date.now() - matchupCache.timestamp < CACHE_TTL_MS)) {
-      renderMatchupResults(matchupCache.data, '');
-      const el = document.getElementById('m-cache-info');
-      if (el) {
-        const age = Math.round((Date.now() - matchupCache.timestamp) / 60000);
-        el.textContent = 'Showing cached results (' + age + 'm ago). Recalculate to refresh.';
-      }
-    }
-  } catch(e) {
-    console.error('onShowMatchup error:', e);
-  }
-}
-
   // Store options data for each custom select
 const customSelectData = {};
 
@@ -4038,152 +3926,6 @@ function selectCustomOption(id, value, label) {
   document.getElementById(id).value = value;
   document.getElementById(id + '-display').textContent = label || 'All';
   closeCustomSelectModal();
-}
-
-async function calcMatchups() {
-  const now = Date.now();
-  if (now - matchupLastCalc < THROTTLE_MS) {
-    const secs = Math.ceil((THROTTLE_MS - (now - matchupLastCalc)) / 1000);
-    const el = document.getElementById('throttle-m');
-    el.textContent = 'Please wait ' + secs + 's before recalculating.';
-    el.style.display = 'block';
-    setTimeout(() => el.style.display = 'none', THROTTLE_MS - (now - matchupLastCalc));
-    return;
-  }
-  const deck   = document.getElementById('m-deck').value;
-  const scope  = document.getElementById('m-scope').value;
-  const filter = document.getElementById('m-filter').value;
-  const format = document.getElementById('m-format').value;
-
-  setProgress('m', 10);
-  document.getElementById('btn-calc-m').disabled = true;
-
-  try {
-    let query = db.from('raw_game_log')
-      .select('pilot_name,deck_archetype,game_number,pre_post,opponent_archetype,game_result,match_result')
-      .not('opponent_archetype', 'is', null)
-      .not('game_result', 'is', null);
-
-    if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
-    if (deck)   query = query.eq('deck_archetype', deck);
-    if (format) query = query.eq('format', format);
-
-    if (filter === 'G1')        query = query.eq('game_number', 'G1');
-    else if (filter === 'G23')  query = query.eq('game_number', 'G23');
-    else if (filter === 'Pre')  query = query.eq('pre_post', 'Pre');
-    else if (filter === 'Post') query = query.eq('pre_post', 'Post');
-    else if (filter === 'Pre_G1')   query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
-    else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
-
-    const dateRange = getDateRange('m');
-    if (dateRange.from) query = query.gte('timestamp', dateRange.from);
-    if (dateRange.to)   query = query.lte('timestamp', dateRange.to);
-
-    setProgress('m', 40);
-    const { data: games, error } = await query.limit(50000);
-    if (error) throw error;
-
-    setProgress('m', 60);
-
-    const byOpponent = {};
-    for (const g of games || []) {
-      const opp = g.opponent_archetype;
-      if (!byOpponent[opp]) byOpponent[opp] = { game_wins: 0, game_losses: 0, match_wins: 0, match_losses: 0 };
-      if (g.game_result === 'Win')  byOpponent[opp].game_wins++;
-      else if (g.game_result === 'Loss') byOpponent[opp].game_losses++;
-      if (g.match_result === 'Win')  byOpponent[opp].match_wins++;
-      else if (g.match_result === 'Loss') byOpponent[opp].match_losses++;
-    }
-
-    const totalGames = Object.values(byOpponent).reduce((s, r) => s + r.game_wins + r.game_losses, 0);
-    const sorted = Object.entries(byOpponent).sort((a, b) => (b[1].game_wins + b[1].game_losses) - (a[1].game_wins + a[1].game_losses));
-    const topArchetypes = new Set();
-    let cumulative = 0;
-    for (const [opp, stats] of sorted) {
-      topArchetypes.add(opp);
-      cumulative += stats.game_wins + stats.game_losses;
-      if (totalGames > 0 && cumulative / totalGames >= 0.75) break;
-    }
-
-    setProgress('m', 80);
-
-    matchupRawData = Object.entries(byOpponent).map(function(entry) {
-      const opp = entry[0], stats = entry[1];
-      const gTotal = stats.game_wins + stats.game_losses;
-      const mTotal = stats.match_wins + stats.match_losses;
-      const gInterval = wilsonInterval(stats.game_wins, gTotal);
-      const mInterval = wilsonInterval(stats.match_wins, mTotal);
-      return {
-        opponent: opp,
-        inTop75: topArchetypes.has(opp),
-        gameWins: stats.game_wins, gameLosses: stats.game_losses,
-        gameTotal: gTotal, gameMid: gInterval.mid,
-        gameLow: gInterval.low, gameHigh: gInterval.high,
-        matchWins: stats.match_wins, matchLosses: stats.match_losses,
-        matchTotal: mTotal, matchMid: mInterval.mid,
-        matchLow: mInterval.low, matchHigh: mInterval.high,
-        lowSample: gTotal < 10
-      };
-    }).sort((a, b) => {
-      if (a.inTop75 && !b.inTop75) return -1;
-      if (!a.inTop75 && b.inTop75) return 1;
-      return b.gameMid - a.gameMid;
-    });
-
-    matchupCache = { data: matchupRawData, timestamp: Date.now() };
-    matchupLastCalc = Date.now();
-    setProgress('m', 100);
-    renderMatchupResults(matchupRawData, '');
-    const ci = document.getElementById('m-cache-info');
-    if (ci) ci.textContent = '';
-
-  } catch(e) {
-    showToast('Error: ' + e.message, 'error');
-  } finally {
-    setProgress('m', 0);
-    document.getElementById('btn-calc-m').disabled = false;
-  }
-}
-
-function filterMatchupResults(query) {
-  if (!matchupRawData.length) return;
-  renderMatchupResults(matchupRawData, query);
-}
-
-function renderMatchupResults(data, searchQuery) {
-  const el = document.getElementById('m-results');
-  const q = (searchQuery || '').toLowerCase();
-  let filtered = q ? data.filter(r => r.opponent.toLowerCase().includes(q)) : data.filter(r => r.inTop75);
-  if (!filtered.length && q) filtered = data.filter(r => r.opponent.toLowerCase().includes(q));
-  if (!filtered.length) {
-    el.innerHTML = '<div style="color:var(--text2);font-size:14px;padding:8px 0;">No matchup data available. Run the calculation notebook first, then load matchups.</div>';
-    return;
-  }
-  const top75 = filtered.filter(r => r.inTop75);
-  const rest = filtered.filter(r => !r.inTop75);
-  const renderRow = r => {
-    const gColor = r.gameMid >= 55 ? 'var(--success)' : r.gameMid <= 45 ? 'var(--danger)' : 'var(--text)';
-    const mColor = r.matchMid >= 55 ? 'var(--success)' : r.matchMid <= 45 ? 'var(--danger)' : 'var(--text)';
-    return '<div style="padding:10px 0;border-bottom:1px solid var(--border);opacity:' + (r.lowSample ? '0.6' : '1') + ';">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
-      '<div style="flex:1;"><div style="font-size:13px;font-weight:600;">' + r.opponent + '</div>' +
-      (r.lowSample ? '<div style="font-size:10px;color:var(--warning);">Low sample</div>' : '') + '</div>' +
-      '<div style="text-align:right;min-width:120px;"><div style="font-size:12px;color:var(--text2);">Game</div>' +
-      '<div style="font-size:14px;font-weight:700;color:' + gColor + ';">' + r.gameMid + '%</div>' +
-      '<div style="font-size:10px;color:var(--text2);">' + r.gameLow + '%–' + r.gameHigh + '% (' + r.gameTotal + 'g)</div></div>' +
-      (r.matchTotal > 0 ? '<div style="text-align:right;min-width:120px;margin-left:8px;"><div style="font-size:12px;color:var(--text2);">Match</div>' +
-      '<div style="font-size:14px;font-weight:700;color:' + mColor + ';">' + r.matchMid + '%</div>' +
-      '<div style="font-size:10px;color:var(--text2);">' + r.matchLow + '%–' + r.matchHigh + '% (' + r.matchTotal + 'm)</div></div>' : '') +
-      '</div></div>';
-  };
-  let html = '';
-  if (q) {
-    html = filtered.map(renderRow).join('');
-  } else {
-    if (top75.length) html += '<div class="card-title" style="margin-bottom:4px;">Top 75% of metagame (' + top75.length + ' matchups)</div>' + top75.map(renderRow).join('');
-    if (rest.length) html += '<hr class="divider"><div class="card-title" style="margin-bottom:4px;cursor:pointer;" onclick="toggleRestMatchups(this)">Other matchups (' + rest.length + ') — tap to show ▼</div><div id="rest-matchups" style="display:none;">' + rest.map(renderRow).join('') + '</div>';
-  }
-  el.innerHTML = '<div class="card" style="padding:12px;">' + html + '</div>';
 }
 
 function toggleRestMatchups(el) {
