@@ -194,25 +194,25 @@
   <div class="container">
 
     <div class="logo">MIZE</div>
-    <div class="tagline">Magic: The Gathering match tracking and analysis</div>
+    <div class="tagline">Magic: The Gathering data tracking and analysis</div>
 
     <a href="index.html" class="back-link">← Back to Mize</a>
 
     <p class="lead">
-      Mize is built for competitive Magic players who want to understand their game more deeply.
+      Mize is built for competitive Magic players who are interested in deeper insight within the game.
       Log your matches, analyze your opening hands, and discover what the data says about
-      the metagame — all in one place.
+      the metagame. This is similar to tools that can be found for other games, like HSReplay for Hearthstone players. However, Mize is free!
     </p>
 
     <!-- Entering Game Data -->
     <h2>Entering Game Data</h2>
-    <p>The foundation of Mize is your personal match record. After each match, you log the result along with your opening hand — the seven cards you were dealt at the start of each game.</p>
-    <p>After selecting your deck and your opponent's archetype, Mize walks you through each game in the match. You record whether you won or lost and which cards were in your opening hand. The whole process takes less than a minute per match.</p>
-    <p>Every match you log contributes to two things: your personal performance history, and the community dataset that powers Mize's analysis features. The opening hand data in particular enables Mize to answer questions no other tool can — not just <em>what</em> you played, but <em>what you were holding when you won or lost</em>.</p>
+    <p>The foundation of Mize is your personal match record. After each match, you log the result along with your opening hand.</p>
+    <p>Mize walks you through each game in the match. You record which cards were in your opening hand, what the opponent was playing, if the game was a preboard or postboard game, and whether you won or lost. The whole process takes less than a minute per match.</p>
+    <p>Every match you log contributes to two things: your personal performance history, and the community dataset that powers Mize's analysis features. The opening hand data in particular enables Mize to provide valuable information about which cards tend to comprise the best performing opening hands for the increasingly important opening turns of the game.</em>.</p>
 
     <!-- Opening Hand Analysis -->
     <h2>Opening Hand Analysis</h2>
-    <p>Once you have enough match data logged, Mize can tell you which cards in your deck are actually making a difference in your win rate — and which ones might be dead weight.</p>
+    <p>Once you have enough match data logged, Mize can tell you which cards in your deck are actually making a difference in your win rate.</p>
 
     <h3>Bayesian Analysis</h3>
     <p>Evaluates each card by comparing your win rate in games where the card appeared in your opening hand versus games where it didn't. A Bayesian adjustment accounts for small sample sizes, so cards with only a few appearances are appropriately weighted rather than producing misleading results.</p>
@@ -232,7 +232,6 @@
       <span class="filter-tag">Format</span>
       <span class="filter-tag">Deck archetype</span>
       <span class="filter-tag">Opponent archetype</span>
-      <span class="filter-tag">Game 1 vs Games 2/3</span>
       <span class="filter-tag">Preboard vs Postboard</span>
       <span class="filter-tag">Date range</span>
       <span class="filter-tag">My data / All data / Compare</span>
@@ -244,7 +243,7 @@
 
     <!-- Meta Matchup Matrix -->
     <h2>Meta Matchup Matrix</h2>
-    <p>The Meta Matchup Matrix gives you a bird's-eye view of how every archetype in the metagame performs against every other archetype — all in a single grid.</p>
+    <p>The Meta Matchup Matrix gives you an overview of how every archetype in the metagame performs against every other archetype — all in a single grid.</p>
     <p>Each cell shows the win rate of the row deck against the column deck. Green cells indicate a favorable matchup, red cells indicate an unfavorable one. Cells with fewer than 5 games show — to indicate insufficient data. Tapping any cell opens a detail view with exact game counts and win rates.</p>
 
     <p>Filters available:</p>
@@ -257,16 +256,16 @@
       <span class="filter-tag">Top 75% of metagame / All archetypes</span>
     </div>
 
-    <p style="margin-top:16px;">Before an event, quickly identify which matchups your deck struggles with and which it dominates. This helps you make informed sideboard decisions and set realistic expectations for the field you're likely to face.</p>
+    <p style="margin-top:16px;">Identify which matchups your deck struggles with and which it dominates, along with which cards seem to help most with each matchup. This helps you make informed sideboard decisions and set realistic expectations for the field you're likely to face.</p>
 
     <hr class="divider">
 
     <!-- MTGO Deck Rankings -->
     <h2>MTGO Deck Rankings</h2>
-    <p>The MTGO Deck Rankings page tracks how every archetype is performing in competitive MTGO events — Challenges, Showcase Challenges, and other tournaments — sourced daily from published decklists and standings.</p>
+    <p>The MTGO Deck Rankings page tracks how every archetype is performing in competitive MTGO events — Challenges, Showcase Challenges, and other tournaments, sourced daily from published decklists and standings.</p>
 
     <h3>What the score means</h3>
-    <p>Decks are ranked by an opportunity score that deliberately rewards decks that are <strong style="color:var(--accent)">outperforming their metagame share</strong>. A deck that many players are playing but barely winning with scores lower than a deck that few players are playing but consistently winning. This is designed to surface potentially underplayed decks that could be strong choices for your next event.</p>
+    <p>Decks are ranked by an opportunity score that deliberately rewards decks that are <strong style="color:var(--accent)">outperforming their metagame share</strong>. A deck that many players are playing but barely winning with scores lower than a deck that few players are playing but consistently winning. This is designed to reveal potentially underplayed decks that could be strong choices for your next event.</p>
 
     <h3>Confidence indicators</h3>
     <div class="card">
@@ -277,13 +276,15 @@
 
     <p>The <strong>vs Field</strong> column shows each deck's match win percentage compared to the weighted field average. ▲ indicates above-average performance, ▼ indicates below-average.</p>
     <p>Tapping any row opens a full detail view with top 8 conversion rate, average points per event, game win percentage, opponent match win percentage (strength of schedule), and metagame share.</p>
-    <p>Instead of relying on content creators or social media to tell you what's good, you can see directly what's winning in competitive play — and more importantly, what's winning that not everyone has caught on to yet.</p>
+    <p>Instead of relying on content creators or social media to tell you what's good, you can see directly what's winning in competitive play, and more importantly, what's winning that not everyone has caught on to yet.</p>
 
+    <p>Mize also provides a sort of MTGO Challenge leaderboard. This provides information about the players who are listed in MTGO's Challenge results and ranks them according to their overall performance, for those who want to separate they hype-generators from the players who are actually consistently showing how things get done.</p>
+    
     <hr class="divider">
-
+    
     <!-- Formats -->
     <h2>Formats Supported</h2>
-    <p>Mize supports tracking and analysis across multiple Magic formats. Each feature can be filtered so Modern players aren't seeing Legacy data and vice versa.</p>
+    <p>Mize supports tracking and analysis across multiple Magic formats. Each feature can be filtered for your format(s) of choice.</p>
     <div class="format-grid">
       <div class="format-pill">Modern</div>
       <div class="format-pill">Legacy</div>
@@ -298,7 +299,7 @@
 
     <!-- Privacy -->
     <h2>Your Data</h2>
-    <p>Your personal match history belongs to you. Your individual game records are only visible in your personal analysis views — they are never displayed to other users by name. Community analysis features use aggregated data across all pilots without identifying individuals.</p>
+    <p>Your personal match history belongs to you. Your individual game records are only visible in your personal analysis views. They are never displayed to other users by name. Community analysis features use aggregated data across all pilots without identifying individuals.</p>
     <p>The more matches the community logs, the more powerful the analysis becomes for everyone.</p>
 
     <!-- CTA -->
