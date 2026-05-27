@@ -3465,7 +3465,7 @@ async function calcChiSquared() {
     if (scope === 'mine'    || scope === 'compare') { setProgress('c', 20); myData  = await fetchSummaryData('mine', filter, deck, 'c', opponent); }
     if (scope === 'all'     || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all',  filter, deck, 'c', opponent); }
     setProgress('c', 80);
-    const myResults  = scope !== 'all'  ? computeChiSquared(myData)  : [];
+    const myResults  = scope !== 'all'  ? (myData)  : [];
     const allResults = scope !== 'mine' ? computeChiSquared(allData) : [];
     const result = { scope, myResults, allResults, filter, deck, opponent };
     state.cache.c = { data: result, timestamp: Date.now() };
@@ -3567,6 +3567,67 @@ function renderBayesianResults(result, fromCache) {
     const isCommunity = result.scope === 'all' || communityAll;
     el.innerHTML = '<div class="card" style="padding:12px;">' + renderList(scores, '', isCommunity) + '</div>';
   }
+}
+
+  function chi2CDF(x, df) {
+  // Chi-squared CDF using incomplete gamma function approximation
+  // For df=1 (our use case): CDF(x) = erf(sqrt(x/2))
+  if (x <= 0) return 0;
+  if (df === 1) {
+    return erf(Math.sqrt(x / 2));
+  }
+  // General case using regularized incomplete gamma function
+  return gammaIncomplete(df / 2, x / 2);
+}
+
+function erf(x) {
+  // Abramowitz and Stegun approximation
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return x >= 0 ? y : -y;
+}
+
+function gammaIncomplete(a, x) {
+  // Regularized incomplete gamma function P(a, x)
+  if (x < 0) return 0;
+  if (x === 0) return 0;
+  if (x < a + 1) {
+    // Series representation
+    let term = 1 / a;
+    let sum = term;
+    for (let n = 1; n <= 100; n++) {
+      term *= x / (a + n);
+      sum += term;
+      if (Math.abs(term) < 1e-10 * Math.abs(sum)) break;
+    }
+    return sum * Math.exp(-x + a * Math.log(x) - logGamma(a));
+  } else {
+    // Continued fraction representation
+    let b = x + 1 - a, c = 1e30, d = 1 / b, h = d;
+    for (let n = 1; n <= 100; n++) {
+      const an = -n * (n - a);
+      b += 2;
+      d = an * d + b;
+      if (Math.abs(d) < 1e-30) d = 1e-30;
+      c = b + an / c;
+      if (Math.abs(c) < 1e-30) c = 1e-30;
+      d = 1 / d;
+      h *= d * c;
+      if (Math.abs(d * c - 1) < 1e-10) break;
+    }
+    return 1 - Math.exp(-x + a * Math.log(x) - logGamma(a)) * h;
+  }
+}
+
+function logGamma(x) {
+  // Stirling's approximation for log gamma
+  const c = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+              -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  let y = x, tmp = x + 5.5;
+  tmp -= (x + 0.5) * Math.log(tmp);
+  let ser = 1.000000000190015;
+  for (let j = 0; j < 6; j++) ser += c[j] / ++y;
+  return -tmp + Math.log(2.5066282746310005 * ser / x);
 }
 
 function computeChiSquared(rows) {
