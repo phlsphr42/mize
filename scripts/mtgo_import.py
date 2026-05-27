@@ -331,27 +331,32 @@ def compute_archetype_summary(results, date_from, date_to):
     return sorted(rows, key=lambda x: x['meta_adjusted_score'], reverse=True)
 
 def compute_pilot_summary(results, date_from, date_to):
+    # Key by (pilot, format) instead of just pilot
     by_pilot = defaultdict(lambda: {
         'appearances': [], 'top8': 0, 'events': set(),
         'points': [], 'mwp': [], 'gwp': [], 'omwp': [],
-        'archetypes': defaultdict(int)
+        'archetypes': defaultdict(int),
+        'format': 'Modern'
     })
     for r in results:
         p = r.get('player_name')
         if not p: continue
+        fmt = r.get('_format', 'Modern')
+        key = (p, fmt)
         pos = r.get('finish_position')
-        by_pilot[p]['appearances'].append(pos)
-        by_pilot[p]['events'].add(r['event_id'])
+        by_pilot[key]['appearances'].append(pos)
+        by_pilot[key]['events'].add(r['event_id'])
+        by_pilot[key]['format'] = fmt
         if pos and pos <= 8:
-            by_pilot[p]['top8'] += 1
+            by_pilot[key]['top8'] += 1
         arch = r.get('archetype_canonical') or 'Unknown'
-        by_pilot[p]['archetypes'][arch] += 1
-        for key, field in [('points','points'),('mwp','match_win_pct'),
-                            ('gwp','game_win_pct'),('omwp','opp_match_win_pct')]:
+        by_pilot[key]['archetypes'][arch] += 1
+        for k, field in [('points','points'),('mwp','match_win_pct'),
+                          ('gwp','game_win_pct'),('omwp','opp_match_win_pct')]:
             if r.get(field) is not None:
-                by_pilot[p][key].append(r[field])
+                by_pilot[key][k].append(r[field])
     rows = []
-    for pilot, d in by_pilot.items():
+    for (pilot, fmt), d in by_pilot.items():
         avg_pts  = avg(d['points'])
         avg_mwp  = avg(d['mwp'])
         avg_gwp  = avg(d['gwp'])
@@ -368,6 +373,7 @@ def compute_pilot_summary(results, date_from, date_to):
         )
         rows.append({
             'player_name':        pilot,
+            'format':             fmt,
             'date_from':          date_from,
             'date_to':            date_to,
             'top32_appearances':  len(d['appearances']),
