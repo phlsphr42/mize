@@ -2943,8 +2943,21 @@ function toggleCustomArchetype() {
   const vis = el.style.display !== 'none';
   el.style.display = vis ? 'none' : 'block';
   if (!vis) {
-    document.querySelectorAll('.archetype-suggestion').forEach(el => el.classList.remove('selected'));
+    // Deselect any suggested archetype
+    document.querySelectorAll('.archetype-suggestion-row').forEach(r => {
+      r.style.background = '';
+      r.style.color = '';
+    });
     state.newDeckArchetype = null;
+    // Show the save section so the user can proceed
+    document.getElementById('new-deck-notes-section').style.display = 'block';
+    // Focus the custom input
+    setTimeout(() => document.getElementById('custom-archetype-input').focus(), 50);
+  } else {
+    // If toggling off, hide save section only if no archetype is selected
+    if (!state.newDeckArchetype) {
+      document.getElementById('new-deck-notes-section').style.display = 'none';
+    }
   }
 }
 
