@@ -910,7 +910,20 @@
         </select>
       </div>
     </div>
-    <div class="row">
+<div class="row">
+      <div>
+        <label class="label">Format</label>
+        <select id="m-format" onchange="onMatchupFormatChange()">
+          <option value="">All formats</option>
+          <option value="Modern">Modern</option>
+          <option value="Legacy">Legacy</option>
+          <option value="Pioneer">Pioneer</option>
+          <option value="Standard">Standard</option>
+          <option value="Pauper">Pauper</option>
+          <option value="Vintage">Vintage</option>
+          <option value="Premodern">Premodern</option>
+        </select>
+      </div>
       <div>
         <label class="label">Game filter</label>
         <select id="m-filter">
@@ -919,6 +932,7 @@
           <option value="Post">Postboard</option>
         </select>
       </div>
+</div>
       <div>
         <label class="label">Date range</label>
         <select id="m-date-preset" onchange="applyDatePreset('m')">
@@ -994,7 +1008,20 @@
         </div>
       </div>
     </div>
-    <div class="row">
+<div class="row">
+      <div>
+        <label class="label">Format</label>
+        <select id="mx-format" onchange="onMatrixFormatChange()">
+          <option value="">All formats</option>
+          <option value="Modern">Modern</option>
+          <option value="Legacy">Legacy</option>
+          <option value="Pioneer">Pioneer</option>
+          <option value="Standard">Standard</option>
+          <option value="Pauper">Pauper</option>
+          <option value="Vintage">Vintage</option>
+          <option value="Premodern">Premodern</option>
+        </select>
+      </div>
       <div>
         <label class="label">Win rate type</label>
         <select id="mx-rate-type" onchange="onMatrixRateTypeChange()">
@@ -1004,6 +1031,7 @@
           <option value="match">Match</option>
         </select>
       </div>
+</div>
       <div>
         <label class="label">Archetypes</label>
         <select id="mx-scope-arch">
@@ -1036,7 +1064,20 @@
     <h2>MTGO Deck Rankings</h2>
   </div>
   <div class="card">
-    <div class="row">
+<div class="row">
+      <div>
+        <label class="label">Format</label>
+        <select id="mtgo-format" onchange="loadMtgoData()">
+          <option value="">All formats</option>
+          <option value="Modern">Modern</option>
+          <option value="Legacy">Legacy</option>
+          <option value="Pioneer">Pioneer</option>
+          <option value="Standard">Standard</option>
+          <option value="Pauper">Pauper</option>
+          <option value="Vintage">Vintage</option>
+          <option value="Premodern">Premodern</option>
+        </select>
+      </div>
       <div>
         <label class="label">Date range</label>
         <select id="mtgo-date" onchange="loadMtgoData()">
@@ -1047,6 +1088,7 @@
           <option value="all">All time</option>
         </select>
       </div>
+</div>
       <div>
         <label class="label">Min appearances</label>
         <select id="mtgo-min" onchange="loadMtgoData()">
@@ -2783,8 +2825,9 @@ function setMtgoTab(tab) {
 async function loadMtgoData() {
   const dateVal = document.getElementById('mtgo-date').value;
   const minApp = parseInt(document.getElementById('mtgo-min').value);
+const format = document.getElementById('mtgo-format')?.value || '';
   const windowDays = dateVal === 'all' ? 0 : parseInt(dateVal);
-  const cacheKey = `${windowDays}_${minApp}`;
+  const cacheKey = `${windowDays}_${minApp}_${format}`;
 
   document.getElementById('mtgo-loading').style.display = 'block';
   document.getElementById('mtgo-results').innerHTML = '';
@@ -2792,24 +2835,28 @@ async function loadMtgoData() {
   try {
     if (mtgoTab === 'archetypes') {
       if (!mtgoCache.archetypes[cacheKey]) {
-        const { data, error } = await db.from('mtgo_archetype_summary')
+let archQuery = db.from('mtgo_archetype_summary')
           .select('*')
           .eq('window_days', windowDays)
           .gte('top32_appearances', minApp)
           .order('meta_adjusted_score', { ascending: false })
           .limit(200);
+        if (format) archQuery = archQuery.eq('format', format);
+        const { data, error } = await archQuery;
         if (error) throw error;
         mtgoCache.archetypes[cacheKey] = data || [];
       }
       renderMtgoArchetypes(mtgoCache.archetypes[cacheKey]);
     } else {
       if (!mtgoCache.pilots[cacheKey]) {
-        const { data, error } = await db.from('mtgo_pilot_summary')
+let pilotQuery = db.from('mtgo_pilot_summary')
           .select('*')
           .eq('window_days', windowDays)
           .gte('top32_appearances', minApp)
           .order('performance_score', { ascending: false })
           .limit(200);
+        if (format) pilotQuery = pilotQuery.eq('format', format);
+        const { data, error } = await pilotQuery;
         if (error) throw error;
         mtgoCache.pilots[cacheKey] = data || [];
       }
@@ -2821,6 +2868,19 @@ async function loadMtgoData() {
   } finally {
     document.getElementById('mtgo-loading').style.display = 'none';
   }
+}
+
+  function onMatchupFormatChange() {
+  matchupCache = null;
+  matchupLastCalc = 0;
+  document.getElementById('m-results').innerHTML =
+    '<div style="color:var(--text2);font-size:14px;padding:8px 0;">Select filters and click Load matchups.</div>';
+}
+
+function onMatrixFormatChange() {
+  matrixCache = null;
+  matrixLastCalc = 0;
+  document.getElementById('mx-results').innerHTML = '';
 }
 function renderMtgoArchetypes(rows) {
   const el = document.getElementById('mtgo-results');
@@ -3990,9 +4050,10 @@ async function calcMatchups() {
     setTimeout(() => el.style.display = 'none', THROTTLE_MS - (now - matchupLastCalc));
     return;
   }
-  const deck = document.getElementById('m-deck').value;
-  const scope = document.getElementById('m-scope').value;
+  const deck   = document.getElementById('m-deck').value;
+  const scope  = document.getElementById('m-scope').value;
   const filter = document.getElementById('m-filter').value;
+  const format = document.getElementById('m-format').value;
 
   setProgress('m', 10);
   document.getElementById('btn-calc-m').disabled = true;
@@ -4004,20 +4065,21 @@ async function calcMatchups() {
       .not('game_result', 'is', null);
 
     if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
-    if (deck) query = query.eq('deck_archetype', deck);
+    if (deck)   query = query.eq('deck_archetype', deck);
+    if (format) query = query.eq('format', format);
 
-if (filter === 'G1') query = query.eq('game_number', 'G1');
-  else if (filter === 'G23') query = query.eq('game_number', 'G23');
-  else if (filter === 'Pre') query = query.eq('pre_post', 'Pre');
-  else if (filter === 'Post') query = query.eq('pre_post', 'Post');
-  else if (filter === 'Pre_G1') query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
-  else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
+    if (filter === 'G1')        query = query.eq('game_number', 'G1');
+    else if (filter === 'G23')  query = query.eq('game_number', 'G23');
+    else if (filter === 'Pre')  query = query.eq('pre_post', 'Pre');
+    else if (filter === 'Post') query = query.eq('pre_post', 'Post');
+    else if (filter === 'Pre_G1')   query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
+    else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
 
-  const dateRange = getDateRange('m');
-  if (dateRange.from) query = query.gte('timestamp', dateRange.from);
-  if (dateRange.to) query = query.lte('timestamp', dateRange.to);
+    const dateRange = getDateRange('m');
+    if (dateRange.from) query = query.gte('timestamp', dateRange.from);
+    if (dateRange.to)   query = query.lte('timestamp', dateRange.to);
 
-  setProgress('m', 40);
+    setProgress('m', 40);
     const { data: games, error } = await query.limit(50000);
     if (error) throw error;
 
@@ -4027,14 +4089,13 @@ if (filter === 'G1') query = query.eq('game_number', 'G1');
     for (const g of games || []) {
       const opp = g.opponent_archetype;
       if (!byOpponent[opp]) byOpponent[opp] = { game_wins: 0, game_losses: 0, match_wins: 0, match_losses: 0 };
-      if (g.game_result === 'Win') byOpponent[opp].game_wins++;
+      if (g.game_result === 'Win')  byOpponent[opp].game_wins++;
       else if (g.game_result === 'Loss') byOpponent[opp].game_losses++;
-      if (g.match_result === 'Win') byOpponent[opp].match_wins++;
+      if (g.match_result === 'Win')  byOpponent[opp].match_wins++;
       else if (g.match_result === 'Loss') byOpponent[opp].match_losses++;
     }
 
     const totalGames = Object.values(byOpponent).reduce((s, r) => s + r.game_wins + r.game_losses, 0);
-
     const sorted = Object.entries(byOpponent).sort((a, b) => (b[1].game_wins + b[1].game_losses) - (a[1].game_wins + a[1].game_losses));
     const topArchetypes = new Set();
     let cumulative = 0;
@@ -4055,18 +4116,12 @@ if (filter === 'G1') query = query.eq('game_number', 'G1');
       return {
         opponent: opp,
         inTop75: topArchetypes.has(opp),
-        gameWins: stats.game_wins,
-        gameLosses: stats.game_losses,
-        gameTotal: gTotal,
-        gameMid: gInterval.mid,
-        gameLow: gInterval.low,
-        gameHigh: gInterval.high,
-        matchWins: stats.match_wins,
-        matchLosses: stats.match_losses,
-        matchTotal: mTotal,
-        matchMid: mInterval.mid,
-        matchLow: mInterval.low,
-        matchHigh: mInterval.high,
+        gameWins: stats.game_wins, gameLosses: stats.game_losses,
+        gameTotal: gTotal, gameMid: gInterval.mid,
+        gameLow: gInterval.low, gameHigh: gInterval.high,
+        matchWins: stats.match_wins, matchLosses: stats.match_losses,
+        matchTotal: mTotal, matchMid: mInterval.mid,
+        matchLow: mInterval.low, matchHigh: mInterval.high,
         lowSample: gTotal < 10
       };
     }).sort((a, b) => {
@@ -4161,10 +4216,10 @@ async function calcMatrix() {
     setTimeout(() => el.style.display = 'none', THROTTLE_MS - (now - matrixLastCalc));
     return;
   }
-
-  const scope = document.getElementById('mx-scope').value;
-  const rateType = document.getElementById('mx-rate-type').value;
+  const scope     = document.getElementById('mx-scope').value;
+  const rateType  = document.getElementById('mx-rate-type').value;
   const archScope = document.getElementById('mx-scope-arch').value;
+  const format    = document.getElementById('mx-format').value;
 
   setProgress('mx', 10);
   document.getElementById('btn-calc-mx').disabled = true;
@@ -4176,54 +4231,43 @@ async function calcMatrix() {
       .not('opponent_archetype', 'is', null)
       .not('game_result', 'is', null);
 
-    if (scope === 'mine') {
-      query = query.eq('pilot_name', state.pilot.pilot_name);
-    }
+    if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
+    if (format) query = query.eq('format', format);
 
-    if (rateType === 'game_pre') {
-      query = query.eq('pre_post', 'Pre');
-    } else if (rateType === 'game_post') {
-      query = query.eq('pre_post', 'Post');
-    }
+    if (rateType === 'game_pre')  query = query.eq('pre_post', 'Pre');
+    else if (rateType === 'game_post') query = query.eq('pre_post', 'Post');
 
     const dateRange = getDateRange('mx');
     if (dateRange.from) query = query.gte('timestamp', dateRange.from);
-    if (dateRange.to) query = query.lte('timestamp', dateRange.to);
+    if (dateRange.to)   query = query.lte('timestamp', dateRange.to);
 
     setProgress('mx', 40);
     const { data: games, error } = await query.limit(50000);
     if (error) throw error;
-
     setProgress('mx', 60);
 
-    // Build matchup data — keyed by [deck_archetype][opponent_archetype]
     const matchups = {};
     const deckCounts = {};
     const oppCounts = {};
-
     for (const g of games || []) {
       const deck = g.deck_archetype;
-      const opp = g.opponent_archetype;
-      if (deck === opp) continue; // skip mirror matches for now
-
+      const opp  = g.opponent_archetype;
+      if (deck === opp) continue;
       if (!matchups[deck]) matchups[deck] = {};
       if (!matchups[deck][opp]) matchups[deck][opp] = { gw: 0, gl: 0, mw: 0, ml: 0 };
-
-      if (g.game_result === 'Win') matchups[deck][opp].gw++;
+      if (g.game_result === 'Win')  matchups[deck][opp].gw++;
       else if (g.game_result === 'Loss') matchups[deck][opp].gl++;
-      if (g.match_result === 'Win') matchups[deck][opp].mw++;
+      if (g.match_result === 'Win')  matchups[deck][opp].mw++;
       else if (g.match_result === 'Loss') matchups[deck][opp].ml++;
-
       deckCounts[deck] = (deckCounts[deck] || 0) + 1;
-      oppCounts[opp] = (oppCounts[opp] || 0) + 1;
+      oppCounts[opp]   = (oppCounts[opp]   || 0) + 1;
     }
 
     setProgress('mx', 75);
 
-    // Determine which archetypes to show
     const totalGames = (games || []).length;
     const allDecks = Object.keys(deckCounts).sort((a, b) => deckCounts[b] - deckCounts[a]);
-    const allOpps = Object.keys(oppCounts).sort((a, b) => oppCounts[b] - oppCounts[a]);
+    const allOpps  = Object.keys(oppCounts).sort((a, b) => oppCounts[b] - oppCounts[a]);
     const allArchetypes = [...new Set([...allDecks, ...allOpps])].sort((a, b) => {
       const countA = (deckCounts[a] || 0) + (oppCounts[a] || 0);
       const countB = (deckCounts[b] || 0) + (oppCounts[b] || 0);
@@ -4242,13 +4286,11 @@ async function calcMatrix() {
     }
 
     matrixArchetypes = topArchetypes;
-    matrixRawData = matchups;
-
-    matrixCache = { archetypes: topArchetypes, matchups, timestamp: Date.now(), rateType };
-    matrixLastCalc = Date.now();
+    matrixRawData    = matchups;
+    matrixCache      = { archetypes: topArchetypes, matchups, timestamp: Date.now(), rateType };
+    matrixLastCalc   = Date.now();
     setProgress('mx', 100);
     renderMatrix(topArchetypes, matchups, rateType, '');
-
     const ci = document.getElementById('mx-cache-info');
     if (ci) ci.textContent = '';
 
