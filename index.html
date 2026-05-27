@@ -4056,18 +4056,30 @@ async function calcMatrix() {
     const matchups = {};
     const deckCounts = {};
     const oppCounts = {};
-    for (const g of games || []) {
+for (const g of games || []) {
       const deck = g.deck_archetype;
       const opp  = g.opponent_archetype;
       if (deck === opp) continue;
+
+      // Record from deck's perspective
       if (!matchups[deck]) matchups[deck] = {};
       if (!matchups[deck][opp]) matchups[deck][opp] = { gw: 0, gl: 0, mw: 0, ml: 0 };
-      if (g.game_result === 'Win')  matchups[deck][opp].gw++;
+      if (g.game_result === 'Win')       matchups[deck][opp].gw++;
       else if (g.game_result === 'Loss') matchups[deck][opp].gl++;
-      if (g.match_result === 'Win')  matchups[deck][opp].mw++;
+      if (g.match_result === 'Win')       matchups[deck][opp].mw++;
       else if (g.match_result === 'Loss') matchups[deck][opp].ml++;
       deckCounts[deck] = (deckCounts[deck] || 0) + 1;
       oppCounts[opp]   = (oppCounts[opp]   || 0) + 1;
+
+      // Also record the inverse — opponent's perspective
+      if (!matchups[opp]) matchups[opp] = {};
+      if (!matchups[opp][deck]) matchups[opp][deck] = { gw: 0, gl: 0, mw: 0, ml: 0 };
+      if (g.game_result === 'Win')       matchups[opp][deck].gl++;
+      else if (g.game_result === 'Loss') matchups[opp][deck].gw++;
+      if (g.match_result === 'Win')       matchups[opp][deck].ml++;
+      else if (g.match_result === 'Loss') matchups[opp][deck].mw++;
+      deckCounts[opp]  = (deckCounts[opp]  || 0) + 1;
+      oppCounts[deck]  = (oppCounts[deck]  || 0) + 1;
     }
 
     setProgress('mx', 75);
