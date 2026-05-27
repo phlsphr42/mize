@@ -3319,21 +3319,26 @@ async function populateAnalysisFilters() {
   const myArchetypes = new Set(
     (state.allDecks || []).map(d => d.archetype_name)
   );
+  const format = document.getElementById('analysis-format')?.value || '';
 
   try {
-    // Query the database views for distinct archetypes with 5+ games
-    const { data: deckData, error: deckErr } = await db.from('distinct_deck_archetypes')
-      .select('deck_archetype');
-    if (deckErr) throw deckErr;
+    let deckQuery = db.from('distinct_deck_archetypes').select('deck_archetype');
+    let oppQuery  = db.from('distinct_opponent_archetypes').select('opponent_archetype');
 
-    const { data: oppData, error: oppErr } = await db.from('distinct_opponent_archetypes')
-      .select('opponent_archetype');
+    if (format) {
+      deckQuery = deckQuery.eq('format', format);
+      oppQuery  = oppQuery.eq('format', format);
+    }
+
+    const { data: deckData, error: deckErr } = await deckQuery;
+    if (deckErr) throw deckErr;
+    const { data: oppData, error: oppErr } = await oppQuery;
     if (oppErr) throw oppErr;
 
-    const qualifiedDecks = (deckData || []).map(r => r.deck_archetype).sort();
-    const qualifiedOpps  = (oppData  || []).map(r => r.opponent_archetype).sort();
+    // Deduplicate since a deck may appear in multiple formats
+    const qualifiedDecks = [...new Set((deckData || []).map(r => r.deck_archetype))].sort();
+    const qualifiedOpps  = [...new Set((oppData  || []).map(r => r.opponent_archetype))].sort();
 
-    // Build the options arrays for the custom dropdowns
     const deckOptions = [{ value: '', label: 'All decks' }].concat(
       qualifiedDecks.map(d => ({
         value: d,
@@ -3350,7 +3355,6 @@ async function populateAnalysisFilters() {
     setCustomSelectOptions('c-opponent', oppOptions);
 
   } catch(e) {
-    // If the view query fails, fall back to just the user's own decks
     const fallback = [{ value: '', label: 'All decks' }].concat(
       (state.allDecks || []).map(d => ({ value: d.archetype_name, label: d.archetype_name }))
     );
@@ -3360,6 +3364,16 @@ async function populateAnalysisFilters() {
     setCustomSelectOptions('c-opponent', [{ value: '', label: 'All opponents' }]);
     console.error('populateAnalysisFilters:', e);
   }
+}
+
+function onAnalysisFormatChange() {
+  // Repopulate dropdowns filtered by new format
+  populateAnalysisFilters();
+  // Clear current results since they may be from a different format
+  document.getElementById('b-results').innerHTML = '';
+  document.getElementById('c-results').innerHTML = '';
+  state.cache.b = null;
+  state.cache.c = null;
 }
 
 function getDateRange(panel) {
@@ -3387,6 +3401,8 @@ async function fetchSummaryData(scope, filter, deck, panel, opponent) {
   if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
   if (deck) query = query.eq('deck_archetype', deck);
   if (opponent) query = query.eq('opponent_archetype', opponent);
+  const format = document.getElementById('analysis-format')?.value || '';
+  if (format) query = query.eq('format', format);
   if (filter === 'G1')        query = query.eq('game_number', 'G1');
   else if (filter === 'G23')  query = query.eq('game_number', 'G23');
   else if (filter === 'Pre')  query = query.eq('pre_post', 'Pre');
