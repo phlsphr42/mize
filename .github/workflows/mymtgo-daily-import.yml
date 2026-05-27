@@ -12,69 +12,65 @@ on:
 jobs:
   import:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: https://vkgtqunhsalquihlqkxp.supabase.co
+      SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      MYMTGO_API_KEY: ${{ secrets.MYMTGO_API_KEY }}
+      MYMTGO_ENDPOINT: https://mymtgo.com/api/card-stats/hands
+
     steps:
-      - name: Fetch and import games from mymtgo
-        env:
-          SUPABASE_URL: https://vkgtqunhsalquihlqkxp.supabase.co
-          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          MYMTGO_API_KEY: ${{ secrets.MYMTGO_API_KEY }}
-          MYMTGO_ENDPOINT: https://mymtgo.com/api/card-stats/hands
+      - name: Fetch games from mymtgo
         run: |
           echo "Fetching games from mymtgo..."
-
-          GAMES=$(curl -s -f \
+          curl -s -f \
             -H "Authorization: Bearer $MYMTGO_API_KEY" \
             -H "Accept: application/json" \
-            "${MYMTGO_ENDPOINT}")
+            "$MYMTGO_ENDPOINT" \
+            -o games_raw.json
+          echo "Fetch complete"
+          wc -c games_raw.json
 
-          if [ $? -ne 0 ]; then
-            echo "ERROR: Failed to fetch games from mymtgo"
-            exit 1
-          fi
+      - name: Wrap and send to Mize
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request, urllib.error
 
-          GAME_COUNT=$(echo $GAMES | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-print(len(data) if isinstance(data, list) else len(data.get('games', [])))
-")
-          echo "Fetched $GAME_COUNT games from mymtgo"
+          with open('games_raw.json') as f:
+              data = json.load(f)
 
-          # Wrap bare array in { "games": [...] } for Mize import function
-          PAYLOAD=$(echo $GAMES | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-if isinstance(data, list):
-    print(json.dumps({'games': data}))
-elif 'games' in data:
-    print(json.dumps(data))
-else:
-    print(json.dumps({'games': [data]}))
-")
+          if isinstance(data, list):
+              payload = {'games': data}
+          elif 'games' in data:
+              payload = data
+          else:
+              payload = {'games': [data]}
 
-          echo "Sending to Mize..."
+          print(f"Game count: {len(payload['games'])}")
 
-          RESULT=$(curl -s -f \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "apikey: $SUPABASE_KEY" \
-            -H "Authorization: Bearer $SUPABASE_KEY" \
-            -d "$PAYLOAD" \
-            "${SUPABASE_URL}/rest/v1/rpc/import_mymtgo_games")
+          body = json.dumps(payload).encode('utf-8')
+          req = urllib.request.Request(
+              os.environ['SUPABASE_URL'] + '/rest/v1/rpc/import_mymtgo_games',
+              data=body,
+              headers={
+                  'Content-Type': 'application/json',
+                  'apikey': os.environ['SUPABASE_KEY'],
+                  'Authorization': 'Bearer ' + os.environ['SUPABASE_KEY'],
+              },
+              method='POST'
+          )
 
-          echo "Import result: $RESULT"
-
-          IMPORTED=$(echo $RESULT | python3 -c "import sys,json; print(json.load(sys.stdin).get('imported', 0))")
-          SKIPPED=$(echo $RESULT | python3 -c "import sys,json; print(json.load(sys.stdin).get('skipped', 0))")
-          ERRORS=$(echo $RESULT | python3 -c "import sys,json; print(json.load(sys.stdin).get('errors', 0))")
-
-          echo "✓ Imported: $IMPORTED | Skipped (duplicates): $SKIPPED | Errors: $ERRORS"
-
-          if [ "$ERRORS" -gt "0" ]; then
-            echo "WARNING: $ERRORS records failed to import"
-            echo $RESULT | python3 -c "
-import sys, json
-details = json.load(sys.stdin).get('error_details', [])
-for d in details[:10]:
-    print(d)
-"
-          fi
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  result = json.loads(resp.read())
+                  imported = result.get('imported', 0)
+                  skipped = result.get('skipped', 0)
+                  errors = result.get('errors', 0)
+                  print(f"Imported: {imported} | Skipped: {skipped} | Errors: {errors}")
+                  if errors > 0:
+                      for e in result.get('error_details', [])[:10]:
+                          print(f"  ERROR: {e}")
+          except urllib.error.HTTPError as e:
+              print(f"HTTP Error: {e.code} {e.reason}")
+              print(e.read().decode())
+              raise
+          PYEOF
