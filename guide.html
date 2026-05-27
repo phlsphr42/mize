@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mize — User Guide</title>
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #242424;
+      --border: #333;
+      --accent: #c8a84b;
+      --text: #f0f0f0;
+      --text2: #999;
+      --success: #4caf50;
+      --danger: #f44336;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+    .logo {
+      font-size: 42px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 6px;
+      text-align: center;
+      padding: 48px 0 8px;
+    }
+    .tagline {
+      text-align: center;
+      color: var(--text2);
+      font-size: 15px;
+      margin-bottom: 48px;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+    .back-link:hover { opacity: 0.8; }
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 48px 0 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 24px 0 8px;
+    }
+    p {
+      font-size: 15px;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    .lead {
+      font-size: 17px;
+      color: var(--text2);
+      margin-bottom: 48px;
+      text-align: center;
+      line-height: 1.8;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .sig-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .sig-row:last-child { border-bottom: none; }
+    .sig-badge {
+      font-weight: 700;
+      min-width: 32px;
+      font-size: 13px;
+    }
+    .sig-high { color: #4caf50; }
+    .sig-med  { color: #ff9800; }
+    .sig-low  { color: var(--text2); }
+    .sig-warn { color: #ff9800; }
+    .conf-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .conf-row:last-child { border-bottom: none; }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .filter-tag {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 10px;
+      font-size: 12px;
+      color: var(--text2);
+      margin: 3px 3px 3px 0;
+    }
+    .format-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .format-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 14px;
+      text-align: center;
+      color: var(--text);
+    }
+    .cta {
+      text-align: center;
+      margin-top: 64px;
+      padding: 40px 24px;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+    }
+    .cta-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .cta-sub {
+      color: var(--text2);
+      font-size: 15px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-block;
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      font-size: 16px;
+      padding: 14px 32px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    .btn:hover { opacity: 0.9; }
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+    ul {
+      padding-left: 20px;
+      margin-bottom: 14px;
+    }
+    ul li {
+      font-size: 15px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="logo">MIZE</div>
+    <div class="tagline">Magic: The Gathering match tracking and analysis</div>
+
+    <a href="index.html" class="back-link">← Back to Mize</a>
+
+    <p class="lead">
+      Mize is built for competitive Magic players who want to understand their game more deeply.
+      Log your matches, analyze your opening hands, and discover what the data says about
+      the metagame — all in one place.
+    </p>
+
+    <!-- Entering Game Data -->
+    <h2>Entering Game Data</h2>
+    <p>The foundation of Mize is your personal match record. After each match, you log the result along with your opening hand — the seven cards you were dealt at the start of each game.</p>
+    <p>After selecting your deck and your opponent's archetype, Mize walks you through each game in the match. You record whether you won or lost and which cards were in your opening hand. The whole process takes less than a minute per match.</p>
+    <p>Every match you log contributes to two things: your personal performance history, and the community dataset that powers Mize's analysis features. The opening hand data in particular enables Mize to answer questions no other tool can — not just <em>what</em> you played, but <em>what you were holding when you won or lost</em>.</p>
+
+    <!-- Opening Hand Analysis -->
+    <h2>Opening Hand Analysis</h2>
+    <p>Once you have enough match data logged, Mize can tell you which cards in your deck are actually making a difference in your win rate — and which ones might be dead weight.</p>
+
+    <h3>Bayesian Analysis</h3>
+    <p>Evaluates each card by comparing your win rate in games where the card appeared in your opening hand versus games where it didn't. A Bayesian adjustment accounts for small sample sizes, so cards with only a few appearances are appropriately weighted rather than producing misleading results.</p>
+
+    <h3>Chi-Squared Analysis</h3>
+    <p>Applies a statistical significance test to the same comparison. Rather than just showing a win rate difference, it tells you how confident you can be that the difference is real and not just variance.</p>
+
+    <div class="card">
+      <div class="sig-row"><span class="sig-badge sig-high">**</span><span>Highly significant (p &lt; 0.01) — very unlikely to be a coincidence</span></div>
+      <div class="sig-row"><span class="sig-badge sig-med">*</span><span>Significant (p &lt; 0.05) — probably a real effect</span></div>
+      <div class="sig-row"><span class="sig-badge sig-low">ns</span><span>Not significant — not enough evidence yet</span></div>
+      <div class="sig-row"><span class="sig-badge sig-warn">⚠</span><span>Insufficient data — sample size too small for meaningful analysis</span></div>
+    </div>
+
+    <p>Filters available:</p>
+    <div>
+      <span class="filter-tag">Format</span>
+      <span class="filter-tag">Deck archetype</span>
+      <span class="filter-tag">Opponent archetype</span>
+      <span class="filter-tag">Game 1 vs Games 2/3</span>
+      <span class="filter-tag">Preboard vs Postboard</span>
+      <span class="filter-tag">Date range</span>
+      <span class="filter-tag">My data / All data / Compare</span>
+    </div>
+
+    <p style="margin-top:16px;">Instead of relying on intuition about which cards are good, you can see what the data says about your specific deck against your specific opponents. This is particularly powerful for identifying which sideboard cards are actually earning their slots.</p>
+
+    <hr class="divider">
+
+    <!-- Meta Matchup Matrix -->
+    <h2>Meta Matchup Matrix</h2>
+    <p>The Meta Matchup Matrix gives you a bird's-eye view of how every archetype in the metagame performs against every other archetype — all in a single grid.</p>
+    <p>Each cell shows the win rate of the row deck against the column deck. Green cells indicate a favorable matchup, red cells indicate an unfavorable one. Cells with fewer than 5 games show — to indicate insufficient data. Tapping any cell opens a detail view with exact game counts and win rates.</p>
+
+    <p>Filters available:</p>
+    <div>
+      <span class="filter-tag">Format</span>
+      <span class="filter-tag">Data scope</span>
+      <span class="filter-tag">Win rate type</span>
+      <span class="filter-tag">Preboard vs Postboard</span>
+      <span class="filter-tag">Date range</span>
+      <span class="filter-tag">Top 75% of metagame / All archetypes</span>
+    </div>
+
+    <p style="margin-top:16px;">Before an event, quickly identify which matchups your deck struggles with and which it dominates. This helps you make informed sideboard decisions and set realistic expectations for the field you're likely to face.</p>
+
+    <hr class="divider">
+
+    <!-- MTGO Deck Rankings -->
+    <h2>MTGO Deck Rankings</h2>
+    <p>The MTGO Deck Rankings page tracks how every archetype is performing in competitive MTGO events — Challenges, Showcase Challenges, and other tournaments — sourced daily from published decklists and standings.</p>
+
+    <h3>What the score means</h3>
+    <p>Decks are ranked by an opportunity score that deliberately rewards decks that are <strong style="color:var(--accent)">outperforming their metagame share</strong>. A deck that many players are playing but barely winning with scores lower than a deck that few players are playing but consistently winning. This is designed to surface potentially underplayed decks that could be strong choices for your next event.</p>
+
+    <h3>Confidence indicators</h3>
+    <div class="card">
+      <div class="conf-row"><div class="dot" style="background:#4caf50;"></div><strong>High</strong> — 100+ appearances: reliable signal</div>
+      <div class="conf-row"><div class="dot" style="background:#ff9800;"></div><strong>Med</strong> — 20–99 appearances: reasonable confidence</div>
+      <div class="conf-row"><div class="dot" style="background:#f44336;"></div><strong>Low</strong> — fewer than 20 appearances: treat with caution</div>
+    </div>
+
+    <p>The <strong>vs Field</strong> column shows each deck's match win percentage compared to the weighted field average. ▲ indicates above-average performance, ▼ indicates below-average.</p>
+    <p>Tapping any row opens a full detail view with top 8 conversion rate, average points per event, game win percentage, opponent match win percentage (strength of schedule), and metagame share.</p>
+    <p>Instead of relying on content creators or social media to tell you what's good, you can see directly what's winning in competitive play — and more importantly, what's winning that not everyone has caught on to yet.</p>
+
+    <hr class="divider">
+
+    <!-- Formats -->
+    <h2>Formats Supported</h2>
+    <p>Mize supports tracking and analysis across multiple Magic formats. Each feature can be filtered so Modern players aren't seeing Legacy data and vice versa.</p>
+    <div class="format-grid">
+      <div class="format-pill">Modern</div>
+      <div class="format-pill">Legacy</div>
+      <div class="format-pill">Pioneer</div>
+      <div class="format-pill">Standard</div>
+      <div class="format-pill">Pauper</div>
+      <div class="format-pill">Vintage</div>
+      <div class="format-pill">Premodern</div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Privacy -->
+    <h2>Your Data</h2>
+    <p>Your personal match history belongs to you. Your individual game records are only visible in your personal analysis views — they are never displayed to other users by name. Community analysis features use aggregated data across all pilots without identifying individuals.</p>
+    <p>The more matches the community logs, the more powerful the analysis becomes for everyone.</p>
+
+    <!-- CTA -->
+    <div class="cta">
+      <div class="cta-title">Ready to start?</div>
+      <div class="cta-sub">Create an account and log your first match in minutes.</div>
+      <a href="index.html" class="btn">Open Mize</a>
+    </div>
+
+  </div>
+</body>
+</html>
