@@ -1,0 +1,31 @@
+name: MTGO Daily Import
+
+on:
+  schedule:
+    # Runs at 18:00 UTC daily (after fbettega updates at ~17:00 UTC)
+    - cron: '0 18 * * *'
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run MTGO import
+        env:
+          SUPABASE_URL: https://vkgtqunhsalquihlqkxp.supabase.co
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.MTGO_GITHUB_TOKEN }}
+        run: python scripts/mtgo_import.py
