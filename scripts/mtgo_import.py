@@ -621,34 +621,44 @@ def main():
     event_format_map = {e['event_id']: e.get('format', 'Modern') for e in all_events_db}
     print(f'Total results: {len(all_results)} | Total events: {len(all_events_db)}')
 
-    now     = datetime.now(timezone.utc).date()
-    windows = [
+now     = datetime.now(timezone.utc).date()
+windows = [
         {'days': 30}, {'days': 90}, {'days': 180}, {'days': 365}, {'days': None}
-    ]
+]
 
-    all_summaries_arch  = []
-    all_summaries_pilot = []
+all_summaries_arch  = []
+all_summaries_pilot = []
 
-    for w in windows:
-        cutoff    = (now - timedelta(days=w['days'])) if w['days'] else None
-        date_from = cutoff.isoformat() if cutoff else '2000-01-01'
-        date_to   = now.isoformat()
-        filtered  = [r for r in all_results if not cutoff or
-                     event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
-        for r in filtered:
+for w in windows:
+    cutoff    = (now - timedelta(days=w['days'])) if w['days'] else None
+    date_from = cutoff.isoformat() if cutoff else '2000-01-01'
+    date_to   = now.isoformat()
+    filtered  = [r for r in all_results if not cutoff or
+                    event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
+    for r in filtered:
             r['_format'] = event_format_map.get(r['event_id'], 'Modern')
-        if not filtered:
+    if not filtered:
             continue
-        label = 'all time' if not w['days'] else f'{w["days"]}d'
-        print(f'Window {label}: {len(filtered)} results')
-        arch_rows  = compute_archetype_summary(filtered, date_from, date_to)
-        pilot_rows = compute_pilot_summary(filtered, date_from, date_to)
+
+        # Group by format and compute summaries separately to avoid
+        # cross-format contamination of archetype names (e.g. Affinity
+        # exists in both Modern and Vintage)
+    formats_in_window = set(r['_format'] for r in filtered)
+    for fmt in sorted(formats_in_window):
+        fmt_results = [r for r in filtered if r['_format'] == fmt]
+        label = ('all time' if not w['days'] else f'{w["days"]}d') + f' / {fmt}'
+        print(f'Window {label}: {len(fmt_results)} results')
+        arch_rows  = compute_archetype_summary(fmt_results, date_from, date_to)
+        pilot_rows = compute_pilot_summary(fmt_results, date_from, date_to)
         for r in arch_rows:
             r['window_days'] = w['days'] if w['days'] else 0
         for r in pilot_rows:
             r['window_days'] = w['days'] if w['days'] else 0
         all_summaries_arch.extend(arch_rows)
         all_summaries_pilot.extend(pilot_rows)
+
+    print(f'Total archetype summary rows: {len(all_summaries_arch)}')
+    print(f'Total pilot summary rows: {len(all_summaries_pilot)}')
 
     print(f'Archetype summary rows: {len(all_summaries_arch)}')
     print(f'Pilot summary rows: {len(all_summaries_pilot)}')
