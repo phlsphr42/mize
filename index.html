@@ -3174,6 +3174,14 @@ function filterArchetypes(query) {
   ).join('');
 }
 
+  function applyDatePreset(panel) {
+  const preset = document.getElementById(panel + '-date-preset').value;
+  const customDiv = document.getElementById(panel + '-date-custom');
+  if (customDiv) {
+    customDiv.style.display = preset === 'custom' ? 'block' : 'none';
+  }
+}
+
 function selectArchetype(name) {
   state.opponent = name;
   document.getElementById('opponent-name').textContent = name;
