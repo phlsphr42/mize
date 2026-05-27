@@ -3669,13 +3669,20 @@ function renderChiResults(result, fromCache) {
   document.getElementById('c-sort-card').style.display = result ? 'block' : 'none';
   const el = document.getElementById('c-results');
   if (!result) { el.innerHTML = ''; return; }
+
   const sortFn = (a, b) => {
+    // Always push insufficient data rows to the bottom
+    if (a.insufficientData && !b.insufficientData) return 1;
+    if (!a.insufficientData && b.insufficientData) return -1;
+    if (a.insufficientData && b.insufficientData) return a.card.localeCompare(b.card);
     if (state.chiSortKey === 'p') return a.p - b.p;
     if (state.chiSortKey === 'chi') return b.chi2 - a.chi2;
     return a.card.localeCompare(b.card);
   };
+
   const renderTable = (rows, title) => {
-    if (!rows.length) return '<div style="color:var(--text2);font-size:14px;">No significant results found. This means either there is not enough data yet (each cell in the 2×2 contingency table needs at least 5 games) or no cards show a statistically detectable effect on win rate with the current data.</div>';
+    if (!rows.length) return '<div style="color:var(--text2);font-size:14px;">No data available for the current filters.</div>';
+
     const sorted = [...rows].sort(sortFn);
 
     // Group by card name
@@ -3686,7 +3693,7 @@ function renderChiResults(result, fromCache) {
     }
 
     // Sort groups by best p-value within each card
-const groupEntries = Object.entries(grouped).sort((a, b) => {
+    const groupEntries = Object.entries(grouped).sort((a, b) => {
       const bestA = Math.min(...a[1].filter(r => !r.insufficientData).map(r => r.p).concat([Infinity]));
       const bestB = Math.min(...b[1].filter(r => !r.insufficientData).map(r => r.p).concat([Infinity]));
       if (state.chiSortKey === 'p') return bestA - bestB;
@@ -3703,7 +3710,7 @@ const groupEntries = Object.entries(grouped).sort((a, b) => {
       html += '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;">';
 
       // Card header row
-const sufficientRows = cardRows.filter(r => !r.insufficientData);
+      const sufficientRows = cardRows.filter(r => !r.insufficientData);
       const bestRow = sufficientRows.length > 0
         ? sufficientRows.reduce((a, b) => a.p < b.p ? a : b)
         : cardRows[0];
@@ -3711,13 +3718,14 @@ const sufficientRows = cardRows.filter(r => !r.insufficientData);
         : bestRow.p < 0.01 ? 'sig-high' : bestRow.p < 0.05 ? 'sig-med' : 'sig-low';
       const sigLabel = bestRow.insufficientData ? '⚠'
         : bestRow.p < 0.01 ? '**' : bestRow.p < 0.05 ? '*' : 'ns';
+
       html += '<div style="background:var(--surface2);padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">' +
         '<div style="font-size:13px;font-weight:700;">' + cardName + '</div>' +
         '<span class="' + sigClass + '" style="font-size:12px;">' + sigLabel + '</span>' +
         '</div>';
 
       // Sub-rows for each copy count
-for (const r of cardRows.sort((a, b) => a.copyCount - b.copyCount)) {
+      for (const r of cardRows.sort((a, b) => a.copyCount - b.copyCount)) {
         const dirClass = r.direction === 'positive' ? 'dir-pos' : 'dir-neg';
         const dirLabel = r.direction === 'positive' ? '▲ +' : '▼ −';
         const wrDiff = ((r.wrWith - r.wrWithout) * 100).toFixed(1);
@@ -3747,9 +3755,11 @@ for (const r of cardRows.sort((a, b) => a.copyCount - b.copyCount)) {
     html += '</div>';
     html += '<div style="font-size:11px;color:var(--text2);margin-top:8px;">' +
       '** p&lt;0.01 highly significant &nbsp;* p&lt;0.05 significant &nbsp;ns not significant<br>' +
-      '▲ positive: win rate higher with card in hand &nbsp;▼ negative: win rate lower</div>';
+      '▲ positive: win rate higher with card in hand &nbsp;▼ negative: win rate lower<br>' +
+      '⚠ insufficient data: sample size too small for statistical significance</div>';
     return html;
   };
+
   if (result.scope === 'compare') {
     el.innerHTML = '<div class="compare-grid"><div>' + renderTable(result.myResults, 'My data') + '</div><div>' + renderTable(result.allResults, 'All data') + '</div></div>';
   } else {
