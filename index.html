@@ -2368,7 +2368,11 @@ async function loadAdminData() {
       topPilotsRes,
       topArchRes,
       dailyRes,
-      eventsRes
+      eventsRes,
+      mymtgoGamesRes,
+      manualGamesRes,
+      mymtgoPilotsRes,
+      mymtgoDailyRes
     ] = await Promise.all([
       db.from('pilots').select('pilot_name,created_at', { count: 'exact' }),
       db.from('raw_game_log').select('id', { count: 'exact', head: true }),
@@ -2379,7 +2383,19 @@ async function loadAdminData() {
       db.from('raw_game_log').select('deck_archetype').gte('timestamp', day30).not('deck_archetype', 'is', null),
       db.from('raw_game_log').select('timestamp').gte('timestamp', day30).not('migration_flag', 'eq', 'MIGRATED'),
       db.from('app_events').select('pilot_name,event_type,event_data,created_at')
-        .gte('created_at', day90).order('created_at', { ascending: false })
+        .gte('created_at', day90).order('created_at', { ascending: false }),
+      // mymtgo imported games (have external_id)
+      db.from('raw_game_log').select('id', { count: 'exact', head: true }).not('external_id', 'is', null),
+      // manually entered games (no external_id)
+      db.from('raw_game_log').select('id', { count: 'exact', head: true }).is('external_id', null),
+      // per-pilot breakdown of mymtgo games
+      db.from('raw_game_log').select('pilot_name,deck_archetype,timestamp')
+        .not('external_id', 'is', null)
+        .order('timestamp', { ascending: false }),
+      // daily mymtgo import counts (last 30 days)
+      db.from('raw_game_log').select('timestamp')
+        .not('external_id', 'is', null)
+        .gte('timestamp', day30)
     ]);
 
     setProgress('admin', 70);
@@ -2439,10 +2455,38 @@ async function loadAdminData() {
       if (d) newUsersByDay[d] = (newUsersByDay[d] || 0) + 1;
     });
 
+    // ── Sources stats ──
+    const mymtgoTotal = mymtgoGamesRes.count || 0;
+    const manualTotal = manualGamesRes.count || 0;
+    const totalAll    = mymtgoTotal + manualTotal;
+
+    // Per-pilot mymtgo breakdown
+    const mymtgoPilotCounts = {};
+    const mymtgoPilotLastSeen = {};
+    const mymtgoPilotArchetypes = {};
+    for (const r of mymtgoPilotsRes.data || []) {
+      const p = r.pilot_name || '—';
+      mymtgoPilotCounts[p] = (mymtgoPilotCounts[p] || 0) + 1;
+      if (!mymtgoPilotLastSeen[p] || r.timestamp > mymtgoPilotLastSeen[p]) {
+        mymtgoPilotLastSeen[p] = r.timestamp;
+      }
+      if (!mymtgoPilotArchetypes[p]) mymtgoPilotArchetypes[p] = new Set();
+      if (r.deck_archetype) mymtgoPilotArchetypes[p].add(r.deck_archetype);
+    }
+    const sortedMymtgoPilots = Object.entries(mymtgoPilotCounts)
+      .sort((a,b) => b[1]-a[1]);
+
+    // Daily mymtgo import counts
+    const mymtgoDailyCounts = {};
+    for (const r of mymtgoDailyRes.data || []) {
+      const d = r.timestamp.slice(0,10);
+      mymtgoDailyCounts[d] = (mymtgoDailyCounts[d] || 0) + 1;
+    }
+
     setProgress('admin', 100);
     setTimeout(() => setProgress('admin', 0), 400);
 
-    // ── Helper: relative time ──
+    // ── Helpers ──
     function relTime(iso) {
       const m = Math.floor((Date.now() - new Date(iso)) / 60000);
       if (m < 2)   return 'just now';
@@ -2452,7 +2496,6 @@ async function loadAdminData() {
       return Math.floor(h/24) + 'd ago';
     }
 
-    // ── Helper: spark bar for last N days ──
     function sparkBar(byDay, days) {
       const entries = [];
       for (let i = days-1; i >= 0; i--) {
@@ -2470,6 +2513,16 @@ async function loadAdminData() {
       </div>`;
     }
 
+    function pctBar(value, total, color) {
+      const pct = total > 0 ? Math.round(value / total * 100) : 0;
+      return `<div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;background:var(--surface2);border-radius:3px;height:8px;">
+          <div style="width:${pct}%;height:8px;background:${color};border-radius:3px;"></div>
+        </div>
+        <span style="font-size:12px;color:var(--text2);min-width:36px;text-align:right;">${pct}%</span>
+      </div>`;
+    }
+
     // ══════════════════════════════════════════
     // BUILD TABS
     // ══════════════════════════════════════════
@@ -2480,11 +2533,13 @@ async function loadAdminData() {
         <div class="analysis-tab"         onclick="adminTab('users')"     id="atab-users">Users</div>
         <div class="analysis-tab"         onclick="adminTab('features')"  id="atab-features">Features</div>
         <div class="analysis-tab"         onclick="adminTab('activity')"  id="atab-activity">Activity</div>
+        <div class="analysis-tab"         onclick="adminTab('sources')"   id="atab-sources">Sources</div>
       </div>
       <div id="apanel-overview"></div>
       <div id="apanel-users"    style="display:none;"></div>
       <div id="apanel-features" style="display:none;"></div>
       <div id="apanel-activity" style="display:none;"></div>
+      <div id="apanel-sources"  style="display:none;"></div>
     `;
 
     // ── OVERVIEW ──
@@ -2642,6 +2697,64 @@ async function loadAdminData() {
       </div>
     `;
 
+    // ── SOURCES ──
+    document.getElementById('apanel-sources').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${mymtgoTotal.toLocaleString()}</div>
+          <div style="font-size:11px;color:var(--text2);">mymtgo imported</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${manualTotal.toLocaleString()}</div>
+          <div style="font-size:11px;color:var(--text2);">Manually entered</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Share of total games</div>
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+            <span>mymtgo</span>
+            <span style="color:var(--accent);font-weight:600;">${mymtgoTotal.toLocaleString()}</span>
+          </div>
+          ${pctBar(mymtgoTotal, totalAll, 'var(--accent)')}
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+            <span>Manual (Mize)</span>
+            <span style="color:var(--success);font-weight:600;">${manualTotal.toLocaleString()}</span>
+          </div>
+          ${pctBar(manualTotal, totalAll, 'var(--success)')}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">mymtgo imports (last 30 days)</div>
+        ${sparkBar(mymtgoDailyCounts, 30)}
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pilots with mymtgo data</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+          <thead><tr>
+            <th style="padding:4px 0;color:var(--text2);font-weight:600;">Pilot</th>
+            <th style="padding:4px 0;color:var(--text2);font-weight:600;text-align:right;">Games</th>
+            <th style="padding:4px 0;color:var(--text2);font-weight:600;text-align:right;">Decks</th>
+            <th style="padding:4px 0;color:var(--text2);font-weight:600;text-align:right;">Latest</th>
+          </tr></thead>
+          <tbody>
+            ${sortedMymtgoPilots.map(([name, count]) => `
+              <tr style="border-bottom:1px solid var(--surface2);">
+                <td style="padding:5px 0;color:var(--accent);font-weight:600;">${name}</td>
+                <td style="padding:5px 0;text-align:right;">${count}</td>
+                <td style="padding:5px 0;text-align:right;">${mymtgoPilotArchetypes[name]?.size || 0}</td>
+                <td style="padding:5px 0;text-align:right;color:var(--text2);">${relTime(mymtgoPilotLastSeen[name])}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
   } catch(e) {
     document.getElementById('admin-results').innerHTML =
       `<div class="card" style="color:var(--danger);">Error: ${e.message}</div>`;
@@ -2651,11 +2764,7 @@ async function loadAdminData() {
 }
 
 window.adminTab = function(tab) {
-  ['overview','users','features','activity'].forEach(t => {
-    document.getElementById('atab-' + t).classList.toggle('active', t === tab);
-    document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
-  });
-};
+  ['overview','users','features','activity','sources'].forEach(t => {
 // ── MTGO META SCREEN ──────────────────────────────────────────────
 
 let mtgoTab = 'archetypes';
