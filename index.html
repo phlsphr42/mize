@@ -1730,12 +1730,66 @@ function renderDeckDetail() {
           : '<div style="width:36px;height:50px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);"></div>') +
         '<div style="flex:1;"><div style="font-size:14px;font-weight:600;">' + c.card_name + '</div>' +
         '<div style="font-size:12px;color:var(--text2);">' + c.main_side + '</div></div>' +
-        '<div style="font-size:18px;font-weight:700;color:var(--accent);">×' + c.quantity + '</div></div>'
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+        '<button onclick="adjustCardQuantity(\'' + c.card_name.replace(/'/g, "\\'") + '\',\'' + c.main_side + '\',-1)" ' +
+        'style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">−</button>' +
+        '<div style="font-size:18px;font-weight:700;color:var(--accent);min-width:24px;text-align:center;">×' + c.quantity + '</div>' +
+        '<button onclick="adjustCardQuantity(\'' + c.card_name.replace(/'/g, "\\'") + '\',\'' + c.main_side + '\',1)" ' +
+        'style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">+</button>' +
+        '<button onclick="removeCardFromDeck(\'' + c.card_name.replace(/'/g, "\\'") + '\',\'' + c.main_side + '\')" ' +
+        'style="width:28px;height:28px;border-radius:50%;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;" title="Remove card">✕</button>' +
+        '</div></div>'
       ).join('');
   };
   el.innerHTML = sec('Mainboard', main) + sec('Sideboard', side);
 }
 
+async function adjustCardQuantity(cardName, mainSide, delta) {
+  const cards = state.currentDeck.cards || [];
+  const card  = cards.find(c => c.card_name === cardName && c.main_side === mainSide);
+  if (!card) return;
+
+  const newQty = card.quantity + delta;
+
+  if (newQty <= 0) {
+    // Remove the card entirely
+    await removeCardFromDeck(cardName, mainSide);
+    return;
+  }
+
+  // Update quantity in database
+  const { error } = await db.from('decklist_cards')
+    .update({ quantity: newQty })
+    .eq('decklist_id', state.currentDeck.id)
+    .eq('card_name', cardName)
+    .eq('main_side', mainSide);
+
+  if (error) { showToast('Error updating quantity', 'error'); return; }
+
+  // Update local state
+  card.quantity = newQty;
+  renderDeckDetail();
+}
+
+async function removeCardFromDeck(cardName, mainSide) {
+  if (!confirm('Remove ' + cardName + ' from this deck?')) return;
+
+  const { error } = await db.from('decklist_cards')
+    .delete()
+    .eq('decklist_id', state.currentDeck.id)
+    .eq('card_name', cardName)
+    .eq('main_side', mainSide);
+
+  if (error) { showToast('Error removing card', 'error'); return; }
+
+  // Update local state
+  state.currentDeck.cards = (state.currentDeck.cards || [])
+    .filter(c => !(c.card_name === cardName && c.main_side === mainSide));
+
+  showToast(cardName + ' removed');
+  renderDeckDetail();
+}
+  
 async function saveDeckNotes() {
   const notes = document.getElementById('deck-notes-input').value.trim();
   const { error } = await db.from('decklists').update({ deck_notes: notes }).eq('id', state.editingDeckId);
