@@ -3799,7 +3799,7 @@ function renderChiResults(result, fromCache) {
             '<div style="font-size:11px;color:var(--warning);">⚠ insufficient data</div>' +
             '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(wrDiff) + '%</span></div>' +
             '</div>';
-        } else {
+    } else if (!r.insufficientData && r.chi2 != null && r.p != null) {
           const rowSigClass = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
           html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
             '<div style="font-size:11px;color:var(--text2);min-width:40px;">' + r.copyCount + '×</div>' +
@@ -3808,6 +3808,13 @@ function renderChiResults(result, fromCache) {
             '<div style="font-size:11px;min-width:60px;">p&nbsp;' + (r.p < 0.0001 ? '&lt;0.0001' : r.p.toFixed(4)) + '</div>' +
             '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(wrDiff) + '%</span></div>' +
             '<span class="' + rowSigClass + '" style="font-size:11px;">' + (r.p < 0.01 ? '**' : r.p < 0.05 ? '*' : 'ns') + '</span>' +
+            '</div>';
+        } else {
+          html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;opacity:0.6;">' +
+            '<div style="font-size:11px;color:var(--text2);min-width:40px;">' + r.copyCount + '×</div>' +
+            '<div style="font-size:11px;color:var(--text2);min-width:50px;">' + r.sampleWith + 'g with</div>' +
+            '<div style="font-size:11px;color:var(--warning);">⚠ insufficient data</div>' +
+            '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(wrDiff) + '%</span></div>' +
             '</div>';
         }
       }
