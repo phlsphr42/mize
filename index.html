@@ -714,9 +714,19 @@
     <button class="back-btn" onclick="showScreen('screen-home')">←</button>
     <h2>Opening Hand Analysis</h2>
   </div>
-  <div class="analysis-tabs">
-<div class="analysis-tab" onclick="switchAnalysisTab('bayesian')">Bayesian</div>
-<div class="analysis-tab active" onclick="switchAnalysisTab('chisq')">Chi-squared</div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <div class="analysis-tabs" style="margin-bottom:0;flex:1;">
+      <div class="analysis-tab" onclick="switchAnalysisTab('bayesian')">Bayesian</div>
+      <div class="analysis-tab active" onclick="switchAnalysisTab('chisq')">Chi-squared</div>
+    </div>
+    <select id="analysis-format" onchange="onAnalysisFormatChange()"
+      style="width:auto;padding:8px 10px;margin-bottom:0;margin-left:8px;font-size:13px;">
+      <option value="">All formats</option>
+      <option value="Modern">Modern</option>
+      <option value="Legacy">Legacy</option>
+      <option value="Pioneer">Pioneer</option>
+      <option value="Standard">Standard</option>
+    </select>
   </div>
 <div id="panel-bayesian" class="analysis-panel">
   <div class="card">
