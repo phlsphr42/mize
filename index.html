@@ -1539,7 +1539,26 @@ function selectMulligan(el, count) {
   el.closest('.toggle-group').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
   state.mulligans = count;
+
+  // Save existing card selections before rebuilding slots
+  const existing = [];
+  let i = 0;
+  while (document.getElementById('hand-card-' + i)) {
+    existing.push(document.getElementById('hand-card-' + i).value);
+    i++;
+  }
+
   buildCardSlots(7 - count);
+
+  // Restore saved selections up to the new slot count
+  const newCount = 7 - count;
+  for (let j = 0; j < Math.min(existing.length, newCount); j++) {
+    const sel = document.getElementById('hand-card-' + j);
+    if (sel && existing[j]) {
+      sel.value = existing[j];
+      updateCardImage(j);
+    }
+  }
 }
 
 function setProgress(id, pct) {
