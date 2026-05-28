@@ -343,10 +343,94 @@
   <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Meta Matchup Matrix</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-mtgo')">MTGO Deck Rankings</button>
   <button class="btn btn-secondary" id="btn-admin" style="display:none;" onclick="showScreen('screen-admin')">Admin</button>
-  <button class="btn btn-secondary" onclick="window.open('guide.html', '_blank')">User Guide</button>
+<button class="btn btn-secondary" onclick="showScreen('screen-guide')">User Guide</button>
   <hr class="divider">
   <div class="card-title">Recent matches</div>
   <div id="recent-matches"><div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div></div>
+</div>
+
+  <!-- GUIDE -->
+<div id="screen-guide" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>User Guide</h2>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Welcome to Mize</div>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;">Mize is a Magic: The Gathering match tracking and analysis platform built for competitive players. Log your matches, analyze your opening hands, and discover what the data says about the metagame.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Entering Game Data</div>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;">After each match, log the result along with your opening hand — the seven cards you were dealt at the start of each game. Select your deck, your opponent's archetype, and record whether you won or lost and which cards were in your opening hand. The whole process takes less than a minute per match.</p>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-top:8px;">Every match you log contributes to your personal performance history and the community dataset that powers Mize's analysis features.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Opening Hand Analysis</div>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;">Tells you which cards in your deck are making a difference in your win rate — and which ones might be dead weight.</p>
+    <div style="margin-top:10px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Bayesian Analysis</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.6;">Compares your win rate in games where a card appeared in your opening hand versus games where it didn't. A Bayesian adjustment accounts for small sample sizes so cards with few appearances are appropriately weighted.</p>
+    </div>
+    <div style="margin-top:10px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Chi-Squared Analysis</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.6;">Applies a statistical significance test to tell you how confident you can be that a win rate difference is real and not just variance.</p>
+      <div style="margin-top:8px;font-size:13px;">
+        <div style="padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;"><span style="color:var(--success);font-weight:700;min-width:24px;">**</span><span style="color:var(--text2);">Highly significant (p &lt; 0.01) — very unlikely to be a coincidence</span></div>
+        <div style="padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;"><span style="color:#ff9800;font-weight:700;min-width:24px;">*</span><span style="color:var(--text2);">Significant (p &lt; 0.05) — probably a real effect</span></div>
+        <div style="padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;"><span style="color:var(--text2);font-weight:700;min-width:24px;">ns</span><span style="color:var(--text2);">Not significant — not enough evidence yet</span></div>
+        <div style="padding:5px 0;display:flex;gap:10px;"><span style="color:#ff9800;font-weight:700;min-width:24px;">⚠</span><span style="color:var(--text2);">Insufficient data — sample size too small for meaningful analysis, but trend is shown</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Meta Matchup Matrix</div>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;">A grid showing how every archetype performs against every other archetype. Green cells indicate a favorable matchup, red cells indicate an unfavorable one. Cells with fewer than 5 games show — to indicate insufficient data.</p>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-top:8px;">Tap any cell to see exact game counts and win rates for that matchup. Use this before an event to identify which matchups your deck struggles with and make informed sideboard decisions.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">MTGO Deck Rankings</div>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;">Tracks how every archetype is performing in competitive MTGO events, sourced daily from published decklists and standings.</p>
+    <div style="margin-top:10px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Opportunity Score</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.6;">Rewards decks outperforming their metagame share. Underplayed strong decks rank highest — useful for finding decks that not everyone has caught on to yet.</p>
+    </div>
+    <div style="margin-top:10px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Raw Performance</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.6;">Rewards high win rate combined with large sample size. Dominant popular decks rank highest — useful for identifying what is objectively performing best in the current metagame.</p>
+    </div>
+    <div style="margin-top:10px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Confidence indicators</div>
+      <div style="font-size:13px;">
+        <div style="padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;"><span style="color:#4caf50;font-weight:700;min-width:40px;">High</span><span style="color:var(--text2);">100+ appearances — reliable signal</span></div>
+        <div style="padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;"><span style="color:#ff9800;font-weight:700;min-width:40px;">Med</span><span style="color:var(--text2);">20–99 appearances — reasonable confidence</span></div>
+        <div style="padding:5px 0;display:flex;gap:10px;align-items:center;"><span style="color:#f44336;font-weight:700;min-width:40px;">Low</span><span style="color:var(--text2);">Fewer than 20 appearances — treat with caution</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Formats Supported</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+      <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;">Modern</span>
+      <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;">Legacy</span>
+      <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;">Pioneer</span>
+      <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;">Standard</span>
+      <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;">Pauper</span>
+      <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;">Vintage</span>
+      <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;">Premodern</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Your Data</div>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;">Your personal match history belongs to you. Individual game records are only visible in your personal analysis views and are never displayed to other users by name. Community analysis features use aggregated data across all pilots without identifying individuals.</p>
+  </div>
+
 </div>
 
 <!-- MY DECKS -->
