@@ -4234,6 +4234,7 @@ async function calcMatrix() {
   document.getElementById('btn-calc-mx').disabled = true;
 
   try {
+    // ── Query community game log ──────────────────────────────────────
     let query = db.from('raw_game_log')
       .select('pilot_name,deck_archetype,opponent_archetype,game_result,match_result,pre_post,game_number')
       .not('deck_archetype', 'is', null)
@@ -4242,40 +4243,64 @@ async function calcMatrix() {
 
     if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
     if (format) query = query.eq('format', format);
-
-    if (rateType === 'game_pre')  query = query.eq('pre_post', 'Pre');
+    if (rateType === 'game_pre')       query = query.eq('pre_post', 'Pre');
     else if (rateType === 'game_post') query = query.eq('pre_post', 'Post');
 
     const dateRange = getDateRange('mx');
     if (dateRange.from) query = query.gte('timestamp', dateRange.from);
     if (dateRange.to)   query = query.lte('timestamp', dateRange.to);
 
-    setProgress('mx', 40);
+    setProgress('mx', 30);
     const { data: games, error } = await query.limit(50000);
     if (error) throw error;
+
+    // ── Query MTGO top 8 matchup data ─────────────────────────────────
+    // Only include when scope is 'all' and rate type is game or match overall
+    // (top 8 data has no pre/post board distinction)
+    let mtgoMatchups = [];
+    if (scope !== 'mine' && rateType !== 'game_pre' && rateType !== 'game_post') {
+      let mtgoQuery = db.from('mtgo_matchup_summary')
+        .select('deck,opponent,matches,match_wins,match_losses,game_wins,game_losses');
+      if (format) {
+        // Filter by format via the mtgo_matches -> mtgo_events join
+        // We use a separate query to get matching event_ids
+        const { data: formatEvents } = await db.from('mtgo_events')
+          .select('event_id')
+          .eq('format', format || 'Modern');
+        const eventIds = (formatEvents || []).map(e => e.event_id);
+        if (eventIds.length > 0) {
+          const { data: fmtMatchups } = await db.from('mtgo_matchup_summary')
+            .select('deck,opponent,matches,match_wins,match_losses,game_wins,game_losses');
+          mtgoMatchups = fmtMatchups || [];
+        }
+      } else {
+        const { data: fmtMatchups } = await mtgoQuery;
+        mtgoMatchups = fmtMatchups || [];
+      }
+    }
+
     setProgress('mx', 60);
 
-    const matchups = {};
+    const matchups   = {};
     const deckCounts = {};
-    const oppCounts = {};
-for (const g of games || []) {
+    const oppCounts  = {};
+
+    // ── Process community games ───────────────────────────────────────
+    for (const g of games || []) {
       const deck = g.deck_archetype;
       const opp  = g.opponent_archetype;
       if (deck === opp) continue;
 
-      // Record from deck's perspective
       if (!matchups[deck]) matchups[deck] = {};
       if (!matchups[deck][opp]) matchups[deck][opp] = { gw: 0, gl: 0, mw: 0, ml: 0 };
       if (g.game_result === 'Win')       matchups[deck][opp].gw++;
       else if (g.game_result === 'Loss') matchups[deck][opp].gl++;
       if (g.match_result === 'Win')       matchups[deck][opp].mw++;
       else if (g.match_result === 'Loss') matchups[deck][opp].ml++;
-deckCounts[deck] = (deckCounts[deck] || 0) + 1;
+      deckCounts[deck] = (deckCounts[deck] || 0) + 1;
       oppCounts[opp]   = (oppCounts[opp]   || 0) + 1;
 
-      // Also record the inverse — opponent's perspective
-      // Note: do NOT increment deckCounts/oppCounts again to avoid
-      // double-counting when computing the 75% metagame threshold
+      // Inverse
       if (!matchups[opp]) matchups[opp] = {};
       if (!matchups[opp][deck]) matchups[opp][deck] = { gw: 0, gl: 0, mw: 0, ml: 0 };
       if (g.game_result === 'Win')       matchups[opp][deck].gl++;
@@ -4284,12 +4309,30 @@ deckCounts[deck] = (deckCounts[deck] || 0) + 1;
       else if (g.match_result === 'Loss') matchups[opp][deck].mw++;
     }
 
+    // ── Merge MTGO top 8 matchup data ────────────────────────────────
+    for (const m of mtgoMatchups) {
+      const deck = m.deck;
+      const opp  = m.opponent;
+      if (!deck || !opp || deck === opp) continue;
+
+      // Add to deck's perspective
+      if (!matchups[deck]) matchups[deck] = {};
+      if (!matchups[deck][opp]) matchups[deck][opp] = { gw: 0, gl: 0, mw: 0, ml: 0 };
+      matchups[deck][opp].gw += m.game_wins  || 0;
+      matchups[deck][opp].gl += m.game_losses || 0;
+      matchups[deck][opp].mw += m.match_wins  || 0;
+      matchups[deck][opp].ml += m.match_losses || 0;
+      deckCounts[deck] = (deckCounts[deck] || 0) + (m.matches || 0);
+      oppCounts[opp]   = (oppCounts[opp]   || 0) + (m.matches || 0);
+
+      // Inverse is already in mtgo_matchup_summary as a separate row
+      // so we don't need to manually invert
+    }
+
     setProgress('mx', 75);
 
-    const totalGames = (games || []).length;
-    const allDecks = Object.keys(deckCounts).sort((a, b) => deckCounts[b] - deckCounts[a]);
-    const allOpps  = Object.keys(oppCounts).sort((a, b) => oppCounts[b] - oppCounts[a]);
-    const allArchetypes = [...new Set([...allDecks, ...allOpps])].sort((a, b) => {
+    const totalGames = (games || []).length + mtgoMatchups.reduce((s, m) => s + (m.game_wins + m.game_losses), 0);
+    const allArchetypes = [...new Set([...Object.keys(deckCounts), ...Object.keys(oppCounts)])].sort((a, b) => {
       const countA = (deckCounts[a] || 0) + (oppCounts[a] || 0);
       const countB = (deckCounts[b] || 0) + (oppCounts[b] || 0);
       return countB - countA;
