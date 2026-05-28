@@ -11,6 +11,9 @@ env:
 jobs:
   import:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
 
     steps:
       - name: Checkout repository
