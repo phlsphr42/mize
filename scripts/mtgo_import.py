@@ -419,6 +419,8 @@ def main():
         f'{SUPABASE_URL}/rest/v1/mtgo_matches?select=id&limit=1',
         headers=headers
     )
+    print(f'Status code: {r.status_code}')
+    print(f'Response: {r.text[:200]}')
     if r.status_code == 200:
         existing_matches = r.json()
         has_matches = isinstance(existing_matches, list) and len(existing_matches) > 0
