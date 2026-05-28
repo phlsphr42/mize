@@ -1391,11 +1391,12 @@ function showScreen(id) {
     if (state.pilot && state.pilot.pilot_name === 'thnkr') loadAdminData();
     else showScreen('screen-home');
   }
-  if (id === 'screen-mtgo') {
+if (id === 'screen-mtgo') {
     mtgoCache = { archetypes: {}, pilots: {} };
     mtgoTab = 'archetypes';
     document.getElementById('mtgo-tab-archetypes').classList.add('active');
     document.getElementById('mtgo-tab-pilots').classList.remove('active');
+    document.getElementById('mtgo-ranking-toggle').style.display = 'block';
     loadMtgoData();
   }
   if (id === 'screen-matrix') {
