@@ -221,26 +221,31 @@ def avg(arr):
 
 # ── Summary computation ───────────────────────────────────────────────────────
 def compute_archetype_summary(results, date_from, date_to):
+    # Group by (arch, format) to prevent cross-format contamination
     by_arch = defaultdict(lambda: {
         'appearances': [], 'top8': 0, 'events': set(),
         'points': [], 'mwp': [], 'gwp': [], 'omwp': [],
         'format': 'Modern'
     })
-    total = len(results)
+    total_by_format = defaultdict(int)
     for r in results:
         arch = r.get('archetype_canonical') or 'Unknown'
+        fmt  = r.get('_format', 'Modern')
+        key  = (arch, fmt)
         pos  = r.get('finish_position')
-        by_arch[arch]['appearances'].append(pos)
-        by_arch[arch]['events'].add(r['event_id'])
-        by_arch[arch]['format'] = r.get('_format', 'Modern')
+        by_arch[key]['appearances'].append(pos)
+        by_arch[key]['events'].add(r['event_id'])
+        by_arch[key]['format'] = fmt
+        total_by_format[fmt] += 1
         if pos and pos <= 8:
-            by_arch[arch]['top8'] += 1
-        for key, field in [('points','points'),('mwp','match_win_pct'),
-                            ('gwp','game_win_pct'),('omwp','opp_match_win_pct')]:
+            by_arch[key]['top8'] += 1
+        for k, field in [('points','points'),('mwp','match_win_pct'),
+                          ('gwp','game_win_pct'),('omwp','opp_match_win_pct')]:
             if r.get(field) is not None:
-                by_arch[arch][key].append(r[field])
+                by_arch[key][k].append(r[field])
     rows = []
-    for arch, d in by_arch.items():
+    for (arch, fmt), d in by_arch.items():
+        total = total_by_format[fmt]
         top32       = len(d['appearances'])
         top32_share = top32 / total if total > 0 else 0
         top8_rate   = d['top8'] / top32 if top32 > 0 else 0
@@ -263,7 +268,7 @@ def compute_archetype_summary(results, date_from, date_to):
         ) if avg_mwp is not None else 0
         rows.append({
             'archetype_name':        arch,
-            'format':                d['format'],
+            'format':                fmt,
             'date_from':             date_from,
             'date_to':               date_to,
             'event_count':           len(d['events']),
