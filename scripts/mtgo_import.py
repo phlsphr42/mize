@@ -312,7 +312,6 @@ def compute_archetype_summary(results, date_from, date_to):
         meta_adj = perf / top32_share if top32_share > 0 else 0
         raw_perf = (((avg_mwp * top32) + (0.5 * 20)) / (top32 + 20)) * math.log(max(top32, 1) + 1) * (1 + top8_rate) if avg_mwp is not None else 0
         rows.append({
-rows.append({
             'archetype_name':        arch,
             'format':                d['format'],
             'date_from':             date_from,
