@@ -469,6 +469,7 @@ def main():
     # Process new events
     event_rows   = []
     result_rows  = []
+    match_rows   = []
     errors       = []
     skipped      = 0
     corrections  = []  # Track archetype corrections for notification
@@ -496,7 +497,15 @@ def main():
             skipped += 1
             continue
 
-        decks_by_player = {d['Player']: d for d in decks}
+decks_by_player = {d['Player']: d for d in decks}
+
+        # Build player -> archetype map for this event
+        player_arch_map = {}
+        for player in standings:
+            player_name = player.get('Player')
+            deck_data   = decks_by_player.get(player_name, {})
+            arch_defs   = arch_defs_by_format.get(event['format'], [])
+            player_arch_map[player_name] = detect_archetype_from_deck(deck_data, arch_defs) if deck_data else 'Unknown'
 
         event_rows.append({
             'event_id':   event['name'],
@@ -508,18 +517,14 @@ def main():
         })
 
         for player in standings:
-            player_name   = player.get('Player')
-            deck_data     = decks_by_player.get(player_name, {})
-            arch_defs     = arch_defs_by_format.get(event['format'], [])
-            declared_arch = detect_archetype_from_deck(deck_data, arch_defs) if deck_data else 'Unknown'
-            finish        = player.get('Rank')
-
+            player_name = player.get('Player')
+            archetype   = player_arch_map.get(player_name, 'Unknown')
             result_rows.append({
                 'event_id':            event['name'],
                 'player_name':         player_name,
-                'archetype_raw':       declared_arch,
-                'archetype_canonical': declared_arch,
-                'finish_position':     finish,
+                'archetype_raw':       archetype,
+                'archetype_canonical': archetype,
+                'finish_position':     player.get('Rank'),
                 'points':              player.get('Points'),
                 'match_win_pct':       norm_pct(player.get('OMWP')),
                 'game_win_pct':        norm_pct(player.get('GWP')),
@@ -527,8 +532,40 @@ def main():
                 'created_at':          datetime.now(timezone.utc).isoformat()
             })
 
+        # Process rounds data for matchup tracking
+        rounds = data.get('Rounds', [])
+        for rnd in rounds:
+            round_name = rnd.get('RoundName', '')
+            for match in rnd.get('Matches', []):
+                p1 = match.get('Player1')
+                p2 = match.get('Player2')
+                result = match.get('Result', '')
+
+                # Parse result e.g. "2-1-0" -> p1_games=2, p2_games=1, draws=0
+                parts = result.split('-')
+                if len(parts) != 3:
+                    continue
+                try:
+                    p1_games = int(parts[0])
+                    p2_games = int(parts[1])
+                    draws    = int(parts[2])
+                except ValueError:
+                    continue
+
+                match_rows.append({
+                    'event_id':      event['name'],
+                    'round_name':    round_name,
+                    'player1':       p1,
+                    'player2':       p2,
+                    'player1_arch':  player_arch_map.get(p1),
+                    'player2_arch':  player_arch_map.get(p2),
+                    'player1_games': p1_games,
+                    'player2_games': p2_games,
+                    'draws':         draws
+                })
+
         if (idx + 1) % 25 == 0:
-            print(f'  Processed {idx+1}/{len(new_events)}... ({len(result_rows)} rows)')
+            print(f'  Processed {idx+1}/{len(new_events)}... ({len(result_rows)} results, {len(match_rows)} matches)')
         time.sleep(0.3)
 
     print(f'Events processed: {len(event_rows)} | Skipped: {skipped} | Errors: {len(errors)}')
@@ -540,6 +577,12 @@ def main():
     if result_rows:
         print(f'Inserting {len(result_rows)} results...')
         sb_insert('mtgo_results', result_rows, batch_size=300)
+        if result_rows:
+        print(f'Inserting {len(result_rows)} results...')
+        sb_insert('mtgo_results', result_rows, batch_size=300)
+    if match_rows:
+        print(f'Inserting {len(match_rows)} match rows...')
+        sb_insert('mtgo_matches', match_rows, batch_size=300)
 
     # ── Validate mymtgo game log imports ──────────────────────────────────────
     print('\nValidating mymtgo game log archetypes...')
