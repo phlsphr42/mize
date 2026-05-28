@@ -2950,16 +2950,16 @@ function renderMtgoArchetypes(rows) {
 
   html += '<div class="card" style="padding:0;overflow:hidden;"><div style="overflow-x:auto;">';
   html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
-  html += `<thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border);">
-    <th style="padding:8px 6px;text-align:left;">#</th>
-    <th style="padding:8px 6px;text-align:left;">Archetype</th>
-    <th style="padding:8px 6px;text-align:center;">Conf.</th>
-    <th style="padding:8px 6px;text-align:right;">T32</th>
-    <th style="padding:8px 6px;text-align:right;">Share</th>
-    <th style="padding:8px 6px;text-align:right;">T8%</th>
-    <th style="padding:8px 6px;text-align:right;">vs Field</th>
-    <th style="padding:8px 6px;text-align:right;">MWP</th>
-    <th style="padding:8px 6px;text-align:right;" title="${scoreTitle}">${scoreLabel}</th>
+html += `<thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border);">
+    <th style="padding:8px 4px;text-align:left;white-space:nowrap;">#</th>
+    <th style="padding:8px 4px;text-align:left;white-space:nowrap;">Archetype</th>
+    <th style="padding:8px 4px;text-align:center;white-space:nowrap;">Conf.</th>
+    <th style="padding:8px 4px;text-align:right;white-space:nowrap;">T32</th>
+    <th style="padding:8px 4px;text-align:right;white-space:nowrap;">Share</th>
+    <th style="padding:8px 4px;text-align:right;white-space:nowrap;">T8%</th>
+    <th style="padding:8px 4px;text-align:right;white-space:nowrap;">±Field</th>
+    <th style="padding:8px 4px;text-align:right;white-space:nowrap;">MWP</th>
+    <th style="padding:8px 4px;text-align:right;white-space:nowrap;" title="${scoreTitle}">${scoreLabel}</th>
   </tr></thead><tbody>`;
 
   sorted.forEach((r, i) => {
@@ -2980,17 +2980,17 @@ function renderMtgoArchetypes(rows) {
 
     html += `<tr style="${bg}border-bottom:1px solid var(--border);cursor:pointer;"
       onclick="showMtgoArchetypeDetail('${r.archetype_name.replace(/'/g, "\\'")}')">
-      <td style="padding:7px 6px;color:var(--text2);">${i + 1}</td>
-      <td style="padding:7px 6px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.archetype_name}</td>
-      <td style="padding:7px 6px;text-align:center;">
+      <td style="padding:7px 4px;color:var(--text2);">${i + 1}</td>
+      <td style="padding:7px 4px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.archetype_name}</td>
+      <td style="padding:7px 4px;text-align:center;">
         <span title="${conf.title}" style="font-size:10px;font-weight:700;color:${conf.color};background:${conf.color}22;border-radius:4px;padding:2px 6px;">${conf.label}</span>
       </td>
-      <td style="padding:7px 6px;text-align:right;">${r.top32_appearances}</td>
-      <td style="padding:7px 6px;text-align:right;">${share}</td>
-      <td style="padding:7px 6px;text-align:right;">${top8}</td>
-      <td style="padding:7px 6px;text-align:right;">${deltaHtml}</td>
-      <td style="padding:7px 6px;text-align:right;">${mwp}</td>
-      <td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${normScore}</td>
+      <td style="padding:7px 4px;text-align:right;">${r.top32_appearances}</td>
+      <td style="padding:7px 4px;text-align:right;">${share}</td>
+      <td style="padding:7px 4px;text-align:right;">${top8}</td>
+      <td style="padding:7px 4px;text-align:right;">${deltaHtml}</td>
+      <td style="padding:7px 4px;text-align:right;">${mwp}</td>
+      <td style="padding:7px 4px;text-align:right;font-weight:700;color:var(--accent);">${normScore}</td>
     </tr>`;
   });
 
