@@ -3009,14 +3009,16 @@ function setMtgoRanking(ranking) {
   mtgoRanking = ranking;
   document.getElementById('mtgo-rank-opportunity').classList.toggle('selected', ranking === 'opportunity');
   document.getElementById('mtgo-rank-performance').classList.toggle('selected', ranking === 'performance');
-  // Re-render with current cached data using new sort
-  const dateVal    = document.getElementById('mtgo-date').value;
-  const minApp     = parseInt(document.getElementById('mtgo-min').value);
-  const format     = document.getElementById('mtgo-format')?.value || '';
-  const windowDays = dateVal === 'all' ? 0 : dateVal === 'custom' ? -1 : parseInt(dateVal);
-  const cacheKey   = `${windowDays}_${minApp}_${format}`;
-  if (mtgoCache.archetypes[cacheKey]) {
-    renderMtgoArchetypes(mtgoCache.archetypes[cacheKey]);
+
+  // Find any cached archetype data and re-render with new sort
+  const cachedKeys = Object.keys(mtgoCache.archetypes);
+  if (cachedKeys.length > 0) {
+    // Use the most recently cached result
+    const lastKey = cachedKeys[cachedKeys.length - 1];
+    renderMtgoArchetypes(mtgoCache.archetypes[lastKey]);
+  } else {
+    // No cache — reload data
+    loadMtgoData();
   }
 }
 
