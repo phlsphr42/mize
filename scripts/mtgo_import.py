@@ -494,8 +494,7 @@ def main():
             skipped += 1
             continue
 
-decks_by_player = {d['Player']: d for d in decks}
-
+        decks_by_player = {d['Player']: d for d in decks}
         # Build player -> archetype map for this event
         player_arch_map = {}
         for player in standings:
