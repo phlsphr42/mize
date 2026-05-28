@@ -985,8 +985,8 @@
     <button class="back-btn" onclick="showScreen('screen-home')">←</button>
     <h2>MTGO Deck Rankings</h2>
   </div>
-  <div class="card">
-<div class="row">
+<div class="card">
+    <div class="row">
       <div>
         <label class="label">Format</label>
         <select id="mtgo-format" onchange="loadMtgoData()">
@@ -1001,7 +1001,6 @@
         </select>
       </div>
       <div>
-<div>
         <label class="label">Date range</label>
         <select id="mtgo-date" onchange="onMtgoDateChange()">
           <option value="30">Last 30 days</option>
@@ -1010,6 +1009,15 @@
           <option value="365">Last year</option>
           <option value="all">All time</option>
           <option value="custom">Custom range</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Min appearances</label>
+        <select id="mtgo-min" onchange="loadMtgoData()">
+          <option value="3">3+</option>
+          <option value="5" selected>5+</option>
+          <option value="10">10+</option>
+          <option value="20">20+</option>
         </select>
       </div>
     </div>
@@ -1025,18 +1033,7 @@
         </div>
       </div>
     </div>
-    <div class="row">
-      <div>
-        <label class="label">Min appearances</label>
-        <select id="mtgo-min" onchange="loadMtgoData()">
-          <option value="3">3+</option>
-          <option value="5" selected>5+</option>
-          <option value="10">10+</option>
-          <option value="20">20+</option>
-        </select>
-      </div>
-    </div>
-<div class="scope-tabs" style="margin-top:8px;">
+    <div class="scope-tabs" style="margin-top:8px;">
       <div class="scope-tab active" onclick="setMtgoTab('archetypes')" id="mtgo-tab-archetypes">Archetypes</div>
       <div class="scope-tab" onclick="setMtgoTab('pilots')" id="mtgo-tab-pilots">Pilots</div>
     </div>
