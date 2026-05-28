@@ -4264,18 +4264,51 @@ async function calcMatrix() {
       if (format) {
         // Filter by format via the mtgo_matches -> mtgo_events join
         // We use a separate query to get matching event_ids
-        const { data: formatEvents } = await db.from('mtgo_events')
-          .select('event_id')
-          .eq('format', format || 'Modern');
-        const eventIds = (formatEvents || []).map(e => e.event_id);
-        if (eventIds.length > 0) {
-          const { data: fmtMatchups } = await db.from('mtgo_matchup_summary')
-            .select('deck,opponent,matches,match_wins,match_losses,game_wins,game_losses');
-          mtgoMatchups = fmtMatchups || [];
+// Filter matchups by format via event join
+      const { data: formatEvents } = await db.from('mtgo_events')
+        .select('event_id')
+        .eq('format', format || 'Modern');
+      const eventIds = (formatEvents || []).map(e => e.event_id);
+      if (eventIds.length > 0) {
+        // Get matchups only for events in this format
+        const { data: fmtMatchups } = await db.from('mtgo_matches')
+          .select('player1_arch,player2_arch,player1_games,player2_games')
+          .in('event_id', eventIds)
+          .not('player1_arch', 'is', null)
+          .not('player2_arch', 'is', null)
+          .neq('player1_arch', '')
+          .neq('player2_arch', '');
+
+        // Build matchup summary from raw matches
+        const matchupMap = {};
+        for (const m of fmtMatchups || []) {
+          const deck = m.player1_arch;
+          const opp  = m.player2_arch;
+          if (deck === opp) continue;
+          // Forward direction
+          if (!matchupMap[deck]) matchupMap[deck] = {};
+          if (!matchupMap[deck][opp]) matchupMap[deck][opp] = { game_wins: 0, game_losses: 0, match_wins: 0, match_losses: 0, matches: 0 };
+          matchupMap[deck][opp].game_wins   += m.player1_games;
+          matchupMap[deck][opp].game_losses += m.player2_games;
+          matchupMap[deck][opp].match_wins  += m.player1_games > m.player2_games ? 1 : 0;
+          matchupMap[deck][opp].match_losses += m.player1_games < m.player2_games ? 1 : 0;
+          matchupMap[deck][opp].matches     += 1;
+          // Inverse direction
+          if (!matchupMap[opp]) matchupMap[opp] = {};
+          if (!matchupMap[opp][deck]) matchupMap[opp][deck] = { game_wins: 0, game_losses: 0, match_wins: 0, match_losses: 0, matches: 0 };
+          matchupMap[opp][deck].game_wins   += m.player2_games;
+          matchupMap[opp][deck].game_losses += m.player1_games;
+          matchupMap[opp][deck].match_wins  += m.player2_games > m.player1_games ? 1 : 0;
+          matchupMap[opp][deck].match_losses += m.player2_games < m.player1_games ? 1 : 0;
+          matchupMap[opp][deck].matches     += 1;
         }
-      } else {
-        const { data: fmtMatchups } = await mtgoQuery;
-        mtgoMatchups = fmtMatchups || [];
+        // Flatten to array
+        mtgoMatchups = [];
+        for (const [deck, opps] of Object.entries(matchupMap)) {
+          for (const [opp, stats] of Object.entries(opps)) {
+            mtgoMatchups.push({ deck, opponent: opp, ...stats });
+          }
+        }
       }
     }
 
