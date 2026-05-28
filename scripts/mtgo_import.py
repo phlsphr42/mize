@@ -573,9 +573,6 @@ def main():
     if result_rows:
         print(f'Inserting {len(result_rows)} results...')
         sb_insert('mtgo_results', result_rows, batch_size=300)
-        if result_rows:
-        print(f'Inserting {len(result_rows)} results...')
-        sb_insert('mtgo_results', result_rows, batch_size=300)
     if match_rows:
         print(f'Inserting {len(match_rows)} match rows...')
         sb_insert('mtgo_matches', match_rows, batch_size=300)
