@@ -1001,8 +1001,9 @@
         </select>
       </div>
       <div>
+<div>
         <label class="label">Date range</label>
-<select id="mtgo-date" onchange="onMtgoDateChange()">
+        <select id="mtgo-date" onchange="onMtgoDateChange()">
           <option value="30">Last 30 days</option>
           <option value="90">Last 90 days</option>
           <option value="180" selected>Last 6 months</option>
@@ -1010,8 +1011,9 @@
           <option value="all">All time</option>
           <option value="custom">Custom range</option>
         </select>
-</div>
-  <div id="mtgo-date-custom" style="display:none;">
+      </div>
+    </div>
+    <div id="mtgo-date-custom" style="display:none;">
       <div class="row">
         <div>
           <label class="label">From</label>
@@ -1022,7 +1024,6 @@
           <input type="date" id="mtgo-date-to" style="margin-bottom:0;" onchange="loadMtgoData()">
         </div>
       </div>
-    </div>
     </div>
     <div class="row">
       <div>
