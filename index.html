@@ -2032,27 +2032,36 @@ function buildCardMaps(cards) {
 }
 
 async function suggestArchetypesForDeck(cards) {
-  // Try exact matching first
+  // Ensure archetype definitions are loaded
+  await loadArchetypeDefinitions();
+
   const { mainboard, sideboard } = buildCardMaps(cards);
   const exactMatches = detectArchetypeExact(mainboard, sideboard);
   if (exactMatches.length > 0) {
-    return exactMatches.map(name => ({ name, score: 1.0, method: 'exact' }));
+    // Map Badaro names to reference_decks names
+    // e.g. "HammerTime" -> "Hammer Time", "GoryoReanimator" -> "Goryo's Vengeance"
+    const nameMap = {
+      'HammerTime':       'Hammer Time',
+      'GoryoReanimator':  "Goryo's Vengeance",
+    };
+    return exactMatches.map(name => ({
+      name: nameMap[name] || name,
+      score: 1.0,
+      method: 'exact'
+    }));
   }
 
   // Fall back to weighted overlap
   const { data: refDecks } = await db.from('reference_decks')
     .select('archetype_name,card_name,quantity,main_side');
   if (!refDecks) return [];
-
   const byArch = {};
   for (const r of refDecks) {
     if (!byArch[r.archetype_name]) byArch[r.archetype_name] = [];
     byArch[r.archetype_name].push(r);
   }
-
   const pilotMainCards = new Set(Object.keys(mainboard));
   const results = [];
-
   for (const [arch, archCards] of Object.entries(byArch)) {
     const refMainCards = new Set(
       archCards.filter(c => c.main_side === 'Main').map(c => c.card_name.toLowerCase())
@@ -2063,7 +2072,6 @@ async function suggestArchetypesForDeck(cards) {
     const combined = (pilotScore + refScore) / 2;
     if (combined > 0.1) results.push({ name: arch, score: combined, method: 'overlap' });
   }
-
   return results.sort((a, b) => b.score - a.score);
 }
 
