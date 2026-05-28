@@ -30,10 +30,9 @@ headers = {
     'Prefer': 'resolution=ignore-duplicates,return=minimal'
 }
 
-# Formats that have archetype definitions available
 VALIDATABLE_FORMATS = {'Modern', 'Legacy', 'Pauper', 'Pioneer', 'Standard', 'Vintage'}
 
-# ── Supabase helpers ─────────────────────────────────────────────────────────
+# ── Supabase helpers ──────────────────────────────────────────────────────────
 def sb_get(table, params=''):
     all_rows = []
     limit = 1000
@@ -101,26 +100,18 @@ def gh_get_raw(url):
 
 # ── Archetype definitions ─────────────────────────────────────────────────────
 def load_archetype_defs_for_format(fmt):
-    """Load archetype definitions for a specific format from Badaro/MTGOFormatData."""
-    # Map our format names to folder names in the repo
     folder_map = {
-        'Modern':    'Modern',
-        'Legacy':    'Legacy',
-        'Pauper':    'Pauper',
-        'Pioneer':   'Pioneer',
-        'Standard':  'Standard',
-        'Vintage':   'Vintage',
+        'Modern': 'Modern', 'Legacy': 'Legacy', 'Pauper': 'Pauper',
+        'Pioneer': 'Pioneer', 'Standard': 'Standard', 'Vintage': 'Vintage',
     }
     folder = folder_map.get(fmt)
     if not folder:
         return []
-
     arch_url   = f'{GITHUB_API}/repos/{FORMAT_REPO}/contents/Formats/{folder}/Archetypes'
     arch_files = gh_get_json(arch_url)
     if not arch_files:
         print(f'  Could not fetch {fmt} archetype definitions.')
         return []
-
     arch_defs = []
     for f in arch_files:
         if not f['name'].endswith('.json'):
@@ -129,7 +120,7 @@ def load_archetype_defs_for_format(fmt):
         raw_def = gh_get_raw(f['download_url'])
         if raw_def:
             try:
-                d        = json.loads(raw_def)
+                d = json.loads(raw_def)
                 d['_name'] = name
                 arch_defs.append(d)
             except:
@@ -138,7 +129,6 @@ def load_archetype_defs_for_format(fmt):
     return arch_defs
 
 def load_all_arch_defs():
-    """Load archetype definitions for all validatable formats."""
     all_defs = {}
     for fmt in VALIDATABLE_FORMATS:
         print(f'  Loading {fmt} archetype definitions...')
@@ -186,21 +176,17 @@ def test_conditions(conditions, mainboard, sideboard):
     return True
 
 def detect_archetype_from_cards(cards_list, arch_defs):
-    """Detect archetype from a list of card names (opening hand)."""
-    # Treat opening hand cards as mainboard for matching purposes
     mainboard = {}
     for card in cards_list:
         if card:
             mainboard[card] = mainboard.get(card, 0) + 1
-    sideboard = {}
     matches = []
     for d in arch_defs:
-        if test_conditions(d.get('Conditions', []), mainboard, sideboard):
+        if test_conditions(d.get('Conditions', []), mainboard, {}):
             matches.append(d['_name'])
     return matches[0] if matches else None
 
 def detect_archetype_from_deck(deck_data, arch_defs):
-    """Detect archetype from full deck data (mainboard + sideboard)."""
     mainboard = {}
     sideboard = {}
     for c in deck_data.get('Mainboard', []):
@@ -212,46 +198,6 @@ def detect_archetype_from_deck(deck_data, arch_defs):
         if test_conditions(d.get('Conditions', []), mainboard, sideboard):
             matches.append(d['_name'])
     return matches[0] if matches else 'Unknown'
-
-def validate_archetype(game, arch_defs_by_format):
-    """
-    Validate that a game's declared archetype matches its opening hand cards.
-    Returns (is_valid, corrected_archetype) where corrected_archetype is None
-    if no better match is found.
-    """
-    fmt           = game.get('format', 'Modern')
-    declared_arch = game.get('deck_archetype', '')
-
-    # Skip validation for formats without definitions
-    if fmt not in VALIDATABLE_FORMATS:
-        return True, None
-
-    arch_defs = arch_defs_by_format.get(fmt, [])
-    if not arch_defs:
-        return True, None
-
-    # Get the declared archetype's definition
-    declared_def = next((d for d in arch_defs if d['_name'] == declared_arch), None)
-
-    # If we don't have a definition for the declared archetype, skip validation
-    if not declared_def:
-        return True, None
-
-    # Get opening hand cards
-    hand_cards = [game.get(f'card{i}') for i in range(1, 8) if game.get(f'card{i}')]
-    if not hand_cards:
-        return True, None
-
-    # Check if the declared archetype's conditions are met by the hand
-    mainboard = {card: hand_cards.count(card) for card in set(hand_cards)}
-    is_valid  = test_conditions(declared_def.get('Conditions', []), mainboard, {})
-
-    if is_valid:
-        return True, None
-
-    # Try to find a better match from the opening hand
-    corrected = detect_archetype_from_cards(hand_cards, arch_defs)
-    return False, corrected
 
 # ── Utility functions ─────────────────────────────────────────────────────────
 def determine_event_type(event_name):
@@ -310,7 +256,11 @@ def compute_archetype_summary(results, date_from, date_to):
             ((avg_omwp or 0) * 0.20)
         )
         meta_adj = perf / top32_share if top32_share > 0 else 0
-        raw_perf = (((avg_mwp * top32) + (0.5 * 20)) / (top32 + 20)) * math.log(max(top32, 1) + 1) * (1 + top8_rate) if avg_mwp is not None else 0
+        raw_perf = (
+            (((avg_mwp * top32) + (0.5 * 20)) / (top32 + 20))
+            * math.log(max(top32, 1) + 1)
+            * (1 + top8_rate)
+        ) if avg_mwp is not None else 0
         rows.append({
             'archetype_name':        arch,
             'format':                d['format'],
@@ -334,7 +284,6 @@ def compute_archetype_summary(results, date_from, date_to):
     return sorted(rows, key=lambda x: x['meta_adjusted_score'], reverse=True)
 
 def compute_pilot_summary(results, date_from, date_to):
-    # Key by (pilot, format) instead of just pilot
     by_pilot = defaultdict(lambda: {
         'appearances': [], 'top8': 0, 'events': set(),
         'points': [], 'mwp': [], 'gwp': [], 'omwp': [],
@@ -403,7 +352,6 @@ def main():
     print('Loading archetype definitions...')
     arch_defs_by_format = load_all_arch_defs()
 
-    # Format patterns for event discovery
     FORMAT_PATTERNS = {
         'Modern':    ['modern-challenge', 'modern-showcase-challenge'],
         'Legacy':    ['legacy-challenge', 'legacy-showcase-challenge'],
@@ -462,14 +410,15 @@ def main():
     existing_ids    = set(r['event_id'] for r in existing_events)
     new_events      = [e for e in all_format_events if e['name'] not in existing_ids]
     print(f'New events to process: {len(new_events)}')
+    for fmt, count in sorted(Counter(e['format'] for e in new_events).items()):
+        print(f'  {fmt}: {count} new')
 
     # Process new events
-    event_rows   = []
-    result_rows  = []
-    match_rows   = []
-    errors       = []
-    skipped      = 0
-    corrections  = []  # Track archetype corrections for notification
+    event_rows  = []
+    result_rows = []
+    match_rows  = []
+    errors      = []
+    skipped     = 0
 
     for idx, event in enumerate(new_events):
         raw = gh_get_raw(event['download_url'])
@@ -495,6 +444,7 @@ def main():
             continue
 
         decks_by_player = {d['Player']: d for d in decks}
+
         # Build player -> archetype map for this event
         player_arch_map = {}
         for player in standings:
@@ -533,12 +483,10 @@ def main():
         for rnd in rounds:
             round_name = rnd.get('RoundName', '')
             for match in rnd.get('Matches', []):
-                p1 = match.get('Player1')
-                p2 = match.get('Player2')
+                p1     = match.get('Player1')
+                p2     = match.get('Player2')
                 result = match.get('Result', '')
-
-                # Parse result e.g. "2-1-0" -> p1_games=2, p2_games=1, draws=0
-                parts = result.split('-')
+                parts  = result.split('-')
                 if len(parts) != 3:
                     continue
                 try:
@@ -547,7 +495,6 @@ def main():
                     draws    = int(parts[2])
                 except ValueError:
                     continue
-
                 match_rows.append({
                     'event_id':      event['name'],
                     'round_name':    round_name,
@@ -565,8 +512,9 @@ def main():
         time.sleep(0.3)
 
     print(f'Events processed: {len(event_rows)} | Skipped: {skipped} | Errors: {len(errors)}')
+    print(f'Result rows: {len(result_rows)} | Match rows: {len(match_rows)}')
 
-    # Insert new events and results
+    # Insert new events, results, and matches
     if event_rows:
         print(f'Inserting {len(event_rows)} events...')
         sb_insert('mtgo_events', event_rows)
@@ -579,53 +527,31 @@ def main():
 
     # ── Validate mymtgo game log imports ──────────────────────────────────────
     print('\nValidating mymtgo game log archetypes...')
-
-    # Fetch all mymtgo-imported games that haven't been validated yet
     mymtgo_games = sb_get('raw_game_log',
         '?select=id,pilot_name,deck_archetype,format,card1,card2,card3,card4,card5,card6,card7,external_id'
         '&not.external_id=is.null'
-        '&archetype_validated=is.false'
     )
-
-    # Fall back to fetching all mymtgo games if the column doesn't exist yet
-    if not mymtgo_games:
-        mymtgo_games = sb_get('raw_game_log',
-            '?select=id,pilot_name,deck_archetype,format,card1,card2,card3,card4,card5,card6,card7,external_id'
-            '&not.external_id=is.null'
-        )
-
     print(f'Validating {len(mymtgo_games)} mymtgo games...')
 
     corrections = []
     for game in mymtgo_games:
         fmt           = game.get('format', 'Modern')
         declared_arch = game.get('deck_archetype', '')
-
         if fmt not in VALIDATABLE_FORMATS:
             continue
-
         arch_defs = arch_defs_by_format.get(fmt, [])
         if not arch_defs:
             continue
-
-        # Get declared archetype definition
         declared_def = next((d for d in arch_defs if d['_name'] == declared_arch), None)
         if not declared_def:
             continue
-
-        # Build hand card counts
         hand_cards = [game.get(f'card{i}') for i in range(1, 8) if game.get(f'card{i}')]
         if not hand_cards:
             continue
-
         mainboard = {card: hand_cards.count(card) for card in set(hand_cards)}
-
-        # Check if declared archetype matches hand
-        is_valid = test_conditions(declared_def.get('Conditions', []), mainboard, {})
+        is_valid  = test_conditions(declared_def.get('Conditions', []), mainboard, {})
         if is_valid:
             continue
-
-        # Try to find better match
         corrected = detect_archetype_from_cards(hand_cards, arch_defs)
         if corrected and corrected != declared_arch:
             corrections.append({
@@ -639,8 +565,6 @@ def main():
             })
 
     print(f'Corrections needed: {len(corrections)}')
-
-    # Apply corrections to raw_game_log
     if corrections:
         for fix in corrections:
             r = requests.patch(
@@ -663,47 +587,42 @@ def main():
     event_format_map = {e['event_id']: e.get('format', 'Modern') for e in all_events_db}
     print(f'Total results: {len(all_results)} | Total events: {len(all_events_db)}')
 
-now     = datetime.now(timezone.utc).date()
-windows = [
+    now     = datetime.now(timezone.utc).date()
+    windows = [
         {'days': 30}, {'days': 90}, {'days': 180}, {'days': 365}, {'days': None}
-]
+    ]
 
-all_summaries_arch  = []
-all_summaries_pilot = []
+    all_summaries_arch  = []
+    all_summaries_pilot = []
 
-for w in windows:
-    cutoff    = (now - timedelta(days=w['days'])) if w['days'] else None
-    date_from = cutoff.isoformat() if cutoff else '2000-01-01'
-    date_to   = now.isoformat()
-    filtered  = [r for r in all_results if not cutoff or
-                    event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
-    for r in filtered:
+    for w in windows:
+        cutoff    = (now - timedelta(days=w['days'])) if w['days'] else None
+        date_from = cutoff.isoformat() if cutoff else '2000-01-01'
+        date_to   = now.isoformat()
+        filtered  = [r for r in all_results if not cutoff or
+                     event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
+        for r in filtered:
             r['_format'] = event_format_map.get(r['event_id'], 'Modern')
-    if not filtered:
+        if not filtered:
             continue
 
-        # Group by format and compute summaries separately to avoid
-        # cross-format contamination of archetype names (e.g. Affinity
-        # exists in both Modern and Vintage)
-    formats_in_window = set(r['_format'] for r in filtered)
-    for fmt in sorted(formats_in_window):
-        fmt_results = [r for r in filtered if r['_format'] == fmt]
-        label = ('all time' if not w['days'] else f'{w["days"]}d') + f' / {fmt}'
-        print(f'Window {label}: {len(fmt_results)} results')
-        arch_rows  = compute_archetype_summary(fmt_results, date_from, date_to)
-        pilot_rows = compute_pilot_summary(fmt_results, date_from, date_to)
-        for r in arch_rows:
-            r['window_days'] = w['days'] if w['days'] else 0
-        for r in pilot_rows:
-            r['window_days'] = w['days'] if w['days'] else 0
-        all_summaries_arch.extend(arch_rows)
-        all_summaries_pilot.extend(pilot_rows)
+        # Group by format to avoid cross-format contamination
+        formats_in_window = set(r['_format'] for r in filtered)
+        for fmt in sorted(formats_in_window):
+            fmt_results = [r for r in filtered if r['_format'] == fmt]
+            label = ('all time' if not w['days'] else f'{w["days"]}d') + f' / {fmt}'
+            print(f'Window {label}: {len(fmt_results)} results')
+            arch_rows  = compute_archetype_summary(fmt_results, date_from, date_to)
+            pilot_rows = compute_pilot_summary(fmt_results, date_from, date_to)
+            for r in arch_rows:
+                r['window_days'] = w['days'] if w['days'] else 0
+            for r in pilot_rows:
+                r['window_days'] = w['days'] if w['days'] else 0
+            all_summaries_arch.extend(arch_rows)
+            all_summaries_pilot.extend(pilot_rows)
 
     print(f'Total archetype summary rows: {len(all_summaries_arch)}')
     print(f'Total pilot summary rows: {len(all_summaries_pilot)}')
-
-    print(f'Archetype summary rows: {len(all_summaries_arch)}')
-    print(f'Pilot summary rows: {len(all_summaries_pilot)}')
 
     # Write summaries
     print('Clearing existing summaries...')
@@ -716,12 +635,13 @@ for w in windows:
     print(f'Writing {len(all_summaries_pilot)} pilot summary rows...')
     sb_insert('mtgo_pilot_summary', all_summaries_pilot, batch_size=300)
 
-    # ── Print correction summary for GitHub Actions log ───────────────────────
+    # ── Final summary ─────────────────────────────────────────────────────────
     print('\n' + '='*60)
     print('IMPORT COMPLETE')
     print('='*60)
     print(f'New events imported:    {len(event_rows)}')
     print(f'New results imported:   {len(result_rows)}')
+    print(f'New matches imported:   {len(match_rows)}')
     print(f'Archetype corrections:  {len(corrections)}')
     print(f'Errors:                 {len(errors)}')
 
@@ -744,7 +664,6 @@ for w in windows:
 
     print(f'\nCompleted: {datetime.now(timezone.utc).isoformat()}')
 
-    # Exit with error code if there were corrections so GitHub Actions flags the run
     if corrections:
         print(f'\n⚠ {len(corrections)} archetype correction(s) were applied.')
         print('Check the Actions log above for details.')
