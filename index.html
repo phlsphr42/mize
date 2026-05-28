@@ -1774,7 +1774,7 @@ async function loadRecentMatches() {
   const el = document.getElementById('recent-matches');
   try {
     const { data, error } = await db.from('raw_game_log')
-      .select('id,timestamp,deck_archetype,opponent_archetype,game_result,match_result,game_number')
+      .select('id,timestamp,deck_archetype,opponent_archetype,game_result,match_result,game_number,pre_post')
       .eq('pilot_name', state.pilot.pilot_name)
       .order('timestamp', { ascending: false })
       .limit(10);
@@ -1794,7 +1794,7 @@ async function loadRecentMatches() {
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
         '<div style="flex:1;">' +
         '<div style="font-size:13px;font-weight:600;">' + (g.deck_archetype || 'Unknown') + ' vs ' + (g.opponent_archetype || 'Unknown') + '</div>' +
-        '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + (g.game_number || '') + ' · ' + date + '</div>' +
+        '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + (g.pre_post === 'Post' ? 'G2/3' : 'G1') + ' · ' + date + '</div>' +
         '</div>' +
         '<div style="text-align:right;">' +
         '<span style="font-size:13px;font-weight:700;color:' + resultColor + ';">' + (g.game_result || '') + '</span>' +
