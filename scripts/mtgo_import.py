@@ -310,6 +310,8 @@ def compute_archetype_summary(results, date_from, date_to):
             ((avg_omwp or 0) * 0.20)
         )
         meta_adj = perf / top32_share if top32_share > 0 else 0
+        raw_perf = (((avg_mwp * top32) + (0.5 * 20)) / (top32 + 20)) * math.log(max(top32, 1) + 1) * (1 + top8_rate) if avg_mwp is not None else 0
+        rows.append({
 rows.append({
             'archetype_name':        arch,
             'format':                d['format'],
@@ -327,11 +329,7 @@ rows.append({
             'avg_omwp':              round(avg_omwp, 6) if avg_omwp else None,
             'performance_score':     round(perf, 6),
             'meta_adjusted_score':   round(meta_adj, 6),
-            'raw_performance_score': round(
-                (((avg_mwp * top32) + (0.5 * 20)) / (top32 + 20))
-                * math.log(max(top32, 1) + 1)
-                * (1 + top8_rate), 6
-            ) if avg_mwp is not None else 0,
+            'raw_performance_score': round(raw_perf, 6),
             'last_updated':          datetime.now(timezone.utc).isoformat()
         })
     return sorted(rows, key=lambda x: x['meta_adjusted_score'], reverse=True)
