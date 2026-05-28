@@ -10,6 +10,7 @@ import json
 import time
 import re
 import os
+import math
 from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 
@@ -309,24 +310,29 @@ def compute_archetype_summary(results, date_from, date_to):
             ((avg_omwp or 0) * 0.20)
         )
         meta_adj = perf / top32_share if top32_share > 0 else 0
-        rows.append({
-            'archetype_name':      arch,
-            'format':              d['format'],
-            'date_from':           date_from,
-            'date_to':             date_to,
-            'event_count':         len(d['events']),
-            'top32_appearances':   top32,
-            'top8_appearances':    d['top8'],
-            'top32_share':         round(top32_share, 6),
-            'top8_rate':           round(top8_rate, 6),
-            'avg_finish':          round(avg_finish, 2) if avg_finish else None,
-            'avg_points':          round(avg_pts, 2) if avg_pts else None,
-            'avg_mwp':             round(avg_mwp, 6) if avg_mwp else None,
-            'avg_gwp':             round(avg_gwp, 6) if avg_gwp else None,
-            'avg_omwp':            round(avg_omwp, 6) if avg_omwp else None,
-            'performance_score':   round(perf, 6),
-            'meta_adjusted_score': round(meta_adj, 6),
-            'last_updated':        datetime.now(timezone.utc).isoformat()
+rows.append({
+            'archetype_name':        arch,
+            'format':                d['format'],
+            'date_from':             date_from,
+            'date_to':               date_to,
+            'event_count':           len(d['events']),
+            'top32_appearances':     top32,
+            'top8_appearances':      d['top8'],
+            'top32_share':           round(top32_share, 6),
+            'top8_rate':             round(top8_rate, 6),
+            'avg_finish':            round(avg_finish, 2) if avg_finish else None,
+            'avg_points':            round(avg_pts, 2) if avg_pts else None,
+            'avg_mwp':               round(avg_mwp, 6) if avg_mwp else None,
+            'avg_gwp':               round(avg_gwp, 6) if avg_gwp else None,
+            'avg_omwp':              round(avg_omwp, 6) if avg_omwp else None,
+            'performance_score':     round(perf, 6),
+            'meta_adjusted_score':   round(meta_adj, 6),
+            'raw_performance_score': round(
+                (((avg_mwp * top32) + (0.5 * 20)) / (top32 + 20))
+                * math.log(max(top32, 1) + 1)
+                * (1 + top8_rate), 6
+            ) if avg_mwp is not None else 0,
+            'last_updated':          datetime.now(timezone.utc).isoformat()
         })
     return sorted(rows, key=lambda x: x['meta_adjusted_score'], reverse=True)
 
