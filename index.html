@@ -1002,14 +1002,27 @@
       </div>
       <div>
         <label class="label">Date range</label>
-        <select id="mtgo-date" onchange="loadMtgoData()">
+<select id="mtgo-date" onchange="onMtgoDateChange()">
           <option value="30">Last 30 days</option>
           <option value="90">Last 90 days</option>
           <option value="180" selected>Last 6 months</option>
           <option value="365">Last year</option>
           <option value="all">All time</option>
+          <option value="custom">Custom range</option>
         </select>
 </div>
+  <div id="mtgo-date-custom" style="display:none;">
+      <div class="row">
+        <div>
+          <label class="label">From</label>
+          <input type="date" id="mtgo-date-from" style="margin-bottom:0;" onchange="loadMtgoData()">
+        </div>
+        <div>
+          <label class="label">To</label>
+          <input type="date" id="mtgo-date-to" style="margin-bottom:0;" onchange="loadMtgoData()">
+        </div>
+      </div>
+    </div>
     </div>
     <div class="row">
       <div>
@@ -1022,9 +1035,15 @@
         </select>
       </div>
     </div>
-    <div class="scope-tabs" style="margin-top:8px;">
+<div class="scope-tabs" style="margin-top:8px;">
       <div class="scope-tab active" onclick="setMtgoTab('archetypes')" id="mtgo-tab-archetypes">Archetypes</div>
       <div class="scope-tab" onclick="setMtgoTab('pilots')" id="mtgo-tab-pilots">Pilots</div>
+    </div>
+    <div id="mtgo-ranking-toggle" style="display:none;margin-top:8px;">
+      <div class="toggle-group">
+        <div class="toggle-btn selected" id="mtgo-rank-opportunity" onclick="setMtgoRanking('opportunity')">Opportunity</div>
+        <div class="toggle-btn" id="mtgo-rank-performance" onclick="setMtgoRanking('performance')">Raw Performance</div>
+      </div>
     </div>
   </div>
   <div id="mtgo-loading" style="display:none;text-align:center;padding:24px;color:var(--text2);">Loading...</div>
@@ -2791,15 +2810,27 @@ function setMtgoTab(tab) {
   mtgoTab = tab;
   document.getElementById('mtgo-tab-archetypes').classList.toggle('active', tab === 'archetypes');
   document.getElementById('mtgo-tab-pilots').classList.toggle('active', tab === 'pilots');
+  document.getElementById('mtgo-ranking-toggle').style.display = tab === 'archetypes' ? 'block' : 'none';
   loadMtgoData();
 }
 
 async function loadMtgoData() {
   const dateVal = document.getElementById('mtgo-date').value;
-  const minApp = parseInt(document.getElementById('mtgo-min').value);
-const format = document.getElementById('mtgo-format')?.value || '';
-  const windowDays = dateVal === 'all' ? 0 : parseInt(dateVal);
-  const cacheKey = `${windowDays}_${minApp}_${format}`;
+  const minApp  = parseInt(document.getElementById('mtgo-min').value);
+  const format  = document.getElementById('mtgo-format')?.value || '';
+
+  // Handle custom date range
+  let windowDays, dateFrom, dateTo;
+  if (dateVal === 'custom') {
+    dateFrom   = document.getElementById('mtgo-date-from').value;
+    dateTo     = document.getElementById('mtgo-date-to').value;
+    if (!dateFrom || !dateTo) return; // wait until both dates are set
+    windowDays = -1; // sentinel for custom
+  } else {
+    windowDays = dateVal === 'all' ? 0 : parseInt(dateVal);
+  }
+
+  const cacheKey = `${windowDays}_${minApp}_${format}_${dateFrom || ''}_${dateTo || ''}`;
 
   document.getElementById('mtgo-loading').style.display = 'block';
   document.getElementById('mtgo-results').innerHTML = '';
@@ -2807,27 +2838,43 @@ const format = document.getElementById('mtgo-format')?.value || '';
   try {
     if (mtgoTab === 'archetypes') {
       if (!mtgoCache.archetypes[cacheKey]) {
-let archQuery = db.from('mtgo_archetype_summary')
+        let archQuery = db.from('mtgo_archetype_summary')
           .select('*')
-          .eq('window_days', windowDays)
           .gte('top32_appearances', minApp)
           .order('meta_adjusted_score', { ascending: false })
           .limit(200);
+
+        if (windowDays === -1) {
+          // Custom date range — filter by date_from and date_to columns
+          if (dateFrom) archQuery = archQuery.gte('date_from', dateFrom);
+          if (dateTo)   archQuery = archQuery.lte('date_to',   dateTo);
+        } else {
+          archQuery = archQuery.eq('window_days', windowDays);
+        }
         if (format) archQuery = archQuery.eq('format', format);
+
         const { data, error } = await archQuery;
         if (error) throw error;
         mtgoCache.archetypes[cacheKey] = data || [];
       }
       renderMtgoArchetypes(mtgoCache.archetypes[cacheKey]);
+
     } else {
       if (!mtgoCache.pilots[cacheKey]) {
-let pilotQuery = db.from('mtgo_pilot_summary')
+        let pilotQuery = db.from('mtgo_pilot_summary')
           .select('*')
-          .eq('window_days', windowDays)
           .gte('top32_appearances', minApp)
           .order('performance_score', { ascending: false })
           .limit(200);
+
+        if (windowDays === -1) {
+          if (dateFrom) pilotQuery = pilotQuery.gte('date_from', dateFrom);
+          if (dateTo)   pilotQuery = pilotQuery.lte('date_to',   dateTo);
+        } else {
+          pilotQuery = pilotQuery.eq('window_days', windowDays);
+        }
         if (format) pilotQuery = pilotQuery.eq('format', format);
+
         const { data, error } = await pilotQuery;
         if (error) throw error;
         mtgoCache.pilots[cacheKey] = data || [];
@@ -2854,86 +2901,124 @@ function renderMtgoArchetypes(rows) {
     return;
   }
 
-  const maxScore = Math.max(...rows.map(r => r.meta_adjusted_score || 0));
-  const totalAppearances = rows.reduce((s, r) => s + (r.top32_appearances || 0), 0);
+  // Sort by selected ranking
+  const sorted = [...rows].sort((a, b) => {
+    if (mtgoRanking === 'performance') {
+      return (b.raw_performance_score || 0) - (a.raw_performance_score || 0);
+    }
+    return (b.meta_adjusted_score || 0) - (a.meta_adjusted_score || 0);
+  });
 
-  // Field average MWP (weighted by appearances)
-  const totalMwpWeight = rows.reduce((s, r) => s + (r.avg_mwp || 0) * r.top32_appearances, 0);
-  const totalApps = rows.reduce((s, r) => s + r.top32_appearances, 0);
-  const fieldAvgMwp = totalApps > 0 ? totalMwpWeight / totalApps : 0.5;
+  const scoreField  = mtgoRanking === 'performance' ? 'raw_performance_score' : 'meta_adjusted_score';
+  const maxScore    = Math.max(...sorted.map(r => r[scoreField] || 0));
+  const totalApps   = sorted.reduce((s, r) => s + r.top32_appearances, 0);
+  const totalMwpW   = sorted.reduce((s, r) => s + (r.avg_mwp || 0) * r.top32_appearances, 0);
+  const fieldAvgMwp = totalApps > 0 ? totalMwpW / totalApps : 0.5;
 
-  // Store rows on window for detail lookup
-  window.mtgoArchetypeRows = rows;
+  window.mtgoArchetypeRows = sorted;
+
+  const scoreLabel = mtgoRanking === 'performance' ? 'Perf.' : 'Opp.';
+  const scoreTitle = mtgoRanking === 'performance'
+    ? 'Raw Performance — rewards high win rate and large sample size. Dominant popular decks rank highest.'
+    : 'Opportunity Score — rewards decks outperforming their meta share. Underplayed strong decks rank highest.';
 
   function confidence(appearances) {
     if (appearances >= 100) return { label: 'High', color: '#4caf50', title: 'High confidence: 100+ appearances' };
     if (appearances >= 20)  return { label: 'Med',  color: '#ff9800', title: 'Medium confidence: 20-99 appearances' };
-    return                         { label: 'Low',  color: '#f44336', title: 'Low confidence: fewer than 20 appearances — treat with caution' };
+    return                         { label: 'Low',  color: '#f44336', title: 'Low confidence: fewer than 20 appearances' };
   }
 
   let html = `<div class="card" style="font-size:12px;color:var(--text2);margin-bottom:4px;">
-    ${rows.length} archetypes · ${totalAppearances.toLocaleString()} total top 32 finishes ·
+    ${sorted.length} archetypes · ${totalApps.toLocaleString()} total top 32 finishes ·
     Field avg MWP: ${(fieldAvgMwp * 100).toFixed(1)}%
+  </div>`;
+
+  html += `<div class="card" style="padding:10px 12px;margin-bottom:4px;">
+    <div style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;">
+      ${mtgoRanking === 'performance' ? '📊 Raw Performance ranking' : '💡 Opportunity Score ranking'}
+    </div>
+    <div style="font-size:11px;color:var(--text2);">${scoreTitle}</div>
   </div>`;
 
   html += `<div class="card" style="padding:10px 12px;margin-bottom:4px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
     <span style="font-size:11px;color:var(--text2);font-weight:600;">Confidence:</span>
-    <span style="font-size:11px;"><span style="color:#4caf50;font-weight:700;">&#9632;</span> High (100+ games)</span>
-    <span style="font-size:11px;"><span style="color:#ff9800;font-weight:700;">&#9632;</span> Med (20–99 games)</span>
-    <span style="font-size:11px;"><span style="color:#f44336;font-weight:700;">&#9632;</span> Low (&lt;20 games)</span>
+    <span style="font-size:11px;"><span style="color:#4caf50;font-weight:700;">&#9632;</span> High (100+)</span>
+    <span style="font-size:11px;"><span style="color:#ff9800;font-weight:700;">&#9632;</span> Med (20–99)</span>
+    <span style="font-size:11px;"><span style="color:#f44336;font-weight:700;">&#9632;</span> Low (&lt;20)</span>
   </div>`;
 
-  html += '<div class="card" style="padding:0;overflow:hidden;">';
-  html += '<div style="overflow-x:auto;">';
+  html += '<div class="card" style="padding:0;overflow:hidden;"><div style="overflow-x:auto;">';
   html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
-  html += '<thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border);">' +
-    '<th style="padding:8px 6px;text-align:left;white-space:nowrap;">#</th>' +
-    '<th style="padding:8px 6px;text-align:left;white-space:nowrap;">Archetype</th>' +
-    '<th style="padding:8px 6px;text-align:center;white-space:nowrap;">Conf.</th>' +
-    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T32</th>' +
-    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Share</th>' +
-    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">T8%</th>' +
-    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">vs Field</th>' +
-    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">MWP</th>' +
-    '<th style="padding:8px 6px;text-align:right;white-space:nowrap;">Score</th>' +
-    '</tr></thead><tbody>';
+  html += `<thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border);">
+    <th style="padding:8px 6px;text-align:left;">#</th>
+    <th style="padding:8px 6px;text-align:left;">Archetype</th>
+    <th style="padding:8px 6px;text-align:center;">Conf.</th>
+    <th style="padding:8px 6px;text-align:right;">T32</th>
+    <th style="padding:8px 6px;text-align:right;">Share</th>
+    <th style="padding:8px 6px;text-align:right;">T8%</th>
+    <th style="padding:8px 6px;text-align:right;">vs Field</th>
+    <th style="padding:8px 6px;text-align:right;">MWP</th>
+    <th style="padding:8px 6px;text-align:right;" title="${scoreTitle}">${scoreLabel}</th>
+  </tr></thead><tbody>`;
 
-  rows.forEach((r, i) => {
+  sorted.forEach((r, i) => {
     const share     = r.top32_share != null ? (r.top32_share * 100).toFixed(1) + '%' : '—';
     const top8      = r.top8_rate   != null ? (r.top8_rate   * 100).toFixed(0) + '%' : '—';
     const mwp       = r.avg_mwp     != null ? (r.avg_mwp     * 100).toFixed(1) + '%' : '—';
-    const normScore = maxScore > 0 ? ((r.meta_adjusted_score / maxScore) * 100).toFixed(1) : '—';
+    const normScore = maxScore > 0 ? ((r[scoreField] / maxScore) * 100).toFixed(1) : '—';
     const conf      = confidence(r.top32_appearances);
     const bg        = i % 2 === 0 ? '' : 'background:var(--surface2);';
 
-    // Delta vs field
     let deltaHtml = '—';
     if (r.avg_mwp != null) {
       const delta = (r.avg_mwp - fieldAvgMwp) * 100;
       const sign  = delta >= 0 ? '▲' : '▼';
       const color = delta >= 0 ? 'var(--success)' : 'var(--danger)';
-      deltaHtml = `<span style="color:${color};font-weight:700;">${sign} ${Math.abs(delta).toFixed(1)}%</span>`;
+      deltaHtml   = `<span style="color:${color};font-weight:700;">${sign} ${Math.abs(delta).toFixed(1)}%</span>`;
     }
 
     html += `<tr style="${bg}border-bottom:1px solid var(--border);cursor:pointer;"
-      onclick="showMtgoArchetypeDetail('${r.archetype_name.replace(/'/g, "\\'")}')">` +
-      `<td style="padding:7px 6px;color:var(--text2);">${i + 1}</td>` +
-      `<td style="padding:7px 6px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.archetype_name}</td>` +
-      `<td style="padding:7px 6px;text-align:center;">` +
-        `<span title="${conf.title}" style="font-size:10px;font-weight:700;color:${conf.color};` +
-        `background:${conf.color}22;border-radius:4px;padding:2px 6px;">${conf.label}</span></td>` +
-      `<td style="padding:7px 6px;text-align:right;">${r.top32_appearances}</td>` +
-      `<td style="padding:7px 6px;text-align:right;">${share}</td>` +
-      `<td style="padding:7px 6px;text-align:right;">${top8}</td>` +
-      `<td style="padding:7px 6px;text-align:right;">${deltaHtml}</td>` +
-      `<td style="padding:7px 6px;text-align:right;">${mwp}</td>` +
-      `<td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${normScore}</td>` +
-      `</tr>`;
+      onclick="showMtgoArchetypeDetail('${r.archetype_name.replace(/'/g, "\\'")}')">
+      <td style="padding:7px 6px;color:var(--text2);">${i + 1}</td>
+      <td style="padding:7px 6px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.archetype_name}</td>
+      <td style="padding:7px 6px;text-align:center;">
+        <span title="${conf.title}" style="font-size:10px;font-weight:700;color:${conf.color};background:${conf.color}22;border-radius:4px;padding:2px 6px;">${conf.label}</span>
+      </td>
+      <td style="padding:7px 6px;text-align:right;">${r.top32_appearances}</td>
+      <td style="padding:7px 6px;text-align:right;">${share}</td>
+      <td style="padding:7px 6px;text-align:right;">${top8}</td>
+      <td style="padding:7px 6px;text-align:right;">${deltaHtml}</td>
+      <td style="padding:7px 6px;text-align:right;">${mwp}</td>
+      <td style="padding:7px 6px;text-align:right;font-weight:700;color:var(--accent);">${normScore}</td>
+    </tr>`;
   });
 
   html += '</tbody></table></div></div>';
-  html += '<div style="font-size:11px;color:var(--text2);margin-top:4px;">Score rewards decks performing above their meta share. vs Field = MWP delta vs weighted field average. Tap a row for details.</div>';
+  html += `<div style="font-size:11px;color:var(--text2);margin-top:4px;">${scoreTitle} Tap a row for details.</div>`;
   el.innerHTML = html;
+}
+
+  let mtgoRanking = 'opportunity'; // 'opportunity' or 'performance'
+
+function onMtgoDateChange() {
+  const val = document.getElementById('mtgo-date').value;
+  document.getElementById('mtgo-date-custom').style.display = val === 'custom' ? 'block' : 'none';
+  if (val !== 'custom') loadMtgoData();
+}
+
+function setMtgoRanking(ranking) {
+  mtgoRanking = ranking;
+  document.getElementById('mtgo-rank-opportunity').classList.toggle('selected', ranking === 'opportunity');
+  document.getElementById('mtgo-rank-performance').classList.toggle('selected', ranking === 'performance');
+  // Re-render with current cached data using new sort
+  const dateVal    = document.getElementById('mtgo-date').value;
+  const minApp     = parseInt(document.getElementById('mtgo-min').value);
+  const format     = document.getElementById('mtgo-format')?.value || '';
+  const windowDays = dateVal === 'all' ? 0 : dateVal === 'custom' ? -1 : parseInt(dateVal);
+  const cacheKey   = `${windowDays}_${minApp}_${format}`;
+  if (mtgoCache.archetypes[cacheKey]) {
+    renderMtgoArchetypes(mtgoCache.archetypes[cacheKey]);
+  }
 }
 
 function renderMtgoPilots(rows) {
