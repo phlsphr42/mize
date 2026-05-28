@@ -405,13 +405,23 @@ def main():
     for fmt, count in sorted(Counter(e['format'] for e in all_format_events).items()):
         print(f'  {fmt}: {count}')
 
-    # Filter to only new events
-    existing_events = sb_get('mtgo_events', '?select=event_id')
-    existing_ids    = set(r['event_id'] for r in existing_events)
-    new_events      = [e for e in all_format_events if e['name'] not in existing_ids]
+# Filter to only new events
+    existing_events  = sb_get('mtgo_events', '?select=event_id')
+    existing_ids     = set(r['event_id'] for r in existing_events)
+    new_events       = [e for e in all_format_events if e['name'] not in existing_ids]
     print(f'New events to process: {len(new_events)}')
     for fmt, count in sorted(Counter(e['format'] for e in new_events).items()):
         print(f'  {fmt}: {count} new')
+
+    # Check if we need to backfill match data for existing events
+    existing_matches = sb_get('mtgo_matches', '?select=event_id&limit=1')
+    backfill_matches = len(existing_matches) == 0
+    if backfill_matches:
+        print('No match data found — will backfill rounds data for all existing events.')
+        backfill_events = [e for e in all_format_events if e['name'] in existing_ids]
+        print(f'Events to backfill: {len(backfill_events)}')
+    else:
+        backfill_events = []
 
     # Process new events
     event_rows  = []
@@ -510,6 +520,68 @@ def main():
         if (idx + 1) % 25 == 0:
             print(f'  Processed {idx+1}/{len(new_events)}... ({len(result_rows)} results, {len(match_rows)} matches)')
         time.sleep(0.3)
+
+    # ── Backfill rounds data for existing events if needed ────────────
+    if backfill_events:
+        print(f'\nBackfilling rounds data for {len(backfill_events)} existing events...')
+        backfill_errors = 0
+        for idx, event in enumerate(backfill_events):
+            raw = gh_get_raw(event['download_url'])
+            if not raw:
+                backfill_errors += 1
+                continue
+            try:
+                data = json.loads(raw)
+            except:
+                backfill_errors += 1
+                continue
+
+            standings = data.get('Standings', [])
+            decks     = data.get('Decks', [])
+            rounds    = data.get('Rounds', [])
+            if not rounds:
+                continue
+
+            decks_by_player = {d['Player']: d for d in decks}
+            player_arch_map = {}
+            for player in standings:
+                player_name = player.get('Player')
+                deck_data   = decks_by_player.get(player_name, {})
+                arch_defs   = arch_defs_by_format.get(event['format'], [])
+                player_arch_map[player_name] = detect_archetype_from_deck(deck_data, arch_defs) if deck_data else 'Unknown'
+
+            for rnd in rounds:
+                round_name = rnd.get('RoundName', '')
+                for match in rnd.get('Matches', []):
+                    p1     = match.get('Player1')
+                    p2     = match.get('Player2')
+                    result = match.get('Result', '')
+                    parts  = result.split('-')
+                    if len(parts) != 3:
+                        continue
+                    try:
+                        p1_games = int(parts[0])
+                        p2_games = int(parts[1])
+                        draws    = int(parts[2])
+                    except ValueError:
+                        continue
+                    match_rows.append({
+                        'event_id':      event['name'],
+                        'round_name':    round_name,
+                        'player1':       p1,
+                        'player2':       p2,
+                        'player1_arch':  player_arch_map.get(p1),
+                        'player2_arch':  player_arch_map.get(p2),
+                        'player1_games': p1_games,
+                        'player2_games': p2_games,
+                        'draws':         draws
+                    })
+
+            if (idx + 1) % 25 == 0:
+                print(f'  Backfilled {idx+1}/{len(backfill_events)}... ({len(match_rows)} matches so far)')
+            time.sleep(0.3)
+
+        print(f'Backfill complete. Matches collected: {len(match_rows)} | Errors: {backfill_errors}')
 
     print(f'Events processed: {len(event_rows)} | Skipped: {skipped} | Errors: {len(errors)}')
     print(f'Result rows: {len(result_rows)} | Match rows: {len(match_rows)}')
