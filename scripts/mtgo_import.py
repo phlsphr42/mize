@@ -413,16 +413,19 @@ def main():
     for fmt, count in sorted(Counter(e['format'] for e in new_events).items()):
         print(f'  {fmt}: {count} new')
 
-    # Check if we need to backfill match data for existing events
+# Check if we need to backfill match data for existing events
     print('Checking mtgo_matches table...')
     r = requests.get(
         f'{SUPABASE_URL}/rest/v1/mtgo_matches?select=id&limit=1',
         headers=headers
     )
-    existing_matches = r.json() if r.status_code == 200 else []
-    backfill_matches = len(existing_matches) == 0
-    print(f'Match data exists: {not backfill_matches}')
-    if backfill_matches:
+    if r.status_code == 200:
+        existing_matches = r.json()
+        has_matches = isinstance(existing_matches, list) and len(existing_matches) > 0
+    else:
+        has_matches = False
+    print(f'Match data exists: {has_matches}')
+    if not has_matches:
         print('No match data found — will backfill rounds data for all existing events.')
         backfill_events = [e for e in all_format_events if e['name'] in existing_ids]
         print(f'Events to backfill: {len(backfill_events)}')
