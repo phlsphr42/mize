@@ -2031,21 +2031,45 @@ function buildCardMaps(cards) {
   return { mainboard, sideboard };
 }
 
-async function suggestArchetypesForDeck(cards) {
-  // Ensure archetype definitions are loaded
+function resolveBadaroName(badaroName, refNames) {
+  // Direct match first
+  if (refNames.includes(badaroName)) return badaroName;
+
+  // Normalize both sides for comparison — lowercase, remove spaces and special chars
+  const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normalizedBadaro = normalize(badaroName);
+
+  // Try exact normalized match
+  const exactNorm = refNames.find(n => normalize(n) === normalizedBadaro);
+  if (exactNorm) return exactNorm;
+
+  // Try starts-with match (e.g. "LivingEnd" -> "Living End")
+  const startsWith = refNames.find(n => normalize(n).startsWith(normalizedBadaro) ||
+                                         normalizedBadaro.startsWith(normalize(n)));
+  if (startsWith) return startsWith;
+
+  // Try contains match
+  const contains = refNames.find(n => normalize(n).includes(normalizedBadaro) ||
+                                       normalizedBadaro.includes(normalize(n)));
+  if (contains) return contains;
+
+  // No match — return original
+  return badaroName;
+}
+
+  async function suggestArchetypesForDeck(cards) {
   await loadArchetypeDefinitions();
 
   const { mainboard, sideboard } = buildCardMaps(cards);
   const exactMatches = detectArchetypeExact(mainboard, sideboard);
+
   if (exactMatches.length > 0) {
-    // Map Badaro names to reference_decks names
-    // e.g. "HammerTime" -> "Hammer Time", "GoryoReanimator" -> "Goryo's Vengeance"
-    const nameMap = {
-      'HammerTime':       'Hammer Time',
-      'GoryoReanimator':  "Goryo's Vengeance",
-    };
+    // Get reference deck names for resolution
+    const { data: refDecks } = await db.from('reference_decks').select('archetype_name');
+    const refNames = [...new Set((refDecks || []).map(r => r.archetype_name))];
+
     return exactMatches.map(name => ({
-      name: nameMap[name] || name,
+      name: resolveBadaroName(name, refNames),
       score: 1.0,
       method: 'exact'
     }));
