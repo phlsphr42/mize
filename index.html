@@ -4918,9 +4918,17 @@ async function calcMatrix() {
           if (batch) fmtMatchups.push(...batch);
         }
         const matchupMap = {};
+// Get reference deck names for resolving Badaro archetype names
+        const { data: refDecks } = await db.from('raw_game_log')
+          .select('deck_archetype')
+          .eq('format', format || 'Modern')
+          .not('deck_archetype', 'is', null)
+          .limit(50000);
+        const refNames = [...new Set((refDecks || []).map(r => r.deck_archetype))];
+
         for (const m of fmtMatchups || []) {
-          const deck = m.player1_arch;
-          const opp  = m.player2_arch;
+          const deck = resolveBadaroName(m.player1_arch, refNames);
+          const opp  = resolveBadaroName(m.player2_arch, refNames);
           if (deck === opp) continue;
           if (!matchupMap[deck]) matchupMap[deck] = {};
           if (!matchupMap[deck][opp]) matchupMap[deck][opp] = { game_wins: 0, game_losses: 0, match_wins: 0, match_losses: 0, matches: 0 };
