@@ -560,7 +560,7 @@ def main():
     print('\nValidating mymtgo game log archetypes...')
     mymtgo_games = sb_get('raw_game_log',
         '?select=id,pilot_name,deck_archetype,format,card1,card2,card3,card4,card5,card6,card7,external_id'
-        '&not.external_id=is.null'
+        '&external_id=not.is.null'
     )
     print(f'Validating {len(mymtgo_games)} mymtgo games...')
 

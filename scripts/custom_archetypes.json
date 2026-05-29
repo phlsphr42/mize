@@ -342,6 +342,1075 @@
     },
     "archetypes": [
       {
+        "Name": "WoodlandsOmniscience",
+        "MizeName": "Gruul Omniscience",
+        "Supertype": "Combo",
+        "_name": "WoodlandsOmniscience",
+        "_mize_name": "Gruul Omniscience",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Omniscience"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Wooded Foothills"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Wizards",
+        "MizeName": "Izzet Wizards",
+        "Supertype": "Midrange",
+        "_name": "Wizards",
+        "_mize_name": "Izzet Wizards",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Wizard's Lightning"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Adeliz, the Cinder Wind"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "WBBlink",
+        "MizeName": "Orzhov Blink",
+        "Supertype": "Blink",
+        "_name": "WBBlink",
+        "_mize_name": "Orzhov Blink",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ephemerate"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Solitude"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Overlord of the Balemurk"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "UWBlink",
+        "MizeName": "Orzhov Blink",
+        "Supertype": "Blink",
+        "_name": "UWBlink",
+        "_mize_name": "Orzhov Blink",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ephemerate"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Solitude"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Overlord of the Balemurk"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "URxCutter",
+        "MizeName": "Izzet Cutter",
+        "Supertype": "Steel Cutter",
+        "_name": "URxCutter",
+        "_mize_name": "Izzet Cutter",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Cori-Steel Cutter"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Emry, Lurker of the Loch"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "UGRitual",
+        "MizeName": "Gruul Ponza",
+        "Supertype": "Midrange",
+        "_name": "UGRitual",
+        "_mize_name": "Gruul Ponza",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arbor Elf"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Utopia Sprawl"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Stone Rain"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "UBMidrange",
+        "MizeName": "Dimir Midrange",
+        "Supertype": "Midrange",
+        "_name": "UBMidrange",
+        "_mize_name": "Dimir Midrange",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Psychic Frog"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Thoughtseize"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Death's Shadow",
+              "Ragavan, Nimble Pilferer"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "TwiddleStorm",
+        "MizeName": "Twiddlestorm",
+        "Supertype": "Storm",
+        "_name": "TwiddleStorm",
+        "_mize_name": "Twiddlestorm",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Twiddle"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Dream's Grip"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Tron",
+        "MizeName": "Eldrazi Tron",
+        "Supertype": "Eldrazi Tron",
+        "_name": "Tron",
+        "_mize_name": "Eldrazi Tron",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Urza's Tower"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Urza's Mine"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Urza's Power Plant"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Eldrazi Temple",
+              "Ugin's Labyrinth"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "ThopterCombo",
+        "MizeName": "Urza Thopter Sword",
+        "Supertype": "Combo",
+        "_name": "ThopterCombo",
+        "_mize_name": "Urza Thopter Sword",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Thopter Foundry"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Sword of the Meek"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "TheRock",
+        "MizeName": "The Rock",
+        "Supertype": "Midrange",
+        "_name": "TheRock",
+        "_mize_name": "The Rock",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Tarmogoyf"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Dark Confidant"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Lightning Bolt",
+              "Wrenn and Six"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "SongOfCreation",
+        "MizeName": "Song of Creation",
+        "Supertype": "Combo",
+        "_name": "SongOfCreation",
+        "_mize_name": "Song of Creation",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Song of Creation"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Shadow",
+        "MizeName": "Dimir Shadow",
+        "Supertype": "Shadow",
+        "_name": "Shadow",
+        "_mize_name": "Dimir Shadow",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Death's Shadow"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Street Wraith"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Ragavan, Nimble Pilferer",
+              "Traverse the Ulvenwald"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "SaheeliCombo",
+        "MizeName": "Saheeli Combo",
+        "Supertype": "Combo",
+        "_name": "SaheeliCombo",
+        "_mize_name": "Saheeli Combo",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Saheeli Rai"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Felidar Guardian"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Ritual",
+        "MizeName": "Combo",
+        "Supertype": "Combo",
+        "_name": "Ritual",
+        "_mize_name": "Combo",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Dark Ritual"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Cabal Ritual"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "RedAggro",
+        "MizeName": "Mono-Red Prowess",
+        "Supertype": "Aggro",
+        "_name": "RedAggro",
+        "_mize_name": "Mono-Red Prowess",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Monastery Swiftspear"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Dragon's Rage Channeler"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Goblin Guide",
+              "Lava Spike"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Reanimator",
+        "MizeName": "Goryo's Vengeance",
+        "Supertype": "Goryo's Vengeance",
+        "_name": "Reanimator",
+        "_mize_name": "Goryo's Vengeance",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Goryo's Vengeance"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Griselbrand",
+              "Atraxa, Grand Unifier"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "PyroPrison",
+        "MizeName": "Red Prison",
+        "Supertype": "Aggro",
+        "_name": "PyroPrison",
+        "_mize_name": "Red Prison",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Blood Moon"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ensnaring Bridge"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Magus of the Moon"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Phoenix",
+        "MizeName": "Izzet Phoenix",
+        "Supertype": "Combo",
+        "_name": "Phoenix",
+        "_mize_name": "Izzet Phoenix",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arclight Phoenix"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Thought Scour"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "OmnathControl",
+        "MizeName": "Omnath Control",
+        "Supertype": "Midrange",
+        "_name": "OmnathControl",
+        "_mize_name": "Omnath Control",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Omnath, Locus of Creation"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Expressive Iteration"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Nadu",
+        "MizeName": "Nadu",
+        "Supertype": "Combo",
+        "_name": "Nadu",
+        "_mize_name": "Nadu",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Nadu, Winged Wisdom"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "MartyrControl",
+        "MizeName": "Martyr Life",
+        "Supertype": "Combo",
+        "_name": "MartyrControl",
+        "_mize_name": "Martyr Life",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Martyr of Sands"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Serra Ascendant"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "LandDestruction",
+        "MizeName": "Land Destruction",
+        "Supertype": "Midrange",
+        "_name": "LandDestruction",
+        "_mize_name": "Land Destruction",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Stone Rain"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Blood Moon",
+              "Molten Rain"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "KethisCombo",
+        "MizeName": "Kethis Combo",
+        "Supertype": "Combo",
+        "_name": "KethisCombo",
+        "_mize_name": "Kethis Combo",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Kethis, the Hidden Hand"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Mox Amber"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "HollowOne",
+        "MizeName": "Hollow One",
+        "Supertype": "Aggro",
+        "_name": "HollowOne",
+        "_mize_name": "Hollow One",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Hollow One"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flamewake Phoenix"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "HeliodCombo",
+        "MizeName": "Heliod Combo",
+        "Supertype": "Combo",
+        "_name": "HeliodCombo",
+        "_mize_name": "Heliod Combo",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Heliod, Sun-Crowned"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Walking Ballista",
+              "Scurry Oak"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "HardenedScales",
+        "MizeName": "Hardened Scales",
+        "Supertype": "Artifact",
+        "_name": "HardenedScales",
+        "_mize_name": "Hardened Scales",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Hardened Scales"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arcbound Ravager"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "GrindingBreach",
+        "MizeName": "Grinding Station",
+        "Supertype": "Steel Cutter",
+        "_name": "GrindingBreach",
+        "_mize_name": "Grinding Station",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Grinding Station"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Underworld Breach"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "GoryoReanimator",
+        "MizeName": "Goryo's Vengeance",
+        "Supertype": "Goryo's Vengeance",
+        "_name": "GoryoReanimator",
+        "_mize_name": "Goryo's Vengeance",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Goryo's Vengeance"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Griselbrand",
+              "Atraxa, Grand Unifier"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "GlimpseCombo",
+        "MizeName": "Glimpse of Tomorrow",
+        "Supertype": "Combo",
+        "_name": "GlimpseCombo",
+        "_mize_name": "Glimpse of Tomorrow",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Glimpse of Tomorrow"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Shardless Agent"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "GiftsStorm",
+        "MizeName": "Izzet Storm",
+        "Supertype": "Storm",
+        "_name": "GiftsStorm",
+        "_mize_name": "Izzet Storm",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Gifts Ungiven"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Past in Flames"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Footfalls",
+        "MizeName": "Crashing Footfalls",
+        "Supertype": "Crashing Footfalls",
+        "_name": "Footfalls",
+        "_mize_name": "Crashing Footfalls",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Crashing Footfalls"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Violent Outburst"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Elementals",
+        "MizeName": "Elementals",
+        "Supertype": "Midrange",
+        "_name": "Elementals",
+        "_mize_name": "Elementals",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Risen Reef"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Omnath, Locus of the Roil"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "DomainValakut",
+        "MizeName": "Scapeshift",
+        "Supertype": "Scapeshift",
+        "_name": "DomainValakut",
+        "_mize_name": "Scapeshift",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Scapeshift"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Valakut, the Molten Pinnacle"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Dice",
+        "MizeName": "Eldrazi Dice Factory",
+        "Supertype": "Eldrazi Ramp",
+        "_name": "Dice",
+        "_mize_name": "Eldrazi Dice Factory",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Eldrazi Temple"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Krark's Thumb"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Delirium",
+        "MizeName": "Jund Midrange",
+        "Supertype": "Midrange",
+        "_name": "Delirium",
+        "_mize_name": "Jund Midrange",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Tarmogoyf"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Traverse the Ulvenwald"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Delirium"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Crabvine",
+        "MizeName": "Dredge",
+        "Supertype": "Combo",
+        "_name": "Crabvine",
+        "_mize_name": "Dredge",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Hedron Crab"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Vengevine"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "CosmoFling",
+        "MizeName": "Cosmo Fling",
+        "Supertype": "Combo",
+        "_name": "CosmoFling",
+        "_mize_name": "Cosmo Fling",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Cosmo Fling"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Convoke",
+        "MizeName": "Boros Energy",
+        "Supertype": "Energy",
+        "_name": "Convoke",
+        "_mize_name": "Boros Energy",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ocelot Pride"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Knight-Errant of Eos"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "CoffersControl",
+        "MizeName": "Coffers",
+        "Supertype": "Midrange",
+        "_name": "CoffersControl",
+        "_mize_name": "Coffers",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Cabal Coffers"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Urborg, Tomb of Yawgmoth"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Belcher",
+        "MizeName": "Blue Belcher",
+        "Supertype": "Blue Belcher",
+        "_name": "Belcher",
+        "_mize_name": "Blue Belcher",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Goblin Charbelcher"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Lotus Bloom"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "BScam",
+        "MizeName": "Rakdos Midrange",
+        "Supertype": "Midrange",
+        "_name": "BScam",
+        "_mize_name": "Rakdos Midrange",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Grief"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Thoughtseize"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Fury",
+              "Archon of Cruelty"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "AssaultLoam",
+        "MizeName": "Selesnya Loam",
+        "Supertype": "Midrange",
+        "_name": "AssaultLoam",
+        "_mize_name": "Selesnya Loam",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Life from the Loam"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Selesnya Sanctuary"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "AsmoFood",
+        "MizeName": "Asmo Food",
+        "Supertype": "Food",
+        "_name": "AsmoFood",
+        "_mize_name": "Asmo Food",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Asmoranomardicadaistinaculdacar"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "The Underworld Cookbook"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "AdNauseam",
+        "MizeName": "Ad Nauseum",
+        "Supertype": "Combo",
+        "_name": "AdNauseam",
+        "_mize_name": "Ad Nauseum",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ad Nauseam"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Angel's Grace"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Eldrazi",
+        "MizeName": "Eldrazi Ramp",
+        "Supertype": "Eldrazi Ramp",
+        "_name": "Eldrazi",
+        "_mize_name": "Eldrazi Ramp",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Utopia Sprawl"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Eldrazi Temple",
+              "Ugin's Labyrinth"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Urza's Tower",
+              "Basking Broodscale",
+              "Eldrazi Linebreaker"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Energy",
+        "MizeName": "Boros Energy",
+        "Supertype": "Energy",
+        "_name": "Energy",
+        "_mize_name": "Boros Energy",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ajani, Nacatl Pariah"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Ocelot Pride",
+              "Guide of Souls"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Scion of Draco",
+              "Thoughtseize",
+              "Orcish Bowmasters"
+            ]
+          }
+        ]
+      },
+      {
         "Name": "EldraziRamp",
         "MizeName": "Eldrazi Ramp",
         "Supertype": "Eldrazi Ramp",
