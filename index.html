@@ -1742,6 +1742,203 @@ function switchAuthTab(tab) {
   hideErrors();
 }
 
+// ── ARCHETYPE CLEANUP ─────────────────────────────────────────────────────────
+
+let cleanupRenames = {}; // { oldName: newName }
+let cleanupSuggestions = [];
+
+function fuzzyScore(a, b) {
+  const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const na = normalize(a);
+  const nb = normalize(b);
+  if (na === nb) return 1.0;
+  if (na.includes(nb) || nb.includes(na)) return 0.85;
+  // Compute character overlap score
+  const longer  = na.length > nb.length ? na : nb;
+  const shorter = na.length > nb.length ? nb : na;
+  let matches = 0;
+  for (let i = 0; i < shorter.length; i++) {
+    if (longer.includes(shorter[i])) matches++;
+  }
+  const overlapScore = matches / longer.length;
+  // Word overlap score
+  const wordsA = a.toLowerCase().split(/\s+/);
+  const wordsB = b.toLowerCase().split(/\s+/);
+  const commonWords = wordsA.filter(w => wordsB.includes(w)).length;
+  const wordScore = commonWords / Math.max(wordsA.length, wordsB.length);
+  return Math.max(overlapScore, wordScore);
+}
+
+async function loadCleanupSuggestions() {
+  const format     = document.getElementById('cleanup-format').value;
+  const minScore   = parseFloat(document.getElementById('cleanup-confidence').value);
+  const el         = document.getElementById('cleanup-results');
+  el.innerHTML     = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">Loading...</div>';
+
+  // Load Badaro definitions for this format
+  await loadArchetypeDefinitions();
+  const badaroNames = (archetypeDefinitions || []).map(d => resolveBadaroName(d.name, []));
+
+  // Also include all existing community names as valid targets
+  const allRows = [];
+  let offset = 0;
+  while (true) {
+    const { data } = await db.from('raw_game_log')
+      .select('opponent_archetype,deck_archetype')
+      .eq('format', format)
+      .range(offset, offset + 999);
+    if (!data || !data.length) break;
+    allRows.push(...data);
+    if (data.length < 1000) break;
+    offset += 1000;
+  }
+
+  // Count frequency of each name
+  const oppCounts = {};
+  const deckCounts = {};
+  for (const r of allRows) {
+    if (r.opponent_archetype) oppCounts[r.opponent_archetype] = (oppCounts[r.opponent_archetype] || 0) + 1;
+    if (r.deck_archetype)     deckCounts[r.deck_archetype]    = (deckCounts[r.deck_archetype]    || 0) + 1;
+  }
+
+  // All unique names
+  const allNames    = [...new Set([...Object.keys(oppCounts), ...Object.keys(deckCounts)])].sort();
+  const targetNames = [...new Set([...badaroNames, ...allNames])].sort();
+
+  // Find suggestions — names that have a close but non-identical match
+  cleanupSuggestions = [];
+  for (const name of allNames) {
+    if (cleanupRenames[name]) continue; // already queued
+    let bestMatch = null;
+    let bestScore = 0;
+    for (const target of targetNames) {
+      if (target === name) continue;
+      const score = fuzzyScore(name, target);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = target;
+      }
+    }
+    if (bestScore >= minScore && bestMatch && bestMatch !== name) {
+      cleanupSuggestions.push({
+        original: name,
+        suggested: bestMatch,
+        score: bestScore,
+        oppCount:  oppCounts[name]  || 0,
+        deckCount: deckCounts[name] || 0
+      });
+    }
+  }
+
+  // Sort by score descending
+  cleanupSuggestions.sort((a, b) => b.score - a.score);
+
+  renderCleanupSuggestions();
+}
+
+function renderCleanupSuggestions() {
+  const el = document.getElementById('cleanup-results');
+  if (!cleanupSuggestions.length) {
+    el.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">No suggestions found at this confidence level.</div>';
+    return;
+  }
+
+  let html = `<div class="card">
+    <div class="card-title">Suggestions (${cleanupSuggestions.length})</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">
+      Review each suggestion. Accept to queue a rename, Skip to ignore.
+    </div>`;
+
+  for (let i = 0; i < cleanupSuggestions.length; i++) {
+    const s = cleanupSuggestions[i];
+    const pct = Math.round(s.score * 100);
+    const games = s.oppCount + s.deckCount;
+    html += `<div id="cleanup-row-${i}" style="border-bottom:1px solid var(--border);padding:10px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:13px;font-weight:600;">${s.original}</div>
+        <div style="font-size:11px;color:var(--text2);">${games} game${games !== 1 ? 's' : ''} · ${pct}% match</div>
+      </div>
+      <div style="font-size:13px;color:var(--text2);">→</div>
+      <div style="flex:1;min-width:200px;">
+        <input type="text" id="cleanup-target-${i}" value="${s.suggested}"
+          style="margin-bottom:0;font-size:12px;padding:6px 8px;">
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <button class="btn btn-primary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
+          onclick="acceptCleanup(${i})">Accept</button>
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
+          onclick="skipCleanup(${i})">Skip</button>
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function acceptCleanup(i) {
+  const s      = cleanupSuggestions[i];
+  const target = document.getElementById(`cleanup-target-${i}`).value.trim();
+  if (!target || target === s.original) return;
+  cleanupRenames[s.original] = target;
+  document.getElementById(`cleanup-row-${i}`).style.opacity = '0.4';
+  document.getElementById(`cleanup-row-${i}`).style.pointerEvents = 'none';
+  updateCleanupPending();
+}
+
+function skipCleanup(i) {
+  document.getElementById(`cleanup-row-${i}`).style.opacity = '0.4';
+  document.getElementById(`cleanup-row-${i}`).style.pointerEvents = 'none';
+}
+
+function updateCleanupPending() {
+  const entries = Object.entries(cleanupRenames);
+  const el = document.getElementById('cleanup-pending');
+  const list = document.getElementById('cleanup-pending-list');
+  if (!entries.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  list.innerHTML = entries.map(([from, to]) =>
+    `<div style="font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--danger);">${from}</span>
+      <span style="color:var(--text2);margin:0 8px;">→</span>
+      <span style="color:var(--success);">${to}</span>
+    </div>`
+  ).join('');
+}
+
+async function applyCleanupRenames() {
+  const entries = Object.entries(cleanupRenames);
+  if (!entries.length) return;
+  const format = document.getElementById('cleanup-format').value;
+
+  let applied = 0;
+  let errors  = 0;
+  for (const [from, to] of entries) {
+    // Update opponent_archetype
+    const r1 = await db.from('raw_game_log')
+      .update({ opponent_archetype: to })
+      .eq('opponent_archetype', from)
+      .eq('format', format);
+    // Update deck_archetype
+    const r2 = await db.from('raw_game_log')
+      .update({ deck_archetype: to })
+      .eq('deck_archetype', from)
+      .eq('format', format);
+    if (r1.error || r2.error) errors++;
+    else applied++;
+  }
+
+  showToast(`Applied ${applied} renames${errors ? `, ${errors} errors` : ''}.`, errors ? 'error' : 'success');
+  cleanupRenames = {};
+  updateCleanupPending();
+  // Reload suggestions
+  loadCleanupSuggestions();
+}
+
+function clearCleanupRenames() {
+  cleanupRenames = {};
+  updateCleanupPending();
+}
+
 function selectToggle(el, group, value) {
   el.closest('.toggle-group').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
@@ -2973,6 +3170,7 @@ container.innerHTML = `
         <div class="analysis-tab"         onclick="adminTab('activity')"  id="atab-activity">Activity</div>
         <div class="analysis-tab"         onclick="adminTab('sources')"   id="atab-sources">Sources</div>
         <div class="analysis-tab"         onclick="adminTab('import')"    id="atab-import">Import</div>
+        <div class="analysis-tab"         onclick="adminTab('cleanup')"   id="atab-cleanup">Cleanup</div>
       </div>
       <div id="apanel-overview"></div>
       <div id="apanel-users"    style="display:none;"></div>
@@ -2980,6 +3178,7 @@ container.innerHTML = `
       <div id="apanel-activity" style="display:none;"></div>
       <div id="apanel-sources"  style="display:none;"></div>
       <div id="apanel-import"   style="display:none;"></div>
+      <div id="apanel-cleanup"  style="display:none;"></div>
     `;
 
     // ── OVERVIEW ──
@@ -3225,6 +3424,55 @@ container.innerHTML = `
       </div>
       <div id="import-preview"></div>
     `;
+        // ── CLEANUP ──
+    document.getElementById('apanel-cleanup').innerHTML = `
+      <div class="card">
+        <div class="card-title">Archetype Name Cleanup</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+          Reviews community archetype names and suggests matches to standardized names.
+          Accept to rename, skip to leave as-is, or edit to specify a custom target name.
+        </p>
+        <div class="row" style="margin-bottom:8px;">
+          <div>
+            <label class="label">Format</label>
+            <select id="cleanup-format">
+              <option value="Modern">Modern</option>
+              <option value="Legacy">Legacy</option>
+              <option value="Pioneer">Pioneer</option>
+              <option value="Standard">Standard</option>
+              <option value="Pauper">Pauper</option>
+              <option value="Vintage">Vintage</option>
+              <option value="Premodern">Premodern</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Min confidence</label>
+            <select id="cleanup-confidence">
+              <option value="0.5">50%+</option>
+              <option value="0.7" selected>70%+</option>
+              <option value="0.85">85%+</option>
+              <option value="1.0">Exact only</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="loadCleanupSuggestions()" style="margin-bottom:0;">
+          Load suggestions
+        </button>
+      </div>
+      <div id="cleanup-results"></div>
+      <div id="cleanup-pending" style="display:none;">
+        <div class="card">
+          <div class="card-title">Pending renames</div>
+          <div id="cleanup-pending-list"></div>
+          <button class="btn btn-primary" onclick="applyCleanupRenames()" style="margin-top:8px;margin-bottom:0;">
+            Apply all renames
+          </button>
+          <button class="btn btn-secondary" onclick="clearCleanupRenames()" style="margin-top:4px;margin-bottom:0;">
+            Clear all
+          </button>
+        </div>
+      </div>
+    `;
   } catch(e) {
     document.getElementById('admin-results').innerHTML =
       `<div class="card" style="color:var(--danger);">Error: ${e.message}</div>`;
@@ -3234,7 +3482,7 @@ container.innerHTML = `
 }
 
 window.adminTab = function(tab) {
-  ['overview','users','features','activity','sources','import'].forEach(t => {
+  ['overview','users','features','activity','sources','import','cleanup'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
   });
