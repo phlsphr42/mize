@@ -4903,13 +4903,20 @@ async function calcMatrix() {
         .eq('format', format || 'Modern');
       const eventIds = (formatEvents || []).map(e => e.event_id);
       if (eventIds.length > 0) {
-        const { data: fmtMatchups } = await db.from('mtgo_matches')
-          .select('player1_arch,player2_arch,player1_games,player2_games')
-          .in('event_id', eventIds)
-          .not('player1_arch', 'is', null)
-          .not('player2_arch', 'is', null)
-          .neq('player1_arch', '')
-          .neq('player2_arch', '');
+// Batch event_id queries to avoid URL length limits
+        const batchSize = 100;
+        const fmtMatchups = [];
+        for (let i = 0; i < eventIds.length; i += batchSize) {
+          const batchIds = eventIds.slice(i, i + batchSize);
+          const { data: batch } = await db.from('mtgo_matches')
+            .select('player1_arch,player2_arch,player1_games,player2_games')
+            .in('event_id', batchIds)
+            .not('player1_arch', 'is', null)
+            .not('player2_arch', 'is', null)
+            .neq('player1_arch', '')
+            .neq('player2_arch', '');
+          if (batch) fmtMatchups.push(...batch);
+        }
         const matchupMap = {};
         for (const m of fmtMatchups || []) {
           const deck = m.player1_arch;
