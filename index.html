@@ -342,11 +342,53 @@
   <button class="btn btn-secondary" onclick="showScreen('screen-analysis')">Opening Hand Analysis</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Meta Matchup Matrix</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-mtgo')">MTGO Deck Rankings</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-insights')">Match Insights</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-insights')">Match Insights</button>
   <button class="btn btn-secondary" id="btn-admin" style="display:none;" onclick="showScreen('screen-admin')">Admin</button>
 <button class="btn btn-secondary" onclick="showScreen('screen-guide')">User Guide</button>
   <hr class="divider">
   <div class="card-title">Recent matches</div>
   <div id="recent-matches"><div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div></div>
+</div>
+
+  <!-- INSIGHTS -->
+<div id="screen-insights" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Match Insights</h2>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label class="label">Format</label>
+        <select id="insights-format" onchange="onInsightsFormatChange()">
+          <option value="">All formats</option>
+          <option value="Modern">Modern</option>
+          <option value="Legacy">Legacy</option>
+          <option value="Pioneer">Pioneer</option>
+          <option value="Standard">Standard</option>
+          <option value="Pauper">Pauper</option>
+          <option value="Vintage">Vintage</option>
+          <option value="Premodern">Premodern</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Deck</label>
+        <div class="custom-select-wrap" id="insights-deck-wrap">
+          <div class="custom-select-display" id="insights-deck-display"
+            onclick="showCustomSelectModal('insights-deck')">All decks</div>
+        </div>
+        <input type="hidden" id="insights-deck" value="">
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-bar-wrap" id="progress-insights">
+    <div class="progress-bar-fill" id="progress-insights-fill" style="width:0%"></div>
+  </div>
+
+  <div id="insights-results"></div>
 </div>
 
   <!-- GUIDE -->
@@ -1398,6 +1440,168 @@ let state = {
   }
 }
 
+  // ── MATCH INSIGHTS ────────────────────────────────────────────────────────────
+
+async function onInsightsFormatChange() {
+  // Repopulate deck dropdown filtered by format
+  const format = document.getElementById('insights-format').value;
+  const myArchetypes = new Set((state.allDecks || []).map(d => d.archetype_name));
+  try {
+    let deckQuery = db.from('distinct_deck_archetypes').select('deck_archetype');
+    if (format) deckQuery = deckQuery.eq('format', format);
+    const { data: deckData } = await deckQuery;
+    const qualifiedDecks = [...new Set((deckData || []).map(r => r.deck_archetype))].sort();
+    const deckOptions = [{ value: '', label: 'All decks' }].concat(
+      qualifiedDecks.map(d => ({
+        value: d,
+        label: d + (myArchetypes.has(d) ? '' : ' ⊕')
+      }))
+    );
+    setCustomSelectOptions('insights-deck', deckOptions);
+  } catch(e) {
+    console.error('onInsightsFormatChange:', e);
+  }
+  loadInsights();
+}
+
+async function loadInsights() {
+  const format = document.getElementById('insights-format').value;
+  const deck   = document.getElementById('insights-deck').value;
+  const el     = document.getElementById('insights-results');
+  // Populate deck dropdown if not already done
+  if (!customSelectData['insights-deck']) {
+    await onInsightsFormatChange();
+    return; // onInsightsFormatChange calls loadInsights again after populating
+  }
+
+  setProgress('insights', 10);
+  el.innerHTML = '';
+
+  try {
+    // Build base query
+    const buildQuery = (scope) => {
+      let q = db.from('raw_game_log')
+        .select('game_result,play_draw,pre_post,mulligan_count')
+        .not('game_result', 'is', null);
+      if (scope === 'mine') q = q.eq('pilot_name', state.pilot.pilot_name);
+      if (format) q = q.eq('format', format);
+      if (deck)   q = q.eq('deck_archetype', deck);
+      return q;
+    };
+
+    setProgress('insights', 20);
+    const [myRes, allRes] = await Promise.all([
+      buildQuery('mine').limit(50000),
+      buildQuery('all').limit(50000)
+    ]);
+
+    setProgress('insights', 60);
+
+    const myGames  = myRes.data  || [];
+    const allGames = allRes.data || [];
+
+    function computeStats(games) {
+      const stats = {
+        play:  { w: 0, t: 0 }, draw:  { w: 0, t: 0 },
+        pre:   { w: 0, t: 0 }, post:  { w: 0, t: 0 },
+        mull:  {}
+      };
+      for (const g of games) {
+        const win = g.game_result === 'Win';
+        if (g.play_draw === 'Play') { stats.play.t++; if (win) stats.play.w++; }
+        else if (g.play_draw === 'Draw') { stats.draw.t++; if (win) stats.draw.w++; }
+        if (g.pre_post === 'Pre')  { stats.pre.t++;  if (win) stats.pre.w++;  }
+        else if (g.pre_post === 'Post') { stats.post.t++; if (win) stats.post.w++; }
+        const m = g.mulligan_count != null ? g.mulligan_count : 'Unknown';
+        if (!stats.mull[m]) stats.mull[m] = { w: 0, t: 0 };
+        stats.mull[m].t++;
+        if (win) stats.mull[m].w++;
+      }
+      return stats;
+    }
+
+    const my  = computeStats(myGames);
+    const all = computeStats(allGames);
+
+    function pct(w, t) {
+      return t > 0 ? (w / t * 100).toFixed(1) + '%' : '—';
+    }
+
+    function bar(w, t, color) {
+      const p = t > 0 ? Math.round(w / t * 100) : 0;
+      return `<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+        <div style="flex:1;background:var(--surface2);border-radius:3px;height:6px;">
+          <div style="width:${p}%;height:6px;background:${color};border-radius:3px;"></div>
+        </div>
+        <span style="font-size:12px;font-weight:700;color:${color};min-width:44px;text-align:right;">${pct(w,t)}</span>
+        <span style="font-size:11px;color:var(--text2);min-width:40px;">${t}g</span>
+      </div>`;
+    }
+
+    function sideCard(title, myW, myT, allW, allT) {
+      return `<div class="card">
+        <div class="card-title">${title}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">My data</div>
+            ${bar(myW, myT, 'var(--accent)')}
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">All data</div>
+            ${bar(allW, allT, 'var(--success)')}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // Play/Draw section
+    let html = sideCard('On the Play', my.play.w, my.play.t, all.play.w, all.play.t);
+    html    += sideCard('On the Draw', my.draw.w, my.draw.t, all.draw.w, all.draw.t);
+
+    // Preboard/Postboard section
+    html += sideCard('Preboard (G1)', my.pre.w, my.pre.t, all.pre.w, all.pre.t);
+    html += sideCard('Postboard (G2/3)', my.post.w, my.post.t, all.post.w, all.post.t);
+
+    // Mulligan section
+    html += `<div class="card"><div class="card-title">Win Rate by Mulligans Taken</div>`;
+    const mullKeys = [...new Set([...Object.keys(my.mull), ...Object.keys(all.mull)])]
+      .filter(k => k !== 'Unknown')
+      .sort((a, b) => parseInt(a) - parseInt(b));
+    if (mullKeys.length === 0) {
+      html += '<div style="color:var(--text2);font-size:13px;">No mulligan data available — mulligan count must be recorded during game entry.</div>';
+    } else {
+      html += `<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:6px 12px;align-items:center;margin-top:8px;">
+        <div style="font-size:11px;color:var(--text2);">Mulligans</div>
+        <div style="font-size:11px;color:var(--text2);">My data</div>
+        <div style="font-size:11px;color:var(--text2);">All data</div>`;
+      for (const k of mullKeys) {
+        const mw = my.mull[k]  || { w: 0, t: 0 };
+        const aw = all.mull[k] || { w: 0, t: 0 };
+        html += `<div style="font-size:13px;font-weight:600;">${k}×</div>
+          <div>${bar(mw.w, mw.t, 'var(--accent)')}</div>
+          <div>${bar(aw.w, aw.t, 'var(--success)')}</div>`;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Note about missing play/draw data
+    if (my.play.t + my.draw.t === 0) {
+      html += `<div style="font-size:12px;color:var(--text2);margin-top:4px;">
+        Play/Draw data requires the play/draw field to be recorded during game entry.
+      </div>`;
+    }
+
+    setProgress('insights', 100);
+    el.innerHTML = html;
+
+  } catch(e) {
+    el.innerHTML = `<div class="card" style="color:var(--danger);">Error: ${e.message}</div>`;
+  } finally {
+    setProgress('insights', 0);
+  }
+}
+
 function switchAdminTab(tab) {
   document.querySelectorAll('#admin-tabs .analysis-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('[id^="admin-panel-"]').forEach(p => p.classList.remove('active'));
@@ -1490,6 +1694,7 @@ if (id === 'screen-mtgo') {
       if (ci) { const age = Math.round((Date.now() - matrixCache.timestamp) / 60000); ci.textContent = 'Showing cached results (' + age + 'm ago).'; }
     }
   }
+  if (id === 'screen-insights') loadInsights();
   if (id === 'screen-change-art') populateArtCardSelect();
   if (id === 'screen-home') loadRecentMatches();
   if (id === 'screen-edit-deck-notes') {
