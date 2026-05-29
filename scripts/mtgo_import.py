@@ -22,6 +22,8 @@ GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 GITHUB_API    = 'https://api.github.com'
 FBETTEGA_REPO = 'fbettega/MTG_decklistcache'
 FORMAT_REPO   = 'Badaro/MTGOFormatData'
+MIZE_REPO     = 'phlsphr42/mize'
+CUSTOM_ARCHETYPES_PATH = 'scripts/custom_archetypes.json'
 
 headers = {
     'apikey': SUPABASE_KEY,
@@ -128,13 +130,44 @@ def load_archetype_defs_for_format(fmt):
         time.sleep(0.05)
     return arch_defs
 
+def load_custom_arch_defs():
+    """Load Mize custom archetype definitions from the repo."""
+    url = f'{GITHUB_API}/repos/{MIZE_REPO}/contents/{CUSTOM_ARCHETYPES_PATH}'
+    file_info = gh_get_json(url)
+    if not file_info:
+        print('  Could not fetch custom archetype definitions.')
+        return {}
+    raw = gh_get_raw(file_info['download_url'])
+    if not raw:
+        print('  Could not download custom archetype definitions.')
+        return {}
+    try:
+        data = json.loads(raw)
+        for fmt, fmt_data in data.items():
+            for arch in fmt_data.get('archetypes', []):
+                arch['_name']      = arch.get('Name', '')
+                arch['_mize_name'] = arch.get('MizeName', arch['_name'])
+                arch['_supertype'] = arch.get('Supertype', '')
+        print(f'  Loaded custom definitions for formats: {list(data.keys())}')
+        return data
+    except Exception as e:
+        print(f'  Error parsing custom archetype definitions: {e}')
+        return {}
+
 def load_all_arch_defs():
+    """Load archetype definitions — custom Mize defs take priority over Badaro."""
+    print('  Loading custom Mize archetype definitions...')
+    custom_by_format = load_custom_arch_defs()
     all_defs = {}
     for fmt in VALIDATABLE_FORMATS:
         print(f'  Loading {fmt} archetype definitions...')
-        defs = load_archetype_defs_for_format(fmt)
-        all_defs[fmt] = defs
-        print(f'    {len(defs)} definitions loaded')
+        badaro_defs  = load_archetype_defs_for_format(fmt)
+        custom_defs  = custom_by_format.get(fmt, {}).get('archetypes', [])
+        custom_names = {d['_name'] for d in custom_defs}
+        badaro_only  = [d for d in badaro_defs if d['_name'] not in custom_names]
+        combined     = custom_defs + badaro_only
+        all_defs[fmt] = combined
+        print(f'    {len(custom_defs)} custom + {len(badaro_only)} Badaro = {len(combined)} total')
     return all_defs
 
 # ── Archetype detection ───────────────────────────────────────────────────────
@@ -180,11 +213,10 @@ def detect_archetype_from_cards(cards_list, arch_defs):
     for card in cards_list:
         if card:
             mainboard[card] = mainboard.get(card, 0) + 1
-    matches = []
     for d in arch_defs:
         if test_conditions(d.get('Conditions', []), mainboard, {}):
-            matches.append(d['_name'])
-    return matches[0] if matches else None
+            return d.get('_mize_name') or d.get('MizeName') or d['_name']
+    return None
 
 def detect_archetype_from_deck(deck_data, arch_defs):
     mainboard = {}
@@ -193,11 +225,10 @@ def detect_archetype_from_deck(deck_data, arch_defs):
         mainboard[c['CardName']] = c.get('Count', 1)
     for c in deck_data.get('Sideboard', []):
         sideboard[c['CardName']] = c.get('Count', 1)
-    matches = []
     for d in arch_defs:
         if test_conditions(d.get('Conditions', []), mainboard, sideboard):
-            matches.append(d['_name'])
-    return matches[0] if matches else 'Unknown'
+            return d.get('_mize_name') or d.get('MizeName') or d['_name']
+    return 'Unknown'
 
 # ── Utility functions ─────────────────────────────────────────────────────────
 def determine_event_type(event_name):
@@ -221,31 +252,26 @@ def avg(arr):
 
 # ── Summary computation ───────────────────────────────────────────────────────
 def compute_archetype_summary(results, date_from, date_to):
-    # Group by (arch, format) to prevent cross-format contamination
     by_arch = defaultdict(lambda: {
         'appearances': [], 'top8': 0, 'events': set(),
         'points': [], 'mwp': [], 'gwp': [], 'omwp': [],
         'format': 'Modern'
     })
-    total_by_format = defaultdict(int)
+    total = len(results)
     for r in results:
         arch = r.get('archetype_canonical') or 'Unknown'
-        fmt  = r.get('_format', 'Modern')
-        key  = (arch, fmt)
         pos  = r.get('finish_position')
-        by_arch[key]['appearances'].append(pos)
-        by_arch[key]['events'].add(r['event_id'])
-        by_arch[key]['format'] = fmt
-        total_by_format[fmt] += 1
+        by_arch[arch]['appearances'].append(pos)
+        by_arch[arch]['events'].add(r['event_id'])
+        by_arch[arch]['format'] = r.get('_format', 'Modern')
         if pos and pos <= 8:
-            by_arch[key]['top8'] += 1
-        for k, field in [('points','points'),('mwp','match_win_pct'),
-                          ('gwp','game_win_pct'),('omwp','opp_match_win_pct')]:
+            by_arch[arch]['top8'] += 1
+        for key, field in [('points','points'),('mwp','match_win_pct'),
+                            ('gwp','game_win_pct'),('omwp','opp_match_win_pct')]:
             if r.get(field) is not None:
-                by_arch[key][k].append(r[field])
+                by_arch[arch][key].append(r[field])
     rows = []
-    for (arch, fmt), d in by_arch.items():
-        total = total_by_format[fmt]
+    for arch, d in by_arch.items():
         top32       = len(d['appearances'])
         top32_share = top32 / total if total > 0 else 0
         top8_rate   = d['top8'] / top32 if top32 > 0 else 0
@@ -268,7 +294,7 @@ def compute_archetype_summary(results, date_from, date_to):
         ) if avg_mwp is not None else 0
         rows.append({
             'archetype_name':        arch,
-            'format':                fmt,
+            'format':                d['format'],
             'date_from':             date_from,
             'date_to':               date_to,
             'event_count':           len(d['events']),
@@ -410,35 +436,13 @@ def main():
     for fmt, count in sorted(Counter(e['format'] for e in all_format_events).items()):
         print(f'  {fmt}: {count}')
 
-# Filter to only new events
-    existing_events  = sb_get('mtgo_events', '?select=event_id')
-    existing_ids     = set(r['event_id'] for r in existing_events)
-    new_events       = [e for e in all_format_events if e['name'] not in existing_ids]
+    # Filter to only new events
+    existing_events = sb_get('mtgo_events', '?select=event_id')
+    existing_ids    = set(r['event_id'] for r in existing_events)
+    new_events      = [e for e in all_format_events if e['name'] not in existing_ids]
     print(f'New events to process: {len(new_events)}')
     for fmt, count in sorted(Counter(e['format'] for e in new_events).items()):
         print(f'  {fmt}: {count} new')
-
-# Check if we need to backfill match data for existing events
-    print('Checking mtgo_matches table...')
-    r = requests.get(
-        f'{SUPABASE_URL}/rest/v1/mtgo_matches?select=id&limit=1',
-        headers=headers
-    )
-    print(f'Status code: {r.status_code}')
-    print(f'Response: {r.text[:200]}')
-    if r.status_code == 200:
-        existing_matches = r.json()
-        has_matches = isinstance(existing_matches, list) and len(existing_matches) > 0
-    else:
-        has_matches = False
-    print(f'Match data exists: {has_matches}')
-    if not has_matches:
-        print('No match data found — will backfill rounds data for all existing events.')
-        backfill_events = [e for e in all_format_events if e['name'] in existing_ids]
-        print(f'Events to backfill: {len(backfill_events)}')
-    else:
-        backfill_events = []
-        print('Match data already exists, skipping backfill.')
 
     # Process new events
     event_rows  = []
@@ -538,68 +542,6 @@ def main():
             print(f'  Processed {idx+1}/{len(new_events)}... ({len(result_rows)} results, {len(match_rows)} matches)')
         time.sleep(0.3)
 
-    # ── Backfill rounds data for existing events if needed ────────────
-    if backfill_events:
-        print(f'\nBackfilling rounds data for {len(backfill_events)} existing events...')
-        backfill_errors = 0
-        for idx, event in enumerate(backfill_events):
-            raw = gh_get_raw(event['download_url'])
-            if not raw:
-                backfill_errors += 1
-                continue
-            try:
-                data = json.loads(raw)
-            except:
-                backfill_errors += 1
-                continue
-
-            standings = data.get('Standings', [])
-            decks     = data.get('Decks', [])
-            rounds    = data.get('Rounds', [])
-            if not rounds:
-                continue
-
-            decks_by_player = {d['Player']: d for d in decks}
-            player_arch_map = {}
-            for player in standings:
-                player_name = player.get('Player')
-                deck_data   = decks_by_player.get(player_name, {})
-                arch_defs   = arch_defs_by_format.get(event['format'], [])
-                player_arch_map[player_name] = detect_archetype_from_deck(deck_data, arch_defs) if deck_data else 'Unknown'
-
-            for rnd in rounds:
-                round_name = rnd.get('RoundName', '')
-                for match in rnd.get('Matches', []):
-                    p1     = match.get('Player1')
-                    p2     = match.get('Player2')
-                    result = match.get('Result', '')
-                    parts  = result.split('-')
-                    if len(parts) != 3:
-                        continue
-                    try:
-                        p1_games = int(parts[0])
-                        p2_games = int(parts[1])
-                        draws    = int(parts[2])
-                    except ValueError:
-                        continue
-                    match_rows.append({
-                        'event_id':      event['name'],
-                        'round_name':    round_name,
-                        'player1':       p1,
-                        'player2':       p2,
-                        'player1_arch':  player_arch_map.get(p1),
-                        'player2_arch':  player_arch_map.get(p2),
-                        'player1_games': p1_games,
-                        'player2_games': p2_games,
-                        'draws':         draws
-                    })
-
-            if (idx + 1) % 25 == 0:
-                print(f'  Backfilled {idx+1}/{len(backfill_events)}... ({len(match_rows)} matches so far)')
-            time.sleep(0.3)
-
-        print(f'Backfill complete. Matches collected: {len(match_rows)} | Errors: {backfill_errors}')
-
     print(f'Events processed: {len(event_rows)} | Skipped: {skipped} | Errors: {len(errors)}')
     print(f'Result rows: {len(result_rows)} | Match rows: {len(match_rows)}')
 
@@ -618,7 +560,7 @@ def main():
     print('\nValidating mymtgo game log archetypes...')
     mymtgo_games = sb_get('raw_game_log',
         '?select=id,pilot_name,deck_archetype,format,card1,card2,card3,card4,card5,card6,card7,external_id'
-        '&external_id=not.is.null'
+        '&not.external_id=is.null'
     )
     print(f'Validating {len(mymtgo_games)} mymtgo games...')
 
