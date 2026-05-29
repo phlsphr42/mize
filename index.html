@@ -1958,8 +1958,13 @@ function acceptCleanup(i) {
   const el     = document.getElementById(`cleanup-target-${i}`);
   const target = el ? el.value.trim() : '';
   const s      = cleanupSuggestions[i];
-  if (!target || target === '' || target === s.original) {
-    showToast('Please select a target name first', 'error');
+  if (!target || target === '') {
+    showToast('Please select a target name from the dropdown first', 'error');
+    return;
+  }
+  if (target === s.original) {
+    showToast('Target is the same as original — skipping', 'error');
+    skipCleanup(i);
     return;
   }
   cleanupRenames[s.original] = target;
