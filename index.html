@@ -4849,33 +4849,29 @@ async function calcMatrix() {
 
   try {
     // ── Query community game log ──────────────────────────────────────
-    let query = db.from('raw_game_log')
-      .select('pilot_name,deck_archetype,opponent_archetype,game_result,match_result,pre_post,game_number')
-      .not('deck_archetype', 'is', null)
-      .not('opponent_archetype', 'is', null)
-      .not('game_result', 'is', null);
-
-    if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
-    if (format) query = query.eq('format', format);
-    if (rateType === 'game_pre')       query = query.eq('pre_post', 'Pre');
-    else if (rateType === 'game_post') query = query.eq('pre_post', 'Post');
-
     const dateRange = getDateRange('mx');
-    if (dateRange.from) query = query.gte('timestamp', dateRange.from);
-    if (dateRange.to)   query = query.lte('timestamp', dateRange.to);
-
-    setProgress('mx', 30);
+    
     const games = [];
     let offset = 0;
     while (true) {
-      const { data: batch, error } = await query.range(offset, offset + 999);
-      if (error) throw error;
+      let pageQuery = db.from('raw_game_log')
+        .select('pilot_name,deck_archetype,opponent_archetype,game_result,match_result,pre_post,game_number')
+        .not('deck_archetype', 'is', null)
+        .not('opponent_archetype', 'is', null)
+        .not('game_result', 'is', null);
+      if (scope === 'mine') pageQuery = pageQuery.eq('pilot_name', state.pilot.pilot_name);
+      if (format) pageQuery = pageQuery.eq('format', format);
+      if (rateType === 'game_pre')       pageQuery = pageQuery.eq('pre_post', 'Pre');
+      else if (rateType === 'game_post') pageQuery = pageQuery.eq('pre_post', 'Post');
+      if (dateRange.from) pageQuery = pageQuery.gte('timestamp', dateRange.from);
+      if (dateRange.to)   pageQuery = pageQuery.lte('timestamp', dateRange.to);
+      const { data: batch, error: batchError } = await pageQuery.range(offset, offset + 999);
+      if (batchError) throw batchError;
       if (!batch || batch.length === 0) break;
       games.push(...batch);
       if (batch.length < 1000) break;
       offset += 1000;
     }
-    if (error) throw error;
 
     // ── Query MTGO top 8 matchup data ─────────────────────────────────
     // Only include when scope is 'all' and rate type is game or match overall
