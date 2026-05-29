@@ -5284,17 +5284,19 @@ async function calcMatrix() {
       offset += 1000;
     }
 
-    // ── Query MTGO top 8 matchup data ─────────────────────────────────
+// ── Query MTGO top 8 matchup data ─────────────────────────────────
     // Only include when scope is 'all' and rate type is game or match overall
     // (top 8 data has no pre/post board distinction)
     let mtgoMatchups = [];
     if (scope !== 'mine' && rateType !== 'game_pre' && rateType !== 'game_post') {
       const { data: formatEvents } = await db.from('mtgo_events')
         .select('event_id')
-        .eq('format', format || 'Modern');
+        .eq('format', format || 'Modern')
+        .gte('event_date', dateRange.from ? dateRange.from.split('T')[0] : '2000-01-01')
+        .lte('event_date', dateRange.to   ? dateRange.to.split('T')[0]   : '2099-12-31');
       const eventIds = (formatEvents || []).map(e => e.event_id);
       if (eventIds.length > 0) {
-// Batch event_id queries to avoid URL length limits
+        // Batch event_id queries to avoid URL length limits
         const batchSize = 100;
         const fmtMatchups = [];
         for (let i = 0; i < eventIds.length; i += batchSize) {
