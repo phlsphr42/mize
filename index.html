@@ -1955,13 +1955,21 @@ function renderCleanupSuggestions() {
 }
 
 function acceptCleanup(i) {
+  const el     = document.getElementById(`cleanup-target-${i}`);
+  const target = el ? el.value.trim() : '';
   const s      = cleanupSuggestions[i];
-  const target = document.getElementById(`cleanup-target-${i}`).value.trim();
-  if (!target || target === s.original) return;
+  if (!target || target === '' || target === s.original) {
+    showToast('Please select a target name first', 'error');
+    return;
+  }
   cleanupRenames[s.original] = target;
-  document.getElementById(`cleanup-row-${i}`).style.opacity = '0.4';
-  document.getElementById(`cleanup-row-${i}`).style.pointerEvents = 'none';
+  const row = document.getElementById(`cleanup-row-${i}`);
+  if (row) {
+    row.style.opacity = '0.4';
+    row.style.pointerEvents = 'none';
+  }
   updateCleanupPending();
+  showToast(`Queued: ${s.original} → ${target}`, 'success');
 }
 
 function skipCleanup(i) {
