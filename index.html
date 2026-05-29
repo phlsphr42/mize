@@ -1751,22 +1751,27 @@ function fuzzyScore(a, b) {
   const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const na = normalize(a);
   const nb = normalize(b);
+
+  // Exact match after normalization (handles spacing/punctuation differences)
   if (na === nb) return 1.0;
-  if (na.includes(nb) || nb.includes(na)) return 0.85;
-  // Compute character overlap score
-  const longer  = na.length > nb.length ? na : nb;
-  const shorter = na.length > nb.length ? nb : na;
-  let matches = 0;
-  for (let i = 0; i < shorter.length; i++) {
-    if (longer.includes(shorter[i])) matches++;
+
+  // One contains the other
+  if (na.length > 3 && nb.length > 3) {
+    if (na.includes(nb) || nb.includes(na)) return 0.9;
   }
-  const overlapScore = matches / longer.length;
-  // Word overlap score
-  const wordsA = a.toLowerCase().split(/\s+/);
-  const wordsB = b.toLowerCase().split(/\s+/);
-  const commonWords = wordsA.filter(w => wordsB.includes(w)).length;
-  const wordScore = commonWords / Math.max(wordsA.length, wordsB.length);
-  return Math.max(overlapScore, wordScore);
+
+  // Word overlap score — must share meaningful words
+  const wordsA = a.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const wordsB = b.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  if (wordsA.length > 0 && wordsB.length > 0) {
+    const commonWords = wordsA.filter(w => wordsB.includes(w)).length;
+    if (commonWords > 0) {
+      return commonWords / Math.max(wordsA.length, wordsB.length);
+    }
+  }
+
+  // No meaningful match
+  return 0;
 }
 
 async function loadCleanupSuggestions() {
