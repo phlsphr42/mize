@@ -1467,54 +1467,65 @@ async function loadInsights() {
   const format = document.getElementById('insights-format').value;
   const deck   = document.getElementById('insights-deck').value;
   const el     = document.getElementById('insights-results');
+
   // Populate deck dropdown if not already done
   if (!customSelectData['insights-deck']) {
     await onInsightsFormatChange();
-    return; // onInsightsFormatChange calls loadInsights again after populating
+    return;
   }
 
   setProgress('insights', 10);
   el.innerHTML = '';
 
   try {
-    // Build base query
-    const buildQuery = (scope) => {
-      let q = db.from('raw_game_log')
-        .select('game_result,play_draw,pre_post,mulligan_count')
-        .not('game_result', 'is', null);
-      if (scope === 'mine') q = q.eq('pilot_name', state.pilot.pilot_name);
-      if (format) q = q.eq('format', format);
-      if (deck)   q = q.eq('deck_archetype', deck);
-      return q;
-    };
+    async function fetchAll(scope) {
+      const allRows = [];
+      const pageSize = 1000;
+      let offset = 0;
+      while (true) {
+        let q = db.from('raw_game_log')
+          .select('game_result,play_draw,pre_post,mulligan_count')
+          .not('game_result', 'is', null)
+          .range(offset, offset + pageSize - 1);
+        if (scope === 'mine') q = q.eq('pilot_name', state.pilot.pilot_name);
+        if (format) q = q.eq('format', format);
+        if (deck)   q = q.eq('deck_archetype', deck);
+        const { data, error } = await q;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allRows.push(...data);
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
+      return allRows;
+    }
 
     setProgress('insights', 20);
-    const [myRes, allRes] = await Promise.all([
-      buildQuery('mine').limit(50000),
-      buildQuery('all').limit(50000)
+    const [myGames, allGames] = await Promise.all([
+      fetchAll('mine'),
+      fetchAll('all')
     ]);
 
     setProgress('insights', 60);
 
-    const myGames  = myRes.data  || [];
-    const allGames = allRes.data || [];
-
     function computeStats(games) {
       const stats = {
-        play:  { w: 0, t: 0 }, draw:  { w: 0, t: 0 },
-        pre:   { w: 0, t: 0 }, post:  { w: 0, t: 0 },
-        mull:  {}
+        play: { w: 0, t: 0 }, draw: { w: 0, t: 0 },
+        pre:  { w: 0, t: 0 }, post: { w: 0, t: 0 },
+        mull: {}
       };
       for (const g of games) {
         const win = g.game_result === 'Win';
-        if (g.play_draw === 'Play') { stats.play.t++; if (win) stats.play.w++; }
-        else if (g.play_draw === 'Draw') { stats.draw.t++; if (win) stats.draw.w++; }
-        if (g.pre_post === 'Pre')  { stats.pre.t++;  if (win) stats.pre.w++;  }
-        else if (g.pre_post === 'Post') { stats.post.t++; if (win) stats.post.w++; }
-        const m = g.mulligan_count != null ? g.mulligan_count : 'Unknown';
-        if (!stats.mull[m]) stats.mull[m] = { w: 0, t: 0 };
-        stats.mull[m].t++;
-        if (win) stats.mull[m].w++;
+        if (g.play_draw === 'Play')       { stats.play.t++; if (win) stats.play.w++; }
+        else if (g.play_draw === 'Draw')  { stats.draw.t++; if (win) stats.draw.w++; }
+        if (g.pre_post === 'Pre')         { stats.pre.t++;  if (win) stats.pre.w++;  }
+        else if (g.pre_post === 'Post')   { stats.post.t++; if (win) stats.post.w++; }
+        const m = g.mulligan_count != null ? g.mulligan_count : null;
+        if (m !== null) {
+          if (!stats.mull[m]) stats.mull[m] = { w: 0, t: 0 };
+          stats.mull[m].t++;
+          if (win) stats.mull[m].w++;
+        }
       }
       return stats;
     }
@@ -1558,13 +1569,12 @@ async function loadInsights() {
     html    += sideCard('On the Draw', my.draw.w, my.draw.t, all.draw.w, all.draw.t);
 
     // Preboard/Postboard section
-    html += sideCard('Preboard (G1)', my.pre.w, my.pre.t, all.pre.w, all.pre.t);
+    html += sideCard('Preboard (G1)',     my.pre.w,  my.pre.t,  all.pre.w,  all.pre.t);
     html += sideCard('Postboard (G2/3)', my.post.w, my.post.t, all.post.w, all.post.t);
 
     // Mulligan section
     html += `<div class="card"><div class="card-title">Win Rate by Mulligans Taken</div>`;
     const mullKeys = [...new Set([...Object.keys(my.mull), ...Object.keys(all.mull)])]
-      .filter(k => k !== 'Unknown')
       .sort((a, b) => parseInt(a) - parseInt(b));
     if (mullKeys.length === 0) {
       html += '<div style="color:var(--text2);font-size:13px;">No mulligan data available — mulligan count must be recorded during game entry.</div>';
@@ -1584,7 +1594,6 @@ async function loadInsights() {
     }
     html += '</div>';
 
-    // Note about missing play/draw data
     if (my.play.t + my.draw.t === 0) {
       html += `<div style="font-size:12px;color:var(--text2);margin-top:4px;">
         Play/Draw data requires the play/draw field to be recorded during game entry.
