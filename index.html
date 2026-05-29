@@ -2355,28 +2355,77 @@ function buildCardMaps(cards) {
 }
 
 function resolveBadaroName(badaroName, refNames) {
-  // Direct match first
+  if (!badaroName) return badaroName;
+
+  // Explicit mappings for known Badaro name differences
+  const EXPLICIT_MAP = {
+    'Energy':           'Boros Energy',
+    'DomainZoo':        'Domain Zoo',
+    'HammerTime':       'Hammer Time',
+    'LivingEnd':        'Living End',
+    'HardenedScales':   'Hardened Scales',
+    'GoryoReanimator':  "Goryo's Vengeance",
+    'RubyStorm':        'Ruby Storm',
+    'AdNauseam':        'Ad Nauseum',
+    'AsmoFood':         'Asmo Food',
+    'CoffersControl':   'Coffers',
+    'HeliodCombo':      'Heliod Combo',
+    'DevotedCombo':     'Devoted Druid Combo',
+    'KethisCombo':      'Kethis Combo',
+    'SaheeliCombo':     'Saheeli Combo',
+    'GlimpseCombo':     'Glimpse of Tomorrow',
+    'SongOfCreation':   'Song of Creation',
+    'GiftsStorm':       'Izzet Storm',
+    'GrindingBreach':   'Grinding Station',
+    'BreachStorm':      'Izzet Storm',
+    'BxBurn':           'Burn',
+    'BScam':            'Rakdos Midrange',
+    'CosmoFling':       'Cosmo Fling',
+    'HollowOne':        'Hollow One',
+    'MartyrControl':    'Martyr Life',
+    'OmnathControl':    'Omnath Control',
+    'PyroPrison':       'Red Prison',
+    'RedAggro':         'Mono-Red Prowess',
+    'SplinterTwin':     'Izzet Splinter Twin',
+    'TwiddleStorm':     'Twiddlestorm',
+    'DomainValakut':    'Scapeshift',
+    'LandDestruction':  'Land Destruction',
+    'AssaultLoam':      'Selesnya Loam',
+    'UGRitual':         'Gruul Ponza',
+    'URxCutter':        'Izzet Cutter',
+    'UBMidrange':       'Dimir Midrange',
+    'UWBlink':          'Jeskai Blink',
+    'WBBlink':          'Orzhov Blink',
+    'WoodlandsOmniscience': 'Gruul Omniscience',
+    'TheRock':          'The Rock',
+    'ThopterCombo':     'Urza Thopter Sword',
+    'Footfalls':        'Crashing Footfalls',
+    'Convoke':          'Boros Prowess',
+    'Necro':            'Necrodominance',
+    'Nadu':             'Gruul Midrange',
+    'Shadow':           'Death\'s Shadow',
+    'Samwise':          'Samwise Combo',
+    'Dice':             'Eldrazi Dice Factory',
+    'Wizards':          'Izzet Wizards',
+    'Reanimator':       'Grixis Reanimator',
+    'Phoenix':          'Izzet Phoenix',
+    'Creativity':       'Indomitable Creativity',
+    'BassimAffinit':    'Affinity',
+    'Lantern':          'Lantern Control',
+    'GoryoReanimator':  "Goryo's Vengeance",
+  };
+
+  if (EXPLICIT_MAP[badaroName]) return EXPLICIT_MAP[badaroName];
+
+  // Direct match
   if (refNames.includes(badaroName)) return badaroName;
 
-  // Normalize both sides for comparison — lowercase, remove spaces and special chars
+  // Normalized match
   const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const normalizedBadaro = normalize(badaroName);
-
-  // Try exact normalized match
   const exactNorm = refNames.find(n => normalize(n) === normalizedBadaro);
   if (exactNorm) return exactNorm;
 
-  // Try starts-with match (e.g. "LivingEnd" -> "Living End")
-  const startsWith = refNames.find(n => normalize(n).startsWith(normalizedBadaro) ||
-                                         normalizedBadaro.startsWith(normalize(n)));
-  if (startsWith) return startsWith;
-
-  // Try contains match
-  const contains = refNames.find(n => normalize(n).includes(normalizedBadaro) ||
-                                       normalizedBadaro.includes(normalize(n)));
-  if (contains) return contains;
-
-  // No match — return original
   return badaroName;
 }
 
