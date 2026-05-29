@@ -2917,12 +2917,14 @@ container.innerHTML = `
         <div class="analysis-tab"         onclick="adminTab('features')"  id="atab-features">Features</div>
         <div class="analysis-tab"         onclick="adminTab('activity')"  id="atab-activity">Activity</div>
         <div class="analysis-tab"         onclick="adminTab('sources')"   id="atab-sources">Sources</div>
+        <div class="analysis-tab"         onclick="adminTab('import')"    id="atab-import">Import</div>
       </div>
       <div id="apanel-overview"></div>
       <div id="apanel-users"    style="display:none;"></div>
       <div id="apanel-features" style="display:none;"></div>
       <div id="apanel-activity" style="display:none;"></div>
       <div id="apanel-sources"  style="display:none;"></div>
+      <div id="apanel-import"   style="display:none;"></div>
     `;
 
     // ── OVERVIEW ──
@@ -3134,7 +3136,40 @@ container.innerHTML = `
         </table>
       </div>
     `;
-    
+    // ── IMPORT ──
+    document.getElementById('apanel-import').innerHTML = `
+      <div class="card">
+        <div class="card-title">Import Google Sheet Data</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+          Paste tab-separated data copied directly from Google Sheets.
+          Specify the deck archetype and format for this sheet before importing.
+        </p>
+        <div class="row">
+          <div>
+            <label class="label">Deck archetype</label>
+            <input type="text" id="import-deck" placeholder="e.g. Amulet Titan" style="margin-bottom:0;">
+          </div>
+          <div>
+            <label class="label">Format</label>
+            <select id="import-format">
+              <option value="Modern">Modern</option>
+              <option value="Legacy">Legacy</option>
+              <option value="Pioneer">Pioneer</option>
+              <option value="Standard">Standard</option>
+              <option value="Pauper">Pauper</option>
+              <option value="Vintage">Vintage</option>
+              <option value="Premodern">Premodern</option>
+            </select>
+          </div>
+        </div>
+        <label class="label" style="margin-top:12px;">Paste sheet data</label>
+        <textarea id="import-paste" rows="8"
+          placeholder="Paste tab-separated rows from Google Sheets here..."
+          style="width:100%;font-size:12px;font-family:monospace;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);resize:vertical;"></textarea>
+        <button class="btn btn-secondary" onclick="previewSheetImport()" style="margin-top:8px;margin-bottom:0;">Preview import</button>
+      </div>
+      <div id="import-preview"></div>
+    `;
   } catch(e) {
     document.getElementById('admin-results').innerHTML =
       `<div class="card" style="color:var(--danger);">Error: ${e.message}</div>`;
@@ -3144,7 +3179,7 @@ container.innerHTML = `
 }
 
 window.adminTab = function(tab) {
-['overview','users','features','activity','sources'].forEach(t => {
+  ['overview','users','features','activity','sources','import'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
   });
@@ -3162,6 +3197,348 @@ function setMtgoTab(tab) {
   loadMtgoData();
 }
 
+// ── ARCHETYPE NAME MAP (Google Sheets -> Mize) ────────────────────────────
+const SHEET_OPPONENT_MAP = {
+  '4c Control': '4C Control',
+  '4C Rhinos': '4C Rhinos',
+  '5c Humans': 'Humans',
+  'Abzan Smallpox': 'Orzhov Smallpox',
+  'Abzan Yawgmoth': 'Yawgmoth',
+  'Ad Nauseum': 'Ad Nauseum',
+  'Affinity': 'Affinity',
+  'Affinity Convoke?': 'Affinity',
+  'Amulet Titan': 'Amulet Titan',
+  'Asmo Food': 'Asmo Food',
+  'Asmo Gardens': 'Asmo Food',
+  'Asmo Reanimator': 'Mardu Artifact Reanimator',
+  'Asmo Roots': 'Asmo Food',
+  'Bant Value': 'Bant Midrange',
+  'Black Burn': 'Mono-Black Discard',
+  'Blue Zoo': 'Domain Zoo',
+  'Bogles': 'Bogles',
+  'Boros Convoke': 'Boros Prowess',
+  'Boros Legends Brew': 'Boros Energy',
+  'Breach Prowess': 'Grixis Prowess',
+  'Burn': 'Burn',
+  'BW Blink': 'Orzhov Blink',
+  'BW Midrange': 'Orzhov Midrange',
+  'Coffers': 'Coffers',
+  'Coffers Scam': 'Dimir Coffers',
+  'Creativity': 'Indomitable Creativity',
+  'Dice Factory': 'Eldrazi Dice Factory',
+  'Dimir Affinity': 'Dimir Affinity',
+  'Dimir Control': 'Dimir Control',
+  'Dimir Frog': 'Dimir Frog',
+  'Dimir Shadow': 'Dimir Shadow',
+  'Domain Control': 'Domain Control',
+  'Domain Infect': 'Infect',
+  'Domain Rhinos': 'Domain Rhinos',
+  'Domain Scam': 'Rakdos Midrange',
+  'Domain Zoo': 'Domain Zoo',
+  'Dredge': 'Dredge',
+  'Eldrazi Ramp': 'Eldrazi Ramp',
+  'Eldrazi Tron': 'Eldrazi Tron',
+  'Elementals': 'Elementals',
+  'Elves': 'Elves',
+  'Emeria Martyr': 'Selesnya Martyr',
+  'Enchantress': 'Enchantress',
+  'Esper Control': 'Esper Control',
+  "Esper Goryo's": "Goryo's Vengeance",
+  'Esper Stoneblade': 'Esper Stoneblade',
+  'Golgari Scam': 'Jund Midrange',
+  'Grinding Breach': 'Grinding Station',
+  'Grixis Jace Valki': 'Grixis Midrange',
+  'Grixis Murktide': 'Grixis Murktide',
+  'Grixis Shadow': 'Grixis Shadow',
+  'Gruul Asmo': 'Gruul Asmo',
+  'Gruul Breach': 'Temur Murktide',
+  'Gruul Prowess': 'Temur Prowess',
+  'Gtron': 'Green Tron',
+  'Hammertime': 'Hammer Time',
+  'Hardened Scales': 'Hardened Scales',
+  'Heliod': 'Heliod Combo',
+  'Infect': 'Infect',
+  'Inti Asmo': 'Asmo Food',
+  'Izzet Kiln Fiend': 'Kiln Fiend',
+  'Izzet Murktide': 'Izzet Murktide',
+  'Izzet Prowess': 'Izzet Prowess',
+  'Izzet Wizards': 'Izzet Wizards',
+  'Jund': 'Jund',
+  'Jund Burn': 'Jund Midrange',
+  'Jund Creativity': 'Jund Creativity',
+  'Jund Insidious Roots': 'Jund Midrange',
+  'Jund Saga': 'Jund Midrange',
+  'Jund Scam': 'Jund Midrange',
+  'Kudoltha Aggro': 'Boros Prowess',
+  'Leyline Control': 'Jeskai Control',
+  'Leyline Pile': 'Jeskai Control',
+  'Leyline Scam': 'Rakdos Midrange',
+  'Living End': 'Living End',
+  'Merfolk': 'Merfolk',
+  'Mill': 'Mill',
+  'Mono B Midrange': 'Mono-Black Midrange',
+  'Mono Black Scam': 'Mono-Black Midrange',
+  'Mono G Aggro': 'Stompy',
+  'Mono G Tron': 'Green Tron',
+  'Mono White artifact convoke thing': 'Boros Prowess',
+  'Naya Burn': 'Burn',
+  'Omnath Control': 'Omnath Control',
+  'Orzhov Taxes': 'Death and Taxes',
+  'Prison Tron': 'Eldrazi Prison Tron',
+  'Prowess': 'Prowess',
+  'R/W Convoke Hideaway': 'White Hideaway',
+  'Rakdos Scam': 'Rakdos Midrange',
+  'Rakdos Vampires (Sorin+Vein Ripper)': 'Orzhov Vampires',
+  'RW Equipment': 'Boros Equipment',
+  'Scales': 'Hardened Scales',
+  'Scam Rack': 'Rakdos Midrange',
+  'Scam Shadow': 'Rakdos Shadow',
+  'Seismic Loam': 'Selesnya Loam',
+  'Sorin Combo': 'Orzhov Vampires',
+  'Spoils Oracle': 'Oops! All Spells',
+  'Storm': 'Izzet Storm',
+  'Sultai Scam': 'Sultai Midrange',
+  'Taxes': 'Death and Taxes',
+  'Temur Breach': 'Temur Murktide',
+  'Temur Control': 'Temur Murktide',
+  'Temur Delirium': 'Jund Delirium',
+  'Temur Gifts Storm': 'Izzet Storm',
+  'Temur Murktide': 'Temur Murktide',
+  'Temur Prowess': 'Temur Prowess',
+  'Temur Wizards': 'Izzet Wizards',
+  'Thoptercombo': 'Urza Thopter Sword',
+  'Titan Creativity': 'Indomitable Creativity',
+  'Titanshift': 'Scapeshift',
+  'Twiddle Storm': 'Twiddlestorm',
+  'U/B Control': 'Dimir Control',
+  'U/B Rona': 'Dimir Midrange',
+  "U/B Rona Goryos": "Goryo's Vengeance",
+  'U/G Merfolk': 'Merfolk',
+  'U/W Affinity Convoke thing?': 'Affinity',
+  'U/W Hammer': 'Hammer Time',
+  'UB Goryos': "Goryo's Vengeance",
+  'Utron': 'Blue Tron',
+  'UW Control': 'Azorius Control',
+  'UW Hammer': 'Hammer Time',
+  'UW Hammertime': 'Hammer Time',
+  'UW Spirits': 'Azorius Spirits',
+  'W Tron': 'Azorius Tron',
+  'Yawgmoth': 'Yawgmoth',
+  'Zoo': 'Domain Zoo',
+};
+
+function normalizeGameResult(val) {
+  if (!val) return null;
+  const v = val.trim().toLowerCase();
+  if (v === 'win' || v === 'w') return 'Win';
+  if (v === 'loss' || v === 'lose' || v === 'l') return 'Loss';
+  return null;
+}
+
+function parseSheetRows(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  // Detect if first line is header
+  const firstLine = lines[0].toLowerCase();
+  const hasHeader = firstLine.includes('timestamp') || firstLine.includes('email') || firstLine.includes('pre or post');
+  const dataLines = hasHeader ? lines.slice(1) : lines;
+  const rows = [];
+  for (const line of dataLines) {
+    if (!line.trim()) continue;
+    const cols = line.split('\t');
+    // Expected columns:
+    // 0: Timestamp, 1: Email, 2: Pre/Post, 3: Play/Draw, 4: Pilot Name
+    // 5: Card1, 6: Card2, 7: Card3, 8: Card4, 9: Card5, 10: Card6, 11: Card7
+    // 12: Opponent's Deck, 13: Game Win or Loss, 14: Match Win or Lose
+    if (cols.length < 13) continue;
+    const timestamp = cols[0]?.trim();
+    const pilotName = cols[4]?.trim();
+    const prePost   = cols[2]?.trim();
+    const playDraw  = cols[3]?.trim();
+    const oppDeck   = cols[12]?.trim();
+    const gameResult = normalizeGameResult(cols[13]);
+    const matchResult = normalizeGameResult(cols[14]);
+    if (!timestamp || !pilotName || !gameResult) continue;
+    // Parse timestamp — format is M/D/YYYY HH:MM:SS
+    let ts = null;
+    try {
+      ts = new Date(timestamp).toISOString();
+    } catch(e) { continue; }
+    const mappedOpp = SHEET_OPPONENT_MAP[oppDeck] || oppDeck;
+    rows.push({
+      timestamp: ts,
+      pilot_name: pilotName,
+      pre_post: prePost === 'Pre' ? 'Pre' : 'Post',
+      play_draw: playDraw === 'Play' ? 'Play' : playDraw === 'Draw' ? 'Draw' : null,
+      card1: cols[5]?.trim() || null,
+      card2: cols[6]?.trim() || null,
+      card3: cols[7]?.trim() || null,
+      card4: cols[8]?.trim() || null,
+      card5: cols[9]?.trim() || null,
+      card6: cols[10]?.trim() || null,
+      card7: cols[11]?.trim() || null,
+      opponent_archetype: mappedOpp || null,
+      game_result: gameResult,
+      match_result: matchResult || null,
+      _original_opp: oppDeck,
+      _raw_timestamp: timestamp
+    });
+  }
+  return rows;
+}
+
+async function previewSheetImport() {
+  const deck   = document.getElementById('import-deck').value.trim();
+  const format = document.getElementById('import-format').value;
+  const text   = document.getElementById('import-paste').value;
+  const el     = document.getElementById('import-preview');
+
+  if (!deck) { showToast('Please enter a deck archetype', 'error'); return; }
+  if (!text.trim()) { showToast('Please paste sheet data', 'error'); return; }
+
+  el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">Parsing...</div>';
+
+  const rows = parseSheetRows(text);
+  if (!rows.length) {
+    el.innerHTML = '<div class="card" style="color:var(--danger);">No valid rows found. Check the format.</div>';
+    return;
+  }
+
+  // Check for duplicates using timestamp + pilot_name
+  // Build duplicate keys from existing data
+  el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">Checking for duplicates...</div>';
+
+  // Get existing timestamps for these pilots
+  const pilots = [...new Set(rows.map(r => r.pilot_name))];
+  const existingRows = [];
+  for (const pilot of pilots) {
+    const { data } = await db.from('raw_game_log')
+      .select('timestamp,pilot_name')
+      .eq('pilot_name', pilot)
+      .eq('migration_flag', 'SHEET_IMPORT');
+    existingRows.push(...(data || []));
+  }
+  const existingKeys = new Set(
+    existingRows.map(r => `${r.pilot_name}|${new Date(r.timestamp).toISOString()}`)
+  );
+
+  const newRows  = rows.filter(r => !existingKeys.has(`${r.pilot_name}|${r.timestamp}`));
+  const dupRows  = rows.filter(r =>  existingKeys.has(`${r.pilot_name}|${r.timestamp}`));
+
+  // Find unmapped opponent names
+  const unmapped = [...new Set(
+    rows.filter(r => r._original_opp && !SHEET_OPPONENT_MAP[r._original_opp] && r._original_opp === r.opponent_archetype)
+        .map(r => r._original_opp)
+  )].sort();
+
+  // Build preview HTML
+  let html = `<div class="card">
+    <div class="card-title">Import Preview</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:var(--accent);">${rows.length}</div>
+        <div style="font-size:11px;color:var(--text2);">Total rows</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:var(--success);">${newRows.length}</div>
+        <div style="font-size:11px;color:var(--text2);">New rows</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:var(--text2);">${dupRows.length}</div>
+        <div style="font-size:11px;color:var(--text2);">Duplicates</div>
+      </div>
+    </div>
+    <div style="font-size:13px;margin-bottom:4px;"><strong>Deck:</strong> ${deck}</div>
+    <div style="font-size:13px;margin-bottom:4px;"><strong>Format:</strong> ${format}</div>
+    <div style="font-size:13px;margin-bottom:12px;"><strong>Pilots:</strong> ${pilots.join(', ')}</div>`;
+
+  if (unmapped.length > 0) {
+    html += `<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;color:var(--warning);margin-bottom:6px;">
+        ⚠ ${unmapped.length} opponent name(s) not in mapping — will be imported as-is:
+      </div>
+      ${unmapped.map(n => `<div style="font-size:12px;color:var(--text2);">• ${n}</div>`).join('')}
+    </div>`;
+  }
+
+  if (newRows.length === 0) {
+    html += `<div style="color:var(--text2);font-size:13px;">All rows are duplicates — nothing to import.</div>`;
+  } else {
+    html += `<button class="btn btn-primary" onclick="confirmSheetImport()" style="margin-bottom:0;">
+      Import ${newRows.length} new rows
+    </button>`;
+  }
+  html += '</div>';
+
+  // Store parsed rows for confirm step
+  window._sheetImportRows   = newRows;
+  window._sheetImportDeck   = deck;
+  window._sheetImportFormat = format;
+
+  el.innerHTML = html;
+}
+
+async function confirmSheetImport() {
+  const rows   = window._sheetImportRows;
+  const deck   = window._sheetImportDeck;
+  const format = window._sheetImportFormat;
+  const el     = document.getElementById('import-preview');
+
+  if (!rows || !rows.length) { showToast('Nothing to import', 'error'); return; }
+
+  el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">Importing...</div>';
+
+  const toInsert = rows.map(r => ({
+    pilot_name:         r.pilot_name,
+    deck_archetype:     deck,
+    opponent_archetype: r.opponent_archetype,
+    game_result:        r.game_result,
+    match_result:       r.match_result,
+    pre_post:           r.pre_post,
+    play_draw:          r.play_draw,
+    card1:              r.card1 || null,
+    card2:              r.card2 || null,
+    card3:              r.card3 || null,
+    card4:              r.card4 || null,
+    card5:              r.card5 || null,
+    card6:              r.card6 || null,
+    card7:              r.card7 || null,
+    timestamp:          r.timestamp,
+    format:             format,
+    migration_flag:     'SHEET_IMPORT',
+    game_number:        r.pre_post === 'Pre' ? 'G1' : 'G23'
+  }));
+
+  let imported = 0;
+  let errors   = 0;
+  const batchSize = 100;
+  for (let i = 0; i < toInsert.length; i += batchSize) {
+    const batch = toInsert.slice(i, i + batchSize);
+    const { error } = await db.from('raw_game_log').insert(batch);
+    if (error) {
+      console.error('Import batch error:', error);
+      errors += batch.length;
+    } else {
+      imported += batch.length;
+    }
+  }
+
+  el.innerHTML = `<div class="card">
+    <div class="card-title">Import Complete</div>
+    <div style="font-size:14px;color:var(--success);font-weight:600;">✓ ${imported} rows imported</div>
+    ${errors > 0 ? `<div style="font-size:13px;color:var(--danger);margin-top:4px;">${errors} errors</div>` : ''}
+    <div style="font-size:12px;color:var(--text2);margin-top:8px;">
+      Clear the paste area and repeat for the next sheet.
+    </div>
+    <button class="btn btn-secondary" onclick="document.getElementById('import-paste').value='';
+      document.getElementById('import-preview').innerHTML='';" style="margin-top:8px;margin-bottom:0;">
+      Import another sheet
+    </button>
+  </div>`;
+
+  window._sheetImportRows = null;
+}
+  
 async function loadMtgoData() {
   const dateVal = document.getElementById('mtgo-date').value;
   const minApp  = parseInt(document.getElementById('mtgo-min').value);
