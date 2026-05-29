@@ -1487,7 +1487,8 @@ async function loadInsights() {
           .select('game_result,play_draw,pre_post,mulligan_count')
           .not('game_result', 'is', null)
           .range(offset, offset + pageSize - 1);
-        if (scope === 'mine') q = q.eq('pilot_name', state.pilot.pilot_name);
+        if (scope === 'mine')   q = q.eq('pilot_name', state.pilot.pilot_name);
+        else if (scope === 'others') q = q.neq('pilot_name', state.pilot.pilot_name);
         if (format) q = q.eq('format', format);
         if (deck)   q = q.eq('deck_archetype', deck);
         const { data, error } = await q;
@@ -1503,7 +1504,7 @@ async function loadInsights() {
     setProgress('insights', 20);
     const [myGames, allGames] = await Promise.all([
       fetchAll('mine'),
-      fetchAll('all')
+      fetchAll('others')
     ]);
 
     setProgress('insights', 60);
@@ -1557,7 +1558,7 @@ async function loadInsights() {
             ${bar(myW, myT, 'var(--accent)')}
           </div>
           <div>
-            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">All data</div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Others</div>
             ${bar(allW, allT, 'var(--success)')}
           </div>
         </div>
@@ -1582,7 +1583,7 @@ async function loadInsights() {
       html += `<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:6px 12px;align-items:center;margin-top:8px;">
         <div style="font-size:11px;color:var(--text2);">Mulligans</div>
         <div style="font-size:11px;color:var(--text2);">My data</div>
-        <div style="font-size:11px;color:var(--text2);">All data</div>`;
+        <div style="font-size:11px;color:var(--text2);">Others</div>
       for (const k of mullKeys) {
         const mw = my.mull[k]  || { w: 0, t: 0 };
         const aw = all.mull[k] || { w: 0, t: 0 };
