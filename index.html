@@ -1087,8 +1087,14 @@
         </select>
       </div>
     </div>
-    <input type="text" id="mx-search" placeholder="Search archetype..."
-           oninput="filterMatrix(this.value)" style="margin-bottom:8px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <input type="text" id="mx-search" placeholder="Search archetype..."
+             oninput="filterMatrix(this.value)" style="margin-bottom:0;flex:1;">
+      <div class="toggle-group" style="margin-bottom:0;flex-shrink:0;">
+        <div class="toggle-btn selected" id="mx-sort-freq" onclick="setMatrixSort('frequency')">By frequency</div>
+        <div class="toggle-btn" id="mx-sort-alpha" onclick="setMatrixSort('alpha')">A–Z</div>
+      </div>
+    </div>
     <div class="throttle-msg" id="throttle-mx"></div>
     <div class="progress-bar-wrap" id="progress-mx">
       <div class="progress-bar-fill" id="progress-mx-fill" style="width:0%"></div>
@@ -4823,6 +4829,20 @@ let matrixCache = null;
 let matrixLastCalc = 0;
 let matrixRawData = [];
 let matrixArchetypes = [];
+let matrixSortOrder = 'frequency';
+
+function setMatrixSort(order) {
+  matrixSortOrder = order;
+  document.getElementById('mx-sort-freq').classList.toggle('selected', order === 'frequency');
+  document.getElementById('mx-sort-alpha').classList.toggle('selected', order === 'alpha');
+  if (matrixCache) {
+    const archetypes = matrixSortOrder === 'alpha'
+      ? [...matrixArchetypes].sort((a, b) => a.localeCompare(b))
+      : matrixArchetypes;
+    renderMatrix(archetypes, matrixRawData, document.getElementById('mx-rate-type').value,
+      document.getElementById('mx-search').value);
+  }
+}
 
 function onMatrixRateTypeChange() {
   // Reset cache when rate type changes
@@ -5041,7 +5061,7 @@ function renderMatrix(archetypes, matchups, rateType, searchQuery) {
     el.innerHTML = '<div style="color:var(--text2);font-size:14px;padding:8px 0;">No data available. Click Load matrix to fetch data.</div>';
     return;
   }
-
+if (matrixSortOrder === 'alpha') archetypes = [...archetypes].sort((a, b) => a.localeCompare(b));
   const q = searchQuery.toLowerCase();
   const highlighted = q ? archetypes.filter(a => a.toLowerCase().includes(q)) : [];
 
