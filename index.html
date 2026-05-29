@@ -4425,6 +4425,10 @@ function selectCustomOption(id, value, label) {
   document.getElementById(id).value = value;
   document.getElementById(id + '-display').textContent = label || 'All';
   closeCustomSelectModal();
+  // Fire onchange callbacks for specific selects
+  if (id === 'insights-deck') loadInsights();
+  if (id === 'b-deck' || id === 'b-opponent') { /* Bayesian handled by button */ }
+  if (id === 'c-deck' || id === 'c-opponent') { /* Chi-squared handled by button */ }
 }
 
 function toggleRestMatchups(el) {
