@@ -1770,16 +1770,23 @@ function fuzzyScore(a, b) {
 }
 
 async function loadCleanupSuggestions() {
-  const format     = document.getElementById('cleanup-format').value;
-  const minScore   = parseFloat(document.getElementById('cleanup-confidence').value);
-  const el         = document.getElementById('cleanup-results');
-  el.innerHTML     = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">Loading...</div>';
+  const format   = document.getElementById('cleanup-format').value;
+  const minScore = parseFloat(document.getElementById('cleanup-confidence').value);
+  const el       = document.getElementById('cleanup-results');
+  el.innerHTML   = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">Loading Badaro definitions...</div>';
 
-  // Load Badaro definitions for this format
-  await loadArchetypeDefinitions();
-  const badaroNames = (archetypeDefinitions || []).map(d => resolveBadaroName(d.name, []));
+  // Load Badaro names for this format
+  const rawBadaroNames = await loadBadaroDefsForFormat(format);
+  const badaroNames    = [...new Set(rawBadaroNames.map(n => resolveBadaroName(n, [])))].sort();
 
-  // Also include all existing community names as valid targets
+  if (!badaroNames.length) {
+    el.innerHTML = '<div class="card" style="color:var(--danger);">Could not load Badaro definitions for this format.</div>';
+    return;
+  }
+
+  el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">Loading community data...</div>';
+
+  // Load all community names with counts
   const allRows = [];
   let offset = 0;
   while (true) {
@@ -1793,25 +1800,22 @@ async function loadCleanupSuggestions() {
     offset += 1000;
   }
 
-  // Count frequency of each name
-  const oppCounts = {};
+  const oppCounts  = {};
   const deckCounts = {};
   for (const r of allRows) {
-    if (r.opponent_archetype) oppCounts[r.opponent_archetype] = (oppCounts[r.opponent_archetype] || 0) + 1;
-    if (r.deck_archetype)     deckCounts[r.deck_archetype]    = (deckCounts[r.deck_archetype]    || 0) + 1;
+    if (r.opponent_archetype) oppCounts[r.opponent_archetype]  = (oppCounts[r.opponent_archetype]  || 0) + 1;
+    if (r.deck_archetype)     deckCounts[r.deck_archetype]     = (deckCounts[r.deck_archetype]     || 0) + 1;
   }
+  const allCommunityNames = [...new Set([...Object.keys(oppCounts), ...Object.keys(deckCounts)])].sort();
 
-  // All unique names
-  const allNames    = [...new Set([...Object.keys(oppCounts), ...Object.keys(deckCounts)])].sort();
-  const targetNames = [...new Set([...badaroNames, ...allNames])].sort();
-
-  // Find suggestions — names that have a close but non-identical match
+  // Build suggestions — match each community name against Badaro names
   cleanupSuggestions = [];
-  for (const name of allNames) {
-    if (cleanupRenames[name]) continue; // already queued
+  for (const name of allCommunityNames) {
+    if (cleanupRenames[name]) continue;
+
     let bestMatch = null;
     let bestScore = 0;
-    for (const target of targetNames) {
+    for (const target of badaroNames) {
       if (target === name) continue;
       const score = fuzzyScore(name, target);
       if (score > bestScore) {
@@ -1819,58 +1823,125 @@ async function loadCleanupSuggestions() {
         bestMatch = target;
       }
     }
-    if (bestScore >= minScore && bestMatch && bestMatch !== name) {
-      cleanupSuggestions.push({
-        original: name,
-        suggested: bestMatch,
-        score: bestScore,
-        oppCount:  oppCounts[name]  || 0,
-        deckCount: deckCounts[name] || 0
-      });
-    }
+
+    const games = (oppCounts[name] || 0) + (deckCounts[name] || 0);
+    cleanupSuggestions.push({
+      original:  name,
+      suggested: bestScore >= minScore ? bestMatch : null,
+      score:     bestScore,
+      games,
+      badaroNames // attach for dropdown
+    });
   }
 
-  // Sort by score descending
-  cleanupSuggestions.sort((a, b) => b.score - a.score);
+  // Sort: matched first (by score desc), then unmatched alphabetically
+  cleanupSuggestions.sort((a, b) => {
+    if (a.suggested && !b.suggested) return -1;
+    if (!a.suggested && b.suggested) return 1;
+    if (a.suggested && b.suggested) return b.score - a.score;
+    return a.original.localeCompare(b.original);
+  });
 
+  window._cleanupBadaroNames = badaroNames;
   renderCleanupSuggestions();
 }
+
+async function loadBadaroDefsForFormat(fmt) {
+  const folderMap = {
+    'Modern': 'Modern', 'Legacy': 'Legacy', 'Pauper': 'Pauper',
+    'Pioneer': 'Pioneer', 'Standard': 'Standard', 'Vintage': 'Vintage', 'Premodern': 'Premodern'
+  };
+  const folder = folderMap[fmt];
+  if (!folder) return [];
+  try {
+    const r = await fetch(
+      `https://api.github.com/repos/Badaro/MTGOFormatData/contents/Formats/${folder}/Archetypes`,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (!r.ok) return [];
+    const files = await r.json();
+    return files.filter(f => f.name.endsWith('.json')).map(f => f.name.replace('.json', ''));
+  } catch(e) {
+    return [];
+  }
+}  
 
 function renderCleanupSuggestions() {
   const el = document.getElementById('cleanup-results');
   if (!cleanupSuggestions.length) {
-    el.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">No suggestions found at this confidence level.</div>';
+    el.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">No community names found.</div>';
     return;
   }
 
+  const badaroNames  = window._cleanupBadaroNames || [];
+  const matched      = cleanupSuggestions.filter(s => s.suggested);
+  const unmatched    = cleanupSuggestions.filter(s => !s.suggested);
+  const badaroOpts   = badaroNames.map(n => `<option value="${n}">${n}</option>`).join('');
+
   let html = `<div class="card">
-    <div class="card-title">Suggestions (${cleanupSuggestions.length})</div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">
-      Review each suggestion. Accept to queue a rename, Skip to ignore.
+    <div class="card-title">Suggestions (${matched.length} matched, ${unmatched.length} unmatched)</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">
+      Matched names show a suggested rename. Unmatched names show a dropdown to pick from all Badaro names.
+      You can also type in the text field to override any suggestion.
     </div>`;
 
-  for (let i = 0; i < cleanupSuggestions.length; i++) {
-    const s = cleanupSuggestions[i];
-    const pct = Math.round(s.score * 100);
-    const games = s.oppCount + s.deckCount;
-    html += `<div id="cleanup-row-${i}" style="border-bottom:1px solid var(--border);padding:10px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="font-size:13px;font-weight:600;">${s.original}</div>
-        <div style="font-size:11px;color:var(--text2);">${games} game${games !== 1 ? 's' : ''} · ${pct}% match</div>
-      </div>
-      <div style="font-size:13px;color:var(--text2);">→</div>
-      <div style="flex:1;min-width:200px;">
-        <input type="text" id="cleanup-target-${i}" value="${s.suggested}"
-          style="margin-bottom:0;font-size:12px;padding:6px 8px;">
-      </div>
-      <div style="display:flex;gap:4px;flex-shrink:0;">
-        <button class="btn btn-primary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
-          onclick="acceptCleanup(${i})">Accept</button>
-        <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
-          onclick="skipCleanup(${i})">Skip</button>
-      </div>
-    </div>`;
+  // Matched section
+  if (matched.length) {
+    html += `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">MATCHED</div>`;
+    for (let i = 0; i < cleanupSuggestions.length; i++) {
+      const s = cleanupSuggestions[i];
+      if (!s.suggested) continue;
+      const pct = Math.round(s.score * 100);
+      html += `<div id="cleanup-row-${i}" style="border-bottom:1px solid var(--border);padding:8px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+          <div style="font-size:13px;font-weight:600;">${s.original}</div>
+          <div style="font-size:11px;color:var(--text2);">${s.games}g · ${pct}% match</div>
+        </div>
+        <div style="font-size:13px;color:var(--text2);">→</div>
+        <div style="flex:1;min-width:160px;">
+          <input type="text" id="cleanup-target-${i}" value="${s.suggested}"
+            style="margin-bottom:0;font-size:12px;padding:6px 8px;">
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn btn-primary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
+            onclick="acceptCleanup(${i})">Accept</button>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
+            onclick="skipCleanup(${i})">Skip</button>
+        </div>
+      </div>`;
+    }
   }
+
+  // Unmatched section
+  if (unmatched.length) {
+    html += `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-top:16px;margin-bottom:6px;">
+      UNMATCHED — select a Badaro name or skip
+    </div>`;
+    for (let i = 0; i < cleanupSuggestions.length; i++) {
+      const s = cleanupSuggestions[i];
+      if (s.suggested) continue;
+      html += `<div id="cleanup-row-${i}" style="border-bottom:1px solid var(--border);padding:8px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+          <div style="font-size:13px;font-weight:600;">${s.original}</div>
+          <div style="font-size:11px;color:var(--text2);">${s.games}g · no match</div>
+        </div>
+        <div style="font-size:13px;color:var(--text2);">→</div>
+        <div style="flex:1;min-width:160px;">
+          <select id="cleanup-target-${i}" style="margin-bottom:0;font-size:12px;">
+            <option value="">-- skip --</option>
+            ${badaroOpts}
+          </select>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn btn-primary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
+            onclick="acceptCleanup(${i})">Accept</button>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
+            onclick="skipCleanup(${i})">Skip</button>
+        </div>
+      </div>`;
+    }
+  }
+
   html += '</div>';
   el.innerHTML = html;
 }
