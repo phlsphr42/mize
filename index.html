@@ -1780,7 +1780,10 @@ async function loadCleanupSuggestions() {
   const el       = document.getElementById('cleanup-results');
   el.innerHTML   = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">Loading Badaro definitions...</div>';
 
-  // Load Badaro names for this format
+  // Clear any cached Badaro names from previous format loads
+  window._cleanupBadaroNames = null;
+
+  // Load Badaro names for this format fresh each time
   const rawBadaroNames = await loadBadaroDefsForFormat(format);
   const badaroNames    = [...new Set(rawBadaroNames.map(n => resolveBadaroName(n, [])))].sort();
 
@@ -2005,8 +2008,10 @@ async function applyCleanupRenames() {
 
   showToast(`Applied ${applied} renames${errors ? `, ${errors} errors` : ''}.`, errors ? 'error' : 'success');
   cleanupRenames = {};
+  cleanupSuggestions = [];
+  window._cleanupBadaroNames = null;
   updateCleanupPending();
-  // Reload suggestions
+  await new Promise(r => setTimeout(r, 1000)); // wait for DB to settle
   loadCleanupSuggestions();
 }
 
