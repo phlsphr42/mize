@@ -708,7 +708,7 @@
   <!-- OPPONENT ENTRY -->
 <div id="screen-opponent-entry" class="screen">
   <div class="header">
-    <button class="back-btn" onclick="showScreen('screen-match-setup')">←</button>
+    <button class="back-btn" id="opp-header-back" onclick="oppHeaderBack()">←</button>
     <h2>Opponent's deck</h2>
   </div>
   <div class="step-indicator">
@@ -729,9 +729,7 @@
 
   <!-- Step 2: Subtype grid -->
   <div class="card" id="opp-step2-card" style="display:none;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-      <button class="btn btn-secondary" onclick="oppBackToStep1()"
-        style="padding:4px 10px;font-size:12px;margin-bottom:0;">← Back</button>
+    <div style="margin-bottom:10px;">
       <span style="font-size:13px;font-weight:600;" id="opp-step2-title">Specific build</span>
     </div>
     <div id="opp-subtype-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;"></div>
@@ -739,9 +737,7 @@
 
   <!-- Unknown: cards seen -->
   <div class="card" id="opp-unknown-card" style="display:none;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-      <button class="btn btn-secondary" onclick="oppBackToStep1()"
-        style="padding:4px 10px;font-size:12px;margin-bottom:0;">← Back</button>
+    <div style="margin-bottom:10px;">
       <span style="font-size:13px;font-weight:600;">Unknown opponent</span>
     </div>
     <label class="label">Cards you saw from their deck (optional)</label>
@@ -5502,9 +5498,12 @@ function oppSelectSupertype(supertype) {
   const taxonomy = state.oppTaxonomy?.[format];
   let subtypes = [];
   if (taxonomy?.archetypes) {
+    // Deduplicate by MizeName — multiple definitions may share the same display name
+    const seen = new Set();
     subtypes = taxonomy.archetypes
       .filter(a => a.Supertype === supertype)
       .map(a => a.MizeName)
+      .filter(name => { if (seen.has(name)) return false; seen.add(name); return true; })
       .sort();
   }
   if (!subtypes.length) { oppFinalSelect(supertype); return; }
@@ -5515,6 +5514,21 @@ function oppSelectSupertype(supertype) {
     `<button class="btn btn-secondary" onclick="oppFinalSelect('${sub.replace(/'/g, "\'")}')"
       style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;">${sub}</button>`
   ).join('');
+}
+
+function oppHeaderBack() {
+  // If on step 2 or unknown — go back to step 1
+  const step2    = document.getElementById('opp-step2-card');
+  const unknown  = document.getElementById('opp-unknown-card');
+  const selected = document.getElementById('opponent-selected');
+  if ((step2    && step2.style.display    !== 'none') ||
+      (unknown  && unknown.style.display  !== 'none') ||
+      (selected && selected.style.display !== 'none')) {
+    oppBackToStep1();
+  } else {
+    // On step 1 — go back to match setup
+    showScreen('screen-match-setup');
+  }
 }
 
 function oppBackToStep1() {
