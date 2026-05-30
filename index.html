@@ -2301,45 +2301,83 @@ async function loadPendingDefinitions() {
           <span style="font-size:13px;font-weight:600;">${d.mize_name}</span>
           <span style="font-size:11px;color:var(--text2);margin-left:8px;">${d.supertype}</span>
         </div>
-        <div style="display:flex;gap:4px;">
-          <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-bottom:0;"
-            onclick="copyPendingDef(${d.id})">Copy</button>
-          <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-bottom:0;"
+        <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-bottom:0;"
             onclick="markDefApplied(${d.id})">Mark applied</button>
-        </div>
       </div>
       <pre style="font-size:10px;padding:8px 10px;margin:0;overflow-x:auto;white-space:pre-wrap;">${d.definition}</pre>
     </div>
   `).join('');
 }
 
-async function copyPendingDef(id) {
-  const { data } = await db.from('mtgo_pending_definitions')
-    .select('definition').eq('id', id).single();
-  if (data) {
-    navigator.clipboard.writeText(data.definition);
-    showToast('Definition copied to clipboard', 'success');
+async function downloadUpdatedCustomArchetypes() {
+  showToast('Fetching current custom_archetypes.json...', 'success');
+  try {
+    // Fetch current file from repo
+    const r = await fetch(
+      'https://raw.githubusercontent.com/phlsphr42/mize/main/scripts/custom_archetypes.json?t=' + Date.now()
+    );
+    if (!r.ok) throw new Error('Could not fetch custom_archetypes.json from repo');
+    const current = await r.json();
+
+    // Fetch all unapplied pending definitions across all formats
+    const { data: pending } = await db.from('mtgo_pending_definitions')
+      .select('mize_name,supertype,format,definition')
+      .eq('applied', false)
+      .order('created_at', { ascending: false });
+
+    if (!pending?.length) {
+      showToast('No pending definitions to merge', 'error');
+      return;
+    }
+
+    // Deduplicate by mize_name per format
+    const seen = {};
+    const toMerge = pending.filter(d => {
+      const key = d.format + '|' + d.mize_name;
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+
+    // Merge into current file
+    let mergedCount = 0;
+    for (const def of toMerge) {
+      const fmt = def.format;
+      if (!current[fmt]) continue;
+      let parsed;
+      try { parsed = JSON.parse(def.definition); } catch(e) { continue; }
+      // Remove existing entry with same Name if present
+      current[fmt].archetypes = current[fmt].archetypes.filter(a => a.Name !== parsed.Name);
+      // Insert at beginning for priority
+      current[fmt].archetypes.unshift(parsed);
+      mergedCount++;
+    }
+
+    // Download the merged file
+    const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'custom_archetypes.json';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showToast(`Downloaded with ${mergedCount} new definitions merged`, 'success');
+
+    // Mark all merged definitions as applied
+    const ids = pending
+      .filter(d => toMerge.some(t => t.mize_name === d.mize_name && t.format === d.format))
+      .map(d => d.id);
+    if (ids.length) {
+      await db.from('mtgo_pending_definitions').update({ applied: true }).in('id', ids);
+    }
+
+    // Reload pending list
+    loadPendingDefinitions();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+    console.error(e);
   }
-}
-
-async function copyAllPendingDefs() {
-  const format = document.getElementById('ud-format')?.value || 'Modern';
-  const { data } = await db.from('mtgo_pending_definitions')
-    .select('mize_name,definition')
-    .eq('format', format)
-    .eq('applied', false)
-    .order('created_at', { ascending: false });
-
-  if (!data?.length) { showToast('No pending definitions', 'error'); return; }
-
-  // Deduplicate
-  const seen = {};
-  const defs = data
-    .filter(d => { if (seen[d.mize_name]) return false; seen[d.mize_name] = true; return true; })
-    .map(d => d.definition)
-    .join(',\n');
-  navigator.clipboard.writeText('[\n' + defs + '\n]');
-  showToast(`Copied ${Object.keys(seen).length} definitions to clipboard`, 'success');
 }
 
 async function markDefApplied(id) {
@@ -4076,12 +4114,12 @@ container.innerHTML = `
           Suggested definitions generated from your deck reviews. Copy into
           <code>scripts/custom_archetypes.json</code> and commit to your repo.
         </p>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
           <button class="btn btn-secondary" onclick="loadPendingDefinitions()" style="margin-bottom:0;font-size:12px;">
             Load pending
           </button>
-          <button class="btn btn-secondary" onclick="copyAllPendingDefs()" style="margin-bottom:0;font-size:12px;">
-            Copy all as JSON
+          <button class="btn btn-primary" onclick="downloadUpdatedCustomArchetypes()" style="margin-bottom:0;font-size:12px;">
+            ↓ Download updated custom_archetypes.json
           </button>
         </div>
         <div id="ud-pending-defs"></div>
