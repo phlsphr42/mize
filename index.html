@@ -716,22 +716,58 @@
     <div class="step-dot active"></div><div class="step-dot"></div>
   </div>
   <div class="match-info" style="margin-bottom:12px;">Deck: <span id="opponent-entry-deck-name"></span></div>
-  <div class="card">
-    <label class="label">Opponent's deck</label>
-    <input type="text" id="opponent-search" placeholder="Search archetypes..." oninput="filterArchetypes(this.value)">
-    <div id="archetype-list" style="max-height:200px;overflow-y:auto;"></div>
-    <div id="opponent-selected" style="display:none;">
-      <hr class="divider">
-      <div style="font-size:13px;color:var(--text2);">Selected:</div>
-      <div id="opponent-name" style="font-size:16px;font-weight:600;color:var(--accent);"></div>
-    </div>
-  </div>
-  <div id="opponent-prefill-section" style="display:none;">
-    <button class="btn btn-secondary" id="btn-use-last-opponent" onclick="useLastOpponent()">
-      Use last opponent again
+
+  <!-- Step 1: Supertype grid -->
+  <div class="card" id="opp-step1-card">
+    <label class="label">Step 1 — Strategy family</label>
+    <div id="opp-supertype-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:10px;"></div>
+    <button class="btn btn-secondary" onclick="oppSelectUnknown()"
+      style="margin-bottom:0;font-size:12px;width:100%;color:var(--warning);">
+      ⚠ Unknown / Can't identify
     </button>
   </div>
-  <button class="btn btn-primary" onclick="confirmOpponent()" id="btn-confirm-opponent" disabled>Continue →</button>
+
+  <!-- Step 2: Subtype grid -->
+  <div class="card" id="opp-step2-card" style="display:none;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <button class="btn btn-secondary" onclick="oppBackToStep1()"
+        style="padding:4px 10px;font-size:12px;margin-bottom:0;">← Back</button>
+      <span style="font-size:13px;font-weight:600;" id="opp-step2-title">Specific build</span>
+    </div>
+    <div id="opp-subtype-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;"></div>
+  </div>
+
+  <!-- Unknown: cards seen -->
+  <div class="card" id="opp-unknown-card" style="display:none;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <button class="btn btn-secondary" onclick="oppBackToStep1()"
+        style="padding:4px 10px;font-size:12px;margin-bottom:0;">← Back</button>
+      <span style="font-size:13px;font-weight:600;">Unknown opponent</span>
+    </div>
+    <label class="label">Cards you saw from their deck (optional)</label>
+    <textarea id="opp-cards-seen" rows="3"
+      placeholder="e.g. Ragavan, Lightning Bolt, Murktide Regent..."
+      style="width:100%;font-size:13px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);resize:vertical;margin-bottom:6px;box-sizing:border-box;"></textarea>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:0;">
+      An admin will review the cards and assign the correct archetype.
+      The game will be logged as Unknown until then.
+    </p>
+  </div>
+
+  <!-- Confirmed selection display -->
+  <div id="opponent-selected" style="display:none;">
+    <div class="card" style="background:var(--surface2);padding:12px 16px;">
+      <div style="font-size:11px;color:var(--text2);">Selected opponent:</div>
+      <div id="opponent-name" style="font-size:18px;font-weight:700;color:var(--accent);margin-top:2px;"></div>
+    </div>
+  </div>
+
+  <div id="opponent-prefill-section" style="display:none;margin-bottom:8px;">
+    <button class="btn btn-secondary" id="btn-use-last-opponent" onclick="useLastOpponent()"
+      style="width:100%;">↩ Use last opponent again</button>
+  </div>
+  <button class="btn btn-primary" onclick="confirmOpponent()" id="btn-confirm-opponent"
+    style="display:none;">Continue →</button>
 </div>
 
 <!-- GAME ENTRY (now just result) -->
@@ -1694,6 +1730,21 @@ function showScreen(id) {
   if (id === 'screen-analysis') onShowAnalysis();
   if (id === 'screen-opponent-entry') {
     document.getElementById('opponent-entry-deck-name').textContent = state.matchDeck?.archetype_name || 'Unknown';
+    // Reset to step 1
+    document.getElementById('opp-step1-card').style.display = '';
+    document.getElementById('opp-step2-card').style.display = 'none';
+    document.getElementById('opp-unknown-card').style.display = 'none';
+    document.getElementById('opponent-selected').style.display = 'none';
+    document.getElementById('btn-confirm-opponent').style.display = 'none';
+    state.opponent = null;
+    // Load taxonomy and build grid
+    if (!state.oppTaxonomy) {
+      fetch('https://raw.githubusercontent.com/phlsphr42/mize/main/scripts/custom_archetypes.json?t=' + Date.now())
+        .then(r => r.json()).then(data => { state.oppTaxonomy = data; oppBuildSupertypeGrid(); })
+        .catch(() => { state.oppTaxonomy = null; oppBuildSupertypeGrid(); });
+    } else {
+      oppBuildSupertypeGrid();
+    }
     state.opponent = null;
     document.getElementById('opponent-search').value = '';
     document.getElementById('opponent-selected').style.display = 'none';
@@ -2728,6 +2779,72 @@ async function markDefApplied(id) {
   await db.from('mtgo_pending_definitions').update({ applied: true }).eq('id', id);
   showToast('Marked as applied', 'success');
   loadPendingDefinitions();
+}
+
+// ── OPPONENT SIGHTINGS REVIEW ─────────────────────────────────────────────────
+
+async function loadSightings() {
+  const el = document.getElementById('sightings-container');
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--text2);">Loading...</div>';
+
+  const { data, error } = await db.from('opponent_sightings')
+    .select('id, pilot_name, format, cards_seen, assigned_archetype, reviewed, created_at')
+    .eq('reviewed', false)
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error || !data?.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text2);">No unreviewed sightings.</div>';
+    return;
+  }
+
+  el.innerHTML = data.map(s => `
+    <div style="border:1px solid var(--border);border-radius:6px;margin-bottom:8px;overflow:hidden;">
+      <div style="background:var(--surface2);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <span style="font-size:13px;font-weight:600;">${s.pilot_name}</span>
+          <span style="font-size:11px;color:var(--text2);margin-left:8px;">${s.format} · ${s.created_at?.slice(0,10)}</span>
+        </div>
+      </div>
+      <div style="padding:10px 12px;">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px;">Cards seen:</div>
+        <div style="font-size:13px;margin-bottom:10px;">${s.cards_seen || '(none recorded)'}</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;">
+          <input type="text" id="sighting-arch-${s.id}"
+            placeholder="Assign archetype name..."
+            style="flex:1;min-width:180px;margin-bottom:0;font-size:12px;"
+            onkeydown="if(event.key==='Enter') assignSighting(${s.id})">
+          <button class="btn btn-primary" onclick="assignSighting(${s.id})"
+            style="margin-bottom:0;font-size:12px;padding:4px 12px;">Assign</button>
+          <button class="btn btn-secondary" onclick="deleteSighting(${s.id})"
+            style="margin-bottom:0;font-size:12px;padding:4px 12px;color:var(--danger);">Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function assignSighting(id) {
+  const input = document.getElementById('sighting-arch-' + id);
+  const arch  = input?.value.trim();
+  if (!arch) { showToast('Enter an archetype name', 'error'); return; }
+
+  const { error } = await db.from('opponent_sightings')
+    .update({ assigned_archetype: arch, reviewed: true, reviewed_at: new Date().toISOString(),
+              reviewed_by: state.pilot?.pilot_name })
+    .eq('id', id);
+
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast('Assigned: ' + arch, 'success');
+  loadSightings();
+}
+
+async function deleteSighting(id) {
+  const { error } = await db.from('opponent_sightings').delete().eq('id', id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast('Sighting deleted', 'success');
+  loadSightings();
 }
 
 async function udAssign() {
@@ -4165,6 +4282,7 @@ container.innerHTML = `
         <div class="analysis-tab"         onclick="adminTab('import')"    id="atab-import">Import</div>
         <div class="analysis-tab"         onclick="adminTab('cleanup')"        id="atab-cleanup">Unknown Decks</div>
         <div class="analysis-tab"         onclick="adminTab('archnames')"       id="atab-archnames">Archetype Names</div>
+        <div class="analysis-tab"         onclick="adminTab('sightings')"       id="atab-sightings">Sightings</div>
       </div>
       <div id="apanel-overview"></div>
       <div id="apanel-users"         style="display:none;"></div>
@@ -4174,6 +4292,7 @@ container.innerHTML = `
       <div id="apanel-import"        style="display:none;"></div>
       <div id="apanel-cleanup"       style="display:none;"></div>
       <div id="apanel-archnames"     style="display:none;"></div>
+      <div id="apanel-sightings"     style="display:none;"></div>
     `;
 
     // ── OVERVIEW ──
@@ -4419,7 +4538,22 @@ container.innerHTML = `
       </div>
       <div id="import-preview"></div>
     `;
-        // ── UNKNOWN DECKS (replaces cleanup) ──
+        // ── SIGHTINGS ──
+    document.getElementById('apanel-sightings').innerHTML = `
+      <div class="card">
+        <div class="card-title">Opponent Sightings</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+          Unknown opponent reports submitted by pilots with cards they saw.
+          Assign an archetype or delete if insufficient information.
+        </p>
+        <button class="btn btn-secondary" onclick="loadSightings()" style="margin-bottom:0;font-size:12px;">
+          Load sightings
+        </button>
+      </div>
+      <div id="sightings-container"></div>
+    `;
+
+    // ── UNKNOWN DECKS (replaces cleanup) ──
     document.getElementById('apanel-cleanup').innerHTML = `
       <div class="card">
         <div class="card-title">Unknown Decks Review</div>
@@ -4552,7 +4686,7 @@ container.innerHTML = `
 }
 
 window.adminTab = function(tab) {
-  ['overview','users','features','activity','sources','import','cleanup','archnames'].forEach(t => {
+  ['overview','users','features','activity','sources','import','cleanup','archnames','sightings'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
   });
@@ -5341,23 +5475,80 @@ async function selectMatchDeck(deckId) {
   buildCardSlots(7);
   showScreen('screen-match-setup');
 }
-function filterArchetypes(query) {
-  const list = document.getElementById('archetype-list');
-  const q = query.toLowerCase().trim();
-  if (!q) { list.innerHTML = ''; return; }
-  if (!state.archetypes || state.archetypes.length === 0) {
-    list.innerHTML = '<div style="padding:10px;font-size:13px;color:var(--warning);">No archetypes loaded. Check connection.</div>';
-    return;
+// ── OPPONENT SELECTION — two-step supertype/subtype ─────────────────────────
+
+function oppBuildSupertypeGrid() {
+  const grid = document.getElementById('opp-supertype-grid');
+  if (!grid) return;
+  const format = state.matchFormat || 'Modern';
+  const taxonomy = state.oppTaxonomy?.[format];
+  let supertypes = [];
+  if (taxonomy?.supertypes) {
+    supertypes = Object.keys(taxonomy.supertypes).sort();
+  } else {
+    // Fallback to deriving from flat archetypes list
+    const seen = new Set();
+    (state.archetypes || []).forEach(a => seen.add(a));
+    supertypes = [...seen].sort();
   }
-  const matches = state.archetypes.filter(a => a.toLowerCase().includes(q)).slice(0, 10);
-  if (!matches.length) {
-    list.innerHTML = '<div style="padding:10px;font-size:13px;color:var(--text2);">No matches for "' + q + '"</div>';
-    return;
-  }
-  list.innerHTML = matches.map(a =>
-    '<div onclick="selectArchetype(\'' + a.replace(/'/g, "\\'") + '\')" style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;">' + a + '</div>'
+  grid.innerHTML = supertypes.map(s =>
+    '<button class="btn btn-secondary" onclick="oppSelectSupertype('' +
+    s.replace(/'/g, "\'") + '')" ' +
+    'style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;">' + s + '</button>'
   ).join('');
 }
+
+function oppSelectSupertype(supertype) {
+  const format = state.matchFormat || 'Modern';
+  const taxonomy = state.oppTaxonomy?.[format];
+  let subtypes = [];
+  if (taxonomy?.archetypes) {
+    subtypes = taxonomy.archetypes
+      .filter(a => a.Supertype === supertype)
+      .map(a => a.MizeName)
+      .sort();
+  }
+  if (!subtypes.length) { oppFinalSelect(supertype); return; }
+  document.getElementById('opp-step1-card').style.display = 'none';
+  document.getElementById('opp-step2-card').style.display = '';
+  document.getElementById('opp-step2-title').textContent = supertype;
+  document.getElementById('opp-subtype-grid').innerHTML = subtypes.map(sub =>
+    '<button class="btn btn-secondary" onclick="oppFinalSelect('' +
+    sub.replace(/'/g, "\'") + '')" ' +
+    'style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;">' + sub + '</button>'
+  ).join('');
+}
+
+function oppBackToStep1() {
+  document.getElementById('opp-step1-card').style.display = '';
+  document.getElementById('opp-step2-card').style.display = 'none';
+  document.getElementById('opp-unknown-card').style.display = 'none';
+  document.getElementById('opponent-selected').style.display = 'none';
+  document.getElementById('btn-confirm-opponent').style.display = 'none';
+  state.opponent = null;
+}
+
+function oppSelectUnknown() {
+  document.getElementById('opp-step1-card').style.display = 'none';
+  document.getElementById('opp-unknown-card').style.display = '';
+  document.getElementById('opp-cards-seen').value = '';
+  state.opponent = 'Unknown';
+  document.getElementById('opponent-name').textContent = 'Unknown';
+  document.getElementById('opponent-selected').style.display = '';
+  document.getElementById('btn-confirm-opponent').style.display = '';
+}
+
+function oppFinalSelect(name) {
+  state.opponent = name;
+  document.getElementById('opp-step2-card').style.display = 'none';
+  document.getElementById('opp-step1-card').style.display = 'none';
+  document.getElementById('opp-unknown-card').style.display = 'none';
+  document.getElementById('opponent-name').textContent = name;
+  document.getElementById('opponent-selected').style.display = '';
+  document.getElementById('btn-confirm-opponent').style.display = '';
+}
+
+function filterArchetypes(query) {} // legacy stub
 
   function applyDatePreset(panel) {
   const preset = document.getElementById(panel + '-date-preset').value;
@@ -5368,21 +5559,17 @@ function filterArchetypes(query) {
 }
 
 function selectArchetype(name) {
-  state.opponent = name;
-  document.getElementById('opponent-name').textContent = name;
-  document.getElementById('opponent-selected').style.display = 'block';
-  document.getElementById('archetype-list').innerHTML = '';
-  document.getElementById('opponent-search').value = name;
-  document.getElementById('btn-confirm-opponent').disabled = false;
+  oppFinalSelect(name); // kept for any legacy calls
 }
 
 function confirmOpponent() {
   if (!state.opponent) { showToast('Please select an opponent deck', 'error'); return; }
-  state.lastOpponent = state.opponent;
+  state.lastOpponent       = state.opponent;
+  state.oppCardsSeen       = document.getElementById('opp-cards-seen')?.value.trim() || null;
   document.getElementById('game-opponent-label').textContent = state.opponent;
   document.getElementById('opponent-entry-deck-name').textContent = state.matchDeck.archetype_name || 'Unknown';
   state.gameResult = null;
-  state.matchEnd = 'No';
+  state.matchEnd   = 'No';
   state.matchResult = null;
   document.getElementById('game-notes').value = '';
   document.querySelectorAll('[onclick*="gameresult"]').forEach(b => b.classList.remove('selected'));
@@ -5458,6 +5645,17 @@ game_result: gameResultValue, match_result: matchResult,
   document.getElementById('btn-next-game').style.display = state.matchEnd === 'Yes' ? 'none' : 'block';
   showToast('Game submitted!');
   logEvent('game_submitted', { deck: state.matchDeck.archetype_name, opponent: state.opponent, result: state.gameResult });
+  // Save Unknown opponent card sighting for admin review
+  if (state.opponent === 'Unknown' && state.oppCardsSeen) {
+    db.from('opponent_sightings').insert({
+      pilot_name: state.pilot.pilot_name,
+      format:     state.matchFormat || 'Modern',
+      cards_seen: state.oppCardsSeen,
+      reviewed:   false,
+      created_at: new Date().toISOString()
+    }).then(() => {}).catch(() => {});
+    state.oppCardsSeen = null;
+  }
   showScreen('screen-after-game');
 }
 
