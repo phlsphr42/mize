@@ -5492,9 +5492,8 @@ function oppBuildSupertypeGrid() {
     supertypes = [...seen].sort();
   }
   grid.innerHTML = supertypes.map(s =>
-    '<button class="btn btn-secondary" onclick="oppSelectSupertype('' +
-    s.replace(/'/g, "\'") + '')" ' +
-    'style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;">' + s + '</button>'
+    `<button class="btn btn-secondary" onclick="oppSelectSupertype('${s.replace(/'/g, "\'")}')"
+      style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;">${s}</button>`
   ).join('');
 }
 
@@ -5513,9 +5512,8 @@ function oppSelectSupertype(supertype) {
   document.getElementById('opp-step2-card').style.display = '';
   document.getElementById('opp-step2-title').textContent = supertype;
   document.getElementById('opp-subtype-grid').innerHTML = subtypes.map(sub =>
-    '<button class="btn btn-secondary" onclick="oppFinalSelect('' +
-    sub.replace(/'/g, "\'") + '')" ' +
-    'style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;">' + sub + '</button>'
+    `<button class="btn btn-secondary" onclick="oppFinalSelect('${sub.replace(/'/g, "\'")}')"
+      style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;">${sub}</button>`
   ).join('');
 }
 
