@@ -1742,7 +1742,7 @@ function showScreen(id) {
       oppBuildSupertypeGrid();
     }
     state.opponent = null;
-    document.getElementById('opponent-search').value = '';
+    const oppSearch = document.getElementById('opponent-search'); if (oppSearch) oppSearch.value = '';
     document.getElementById('opponent-selected').style.display = 'none';
     document.getElementById('btn-confirm-opponent').disabled = true;
     document.getElementById('archetype-list').innerHTML = '';
