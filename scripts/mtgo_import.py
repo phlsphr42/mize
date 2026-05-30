@@ -100,101 +100,154 @@ def gh_get_raw(url):
         return r.text
     return None
 
-# ── Archetype definitions ─────────────────────────────────────────────────────
-def load_custom_arch_defs():
-    """Load Mize custom archetype definitions from the repo."""
-    url = f'{GITHUB_API}/repos/{MIZE_REPO}/contents/{CUSTOM_ARCHETYPES_PATH}'
-    file_info = gh_get_json(url)
-    if not file_info:
-        print('  Could not fetch custom archetype definitions.')
-        return {}
-    raw = gh_get_raw(file_info['download_url'])
-    if not raw:
-        print('  Could not download custom archetype definitions.')
-        return {}
-    try:
-        data = json.loads(raw)
-        for fmt, fmt_data in data.items():
-            for arch in fmt_data.get('archetypes', []):
-                arch['_name']      = arch.get('Name', '')
-                arch['_mize_name'] = arch.get('MizeName', arch['_name'])
-                arch['_supertype'] = arch.get('Supertype', '')
-        print(f'  Loaded custom definitions for formats: {list(data.keys())}')
-        return data
-    except Exception as e:
-        print(f'  Error parsing custom archetype definitions: {e}')
-        return {}
+# ── Reference decklist similarity matching ────────────────────────────────────
+SIMILARITY_THRESHOLD     = 0.60  # minimum Jaccard similarity for full deck match
+SIMILARITY_THRESHOLD_HAND = 0.35  # lower threshold for 7-card opening hand
+MIN_REFERENCE_DECKS      = 5     # auto-add matched decks until this many refs exist
+MAX_DECK_CARDS           = 80    # ignore lands-only noise above this count
 
-def load_all_arch_defs():
-    """Load only Mize custom archetype definitions — no Badaro fallback."""
-    print('  Loading Mize custom archetype definitions...')
-    custom_by_format = load_custom_arch_defs()
-    all_defs = {}
-    for fmt in VALIDATABLE_FORMATS:
-        custom_defs = custom_by_format.get(fmt, {}).get('archetypes', [])
-        all_defs[fmt] = custom_defs
-        print(f'  {fmt}: {len(custom_defs)} definitions loaded')
-    return all_defs
+def load_reference_fingerprints(fmt):
+    """Load reference decklists from Supabase and build per-archetype fingerprints.
 
-# ── Archetype detection ───────────────────────────────────────────────────────
-def test_conditions(conditions, mainboard, sideboard):
-    if not conditions:
+    Returns:
+        fingerprints: dict of archetype_name -> {
+            'cards': {card_name: avg_quantity},
+            'card_set': set of card names in mainboard,
+            'deck_count': int
+        }
+        deck_counts: dict of archetype_name -> number of reference decks stored
+    """
+    rows = sb_get('reference_decklists',
+        f'?format=eq.{fmt}&main_side=eq.Main&select=archetype_name,card_name,quantity&limit=50000'
+    )
+    if not rows:
+        return {}, {}
+
+    # Group by archetype — each archetype may have multiple reference decks.
+    # deck_index distinguishes them; for fingerprinting we average across all decks.
+    from collections import defaultdict
+    arch_cards = defaultdict(lambda: defaultdict(list))  # arch -> card -> [qty per deck]
+    arch_deck_sets = defaultdict(set)  # arch -> set of deck_index values (proxy for deck count)
+
+    for row in rows:
+        arch  = row['archetype_name']
+        card  = row['card_name']
+        qty   = row.get('quantity', 1)
+        arch_cards[arch][card].append(qty)
+
+    fingerprints = {}
+    for arch, cards in arch_cards.items():
+        # Average quantity per card across all reference decks
+        avg = {card: sum(qtys) / len(qtys) for card, qtys in cards.items()}
+        fingerprints[arch] = {
+            'cards':      avg,
+            'card_set':   set(avg.keys()),
+            'deck_count': max(len(v) for v in cards.values()),  # max occurrences ≈ deck count
+        }
+
+    deck_counts = {arch: fp['deck_count'] for arch, fp in fingerprints.items()}
+    return fingerprints, deck_counts
+
+
+def jaccard_similarity(deck_cards: set, ref_cards: set) -> float:
+    """Jaccard similarity between two sets of card names."""
+    if not deck_cards or not ref_cards:
+        return 0.0
+    intersection = len(deck_cards & ref_cards)
+    union        = len(deck_cards | ref_cards)
+    return intersection / union if union > 0 else 0.0
+
+
+def weighted_similarity(deck: dict, fingerprint: dict) -> float:
+    """Weighted similarity: cards with higher average quantity in reference count more.
+
+    Score = sum of min(deck_qty, ref_avg_qty) for shared cards
+            / max(sum of deck quantities, sum of ref avg quantities)
+    This rewards matching high-copy cards (4-ofs) more than 1-ofs.
+    """
+    ref   = fingerprint['cards']
+    score = sum(min(deck.get(c, 0), ref[c]) for c in ref if c in deck)
+    total = max(sum(deck.values()), sum(ref.values()))
+    return score / total if total > 0 else 0.0
+
+
+def detect_archetype_from_deck(deck_data, fingerprints, threshold=SIMILARITY_THRESHOLD):
+    """Compare a full decklist against reference fingerprints.
+
+    Returns (archetype_name, score) or (None, 0.0) if no match above threshold.
+    """
+    mainboard = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Mainboard', [])}
+    if not mainboard:
+        return None, 0.0
+
+    deck_set = set(mainboard.keys())
+    best_arch, best_score = None, 0.0
+
+    for arch, fp in fingerprints.items():
+        # Use weighted similarity as primary score
+        score = weighted_similarity(mainboard, fp)
+        if score > best_score:
+            best_score = score
+            best_arch  = arch
+
+    if best_score >= threshold:
+        return best_arch, best_score
+    return None, best_score
+
+
+def detect_archetype_from_cards(cards_list, fingerprints, threshold=SIMILARITY_THRESHOLD_HAND):
+    """Compare a 7-card opening hand against reference fingerprints.
+
+    Uses Jaccard similarity (no quantities) since hand is a small sample.
+    Returns archetype_name or None.
+    """
+    hand_set = {c for c in cards_list if c}
+    if not hand_set:
+        return None
+
+    best_arch, best_score = None, 0.0
+    for arch, fp in fingerprints.items():
+        score = jaccard_similarity(hand_set, fp['card_set'])
+        if score > best_score:
+            best_score = score
+            best_arch  = arch
+
+    return best_arch if best_score >= threshold else None
+
+
+def add_to_reference_decklists(deck_data, archetype, fmt, deck_counts):
+    """Add a matched deck to reference_decklists if archetype has < MIN_REFERENCE_DECKS."""
+    current = deck_counts.get(archetype, 0)
+    if current >= MIN_REFERENCE_DECKS:
         return False
-    mb   = {c.lower(): q for c, q in mainboard.items()}
-    sb   = {c.lower(): q for c, q in sideboard.items()}
-    both = dict(mb)
-    for c, q in sb.items():
-        both[c] = both.get(c, 0) + q
-    for cond in conditions:
-        t     = cond.get('Type', '')
-        cards = [c.lower() for c in cond.get('Cards', [])]
-        if t == 'InMainboard':
-            if not all(mb.get(c, 0) > 0 for c in cards): return False
-        elif t == 'InSideboard':
-            if not all(sb.get(c, 0) > 0 for c in cards): return False
-        elif t == 'InMainOrSideboard':
-            if not all(both.get(c, 0) > 0 for c in cards): return False
-        elif t == 'OneOrMoreInMainboard':
-            if not any(mb.get(c, 0) > 0 for c in cards): return False
-        elif t == 'OneOrMoreInSideboard':
-            if not any(sb.get(c, 0) > 0 for c in cards): return False
-        elif t == 'OneOrMoreInMainOrSideboard':
-            if not any(both.get(c, 0) > 0 for c in cards): return False
-        elif t == 'TwoOrMoreInMainboard':
-            if sum(1 for c in cards if mb.get(c, 0) > 0) < 2: return False
-        elif t == 'TwoOrMoreInSideboard':
-            if sum(1 for c in cards if sb.get(c, 0) > 0) < 2: return False
-        elif t == 'TwoOrMoreInMainOrSideboard':
-            if sum(1 for c in cards if both.get(c, 0) > 0) < 2: return False
-        elif t == 'DoesNotContain':
-            if any(both.get(c, 0) > 0 for c in cards): return False
-        elif t == 'DoesNotContainMainboard':
-            if any(mb.get(c, 0) > 0 for c in cards): return False
-        elif t == 'DoesNotContainSideboard':
-            if any(sb.get(c, 0) > 0 for c in cards): return False
-    return True
 
-def detect_archetype_from_cards(cards_list, arch_defs):
-    mainboard = {}
-    for card in cards_list:
-        if card:
-            mainboard[card] = mainboard.get(card, 0) + 1
-    for d in arch_defs:
-        if test_conditions(d.get('Conditions', []), mainboard, {}):
-            return d.get('_mize_name') or d.get('MizeName') or d['_name']
-    return None
-
-def detect_archetype_from_deck(deck_data, arch_defs):
-    mainboard = {}
-    sideboard = {}
+    next_index = current + 1
+    rows = []
     for c in deck_data.get('Mainboard', []):
-        mainboard[c['CardName']] = c.get('Count', 1)
+        rows.append({
+            'archetype_name': archetype,
+            'format':         fmt,
+            'card_name':      c['CardName'],
+            'quantity':       c.get('Count', 1),
+            'main_side':      'Main',
+            'source':         'mtgo_import',
+            'deck_index':     next_index,
+        })
     for c in deck_data.get('Sideboard', []):
-        sideboard[c['CardName']] = c.get('Count', 1)
-    for d in arch_defs:
-        if test_conditions(d.get('Conditions', []), mainboard, sideboard):
-            return d.get('_mize_name') or d.get('MizeName') or d['_name']
-    return None  # None = unknown, caller stores for review
+        rows.append({
+            'archetype_name': archetype,
+            'format':         fmt,
+            'card_name':      c['CardName'],
+            'quantity':       c.get('Count', 1),
+            'main_side':      'Side',
+            'source':         'mtgo_import',
+            'deck_index':     next_index,
+        })
+    if rows:
+        sb_insert('reference_decklists', rows, batch_size=100)
+        deck_counts[archetype] = next_index  # update in-memory count
+        return True
+    return False
 
 # ── Utility functions ─────────────────────────────────────────────────────────
 def determine_event_type(event_name):
@@ -345,9 +398,15 @@ def compute_pilot_summary(results, date_from, date_to):
 def main():
     print(f'Mize MTGO Import — {datetime.now(timezone.utc).isoformat()}')
 
-    # Load archetype definitions for all formats
-    print('Loading archetype definitions...')
-    arch_defs_by_format = load_all_arch_defs()
+    # Load reference fingerprints for all formats
+    print('Loading reference decklist fingerprints...')
+    fingerprints_by_format = {}
+    deck_counts_by_format  = {}
+    for fmt in VALIDATABLE_FORMATS:
+        fp, dc = load_reference_fingerprints(fmt)
+        fingerprints_by_format[fmt] = fp
+        deck_counts_by_format[fmt]  = dc
+        print(f'  {fmt}: {len(fp)} archetype fingerprints loaded')
 
     FORMAT_PATTERNS = {
         'Modern':    ['modern-challenge', 'modern-showcase-challenge'],
@@ -448,8 +507,16 @@ def main():
         for player in standings:
             player_name = player.get('Player')
             deck_data   = decks_by_player.get(player_name, {})
-            arch_defs   = arch_defs_by_format.get(event['format'], [])
-            detected    = detect_archetype_from_deck(deck_data, arch_defs) if deck_data else None
+            fmt         = event['format']
+            fingerprints = fingerprints_by_format.get(fmt, {})
+            deck_counts  = deck_counts_by_format.get(fmt, {})
+            if deck_data:
+                detected, score = detect_archetype_from_deck(deck_data, fingerprints)
+                # Auto-add to reference if match found and archetype needs more examples
+                if detected:
+                    add_to_reference_decklists(deck_data, detected, fmt, deck_counts)
+            else:
+                detected, score = None, 0.0
             player_arch_map[player_name] = detected  # None = unknown
 
             # Store unknown decks for admin review
@@ -459,7 +526,7 @@ def main():
                 unknown_deck_rows.append({
                     'event_id':    event['name'],
                     'player_name': player_name,
-                    'format':      event['format'],
+                    'format':      fmt,
                     'finish':      player.get('Rank'),
                     'mainboard':   json.dumps(mb),
                     'sideboard':   json.dumps(sb),
@@ -556,11 +623,11 @@ def main():
         declared_arch = game.get('deck_archetype', '')
         if fmt not in VALIDATABLE_FORMATS:
             continue
-        arch_defs = arch_defs_by_format.get(fmt, [])
-        if not arch_defs:
+        fingerprints = fingerprints_by_format.get(fmt, {})
+        if not fingerprints:
             continue
-        declared_def = next((d for d in arch_defs if d['_name'] == declared_arch), None)
-        if not declared_def:
+        # For mymtgo validation, check if declared archetype exists in fingerprints
+        if declared_arch not in fingerprints:
             continue
         hand_cards = [game.get(f'card{i}') for i in range(1, 8) if game.get(f'card{i}')]
         if not hand_cards:
@@ -569,7 +636,7 @@ def main():
         is_valid  = test_conditions(declared_def.get('Conditions', []), mainboard, {})
         if is_valid:
             continue
-        corrected = detect_archetype_from_cards(hand_cards, arch_defs)
+        corrected = detect_archetype_from_cards(hand_cards, fingerprints)
         if corrected and corrected != declared_arch:
             corrections.append({
                 'id':          game['id'],
