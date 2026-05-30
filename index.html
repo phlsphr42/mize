@@ -841,7 +841,6 @@
   </div>
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
     <div class="analysis-tabs" style="margin-bottom:0;flex:1;">
-      <div class="analysis-tab" onclick="switchAnalysisTab('bayesian')">Bayesian</div>
       <div class="analysis-tab active" onclick="switchAnalysisTab('chisq')">Chi-squared</div>
     </div>
     <select id="analysis-format" onchange="onAnalysisFormatChange()"
@@ -1026,7 +1025,6 @@
     <label class="label">Sort by</label>
     <div class="toggle-group">
       <div class="toggle-btn selected" onclick="sortChiResults('p')" id="sort-p">P-value</div>
-      <div class="toggle-btn" onclick="sortChiResults('chi')" id="sort-chi">&#967;&#178; stat</div>
       <div class="toggle-btn" onclick="sortChiResults('name')" id="sort-name">Name</div>
     </div>
   </div>
@@ -3614,8 +3612,7 @@ container.innerHTML = `
         <div class="analysis-tab"         onclick="adminTab('activity')"  id="atab-activity">Activity</div>
         <div class="analysis-tab"         onclick="adminTab('sources')"   id="atab-sources">Sources</div>
         <div class="analysis-tab"         onclick="adminTab('import')"    id="atab-import">Import</div>
-        <div class="analysis-tab"         onclick="adminTab('cleanup')"        id="atab-cleanup">Cleanup</div>
-        <div class="analysis-tab"         onclick="adminTab('unknowndecks')"   id="atab-unknowndecks">Unknown Decks</div>
+        <div class="analysis-tab"         onclick="adminTab('cleanup')"        id="atab-cleanup">Unknown Decks</div>
       </div>
       <div id="apanel-overview"></div>
       <div id="apanel-users"         style="display:none;"></div>
@@ -3624,7 +3621,6 @@ container.innerHTML = `
       <div id="apanel-sources"       style="display:none;"></div>
       <div id="apanel-import"        style="display:none;"></div>
       <div id="apanel-cleanup"       style="display:none;"></div>
-      <div id="apanel-unknowndecks"  style="display:none;"></div>
     `;
 
     // ── OVERVIEW ──
@@ -3870,58 +3866,8 @@ container.innerHTML = `
       </div>
       <div id="import-preview"></div>
     `;
-        // ── CLEANUP ──
+        // ── UNKNOWN DECKS (replaces cleanup) ──
     document.getElementById('apanel-cleanup').innerHTML = `
-      <div class="card">
-        <div class="card-title">Archetype Name Cleanup</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
-          Reviews community archetype names and suggests matches to standardized names.
-          Accept to rename, skip to leave as-is, or edit to specify a custom target name.
-        </p>
-        <div class="row" style="margin-bottom:8px;">
-          <div>
-            <label class="label">Format</label>
-            <select id="cleanup-format">
-              <option value="Modern">Modern</option>
-              <option value="Legacy">Legacy</option>
-              <option value="Pioneer">Pioneer</option>
-              <option value="Standard">Standard</option>
-              <option value="Pauper">Pauper</option>
-              <option value="Vintage">Vintage</option>
-              <option value="Premodern">Premodern</option>
-            </select>
-          </div>
-          <div>
-            <label class="label">Min confidence</label>
-            <select id="cleanup-confidence">
-              <option value="0.5">50%+</option>
-              <option value="0.7" selected>70%+</option>
-              <option value="0.85">85%+</option>
-              <option value="1.0">Exact only</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn btn-secondary" onclick="loadCleanupSuggestions()" style="margin-bottom:0;">
-          Load suggestions
-        </button>
-      </div>
-      <div id="cleanup-results"></div>
-      <div id="cleanup-pending" style="display:none;">
-        <div class="card">
-          <div class="card-title">Pending renames</div>
-          <div id="cleanup-pending-list"></div>
-          <button class="btn btn-primary" onclick="applyCleanupRenames()" style="margin-top:8px;margin-bottom:0;">
-            Apply all renames
-          </button>
-          <button class="btn btn-secondary" onclick="clearCleanupRenames()" style="margin-top:4px;margin-bottom:0;">
-            Clear all
-          </button>
-        </div>
-      </div>
-    `;
-
-    // ── UNKNOWN DECKS ──
-    document.getElementById('apanel-unknowndecks').innerHTML = `
       <div class="card">
         <div class="card-title">Unknown Decks Review</div>
         <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
@@ -3966,7 +3912,7 @@ container.innerHTML = `
 }
 
 window.adminTab = function(tab) {
-  ['overview','users','features','activity','sources','import','cleanup','unknowndecks'].forEach(t => {
+  ['overview','users','features','activity','sources','import','cleanup'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
   });
@@ -5367,7 +5313,7 @@ function computeChiSquared(rows) {
           direction: wrWith > wrWithout ? 'positive' : 'negative',
           wrWith: wrWith, wrWithout: wrWithout,
           sampleWith: cd.total, sampleWithout: base.total,
-          wilsonLow: wilsonW.low, wilsonHigh: wilsonW.high,
+          wilsonLow: wilsonW.low, wilsonHigh: wilsonW.high,  // already in %
           mulliganData: rows.find(r => r.card_name === card)?.mulligan_data || null,
           insufficientData: false
         });
@@ -5416,7 +5362,7 @@ function lnGamma(z) {
 
 function sortChiResults(key) {
   state.chiSortKey = key;
-  ['p','chi','name'].forEach(k => { document.getElementById('sort-' + k).classList.toggle('selected', k === key); });
+  ['p','name'].forEach(k => { document.getElementById('sort-' + k).classList.toggle('selected', k === key); });
   if (state.cache.c) renderChiResults(state.cache.c.data, true);
 }
 
@@ -5496,7 +5442,7 @@ function renderChiResults(result, fromCache) {
     } else if (!r.insufficientData && r.chi2 != null && r.p != null) {
           const rowSigClass = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
           const wilsonStr = r.wilsonLow != null
-            ? ' <span style="color:var(--text2);font-size:10px;">[' + (r.wilsonLow*100).toFixed(1) + '–' + (r.wilsonHigh*100).toFixed(1) + '%]</span>'
+            ? ' <span style="color:var(--text2);font-size:10px;">[' + r.wilsonLow.toFixed(1) + '–' + r.wilsonHigh.toFixed(1) + '%]</span>'
             : '';
           html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
             '<div style="font-size:11px;color:var(--text2);min-width:40px;">' + r.copyCount + '×</div>' +
@@ -5536,16 +5482,23 @@ function renderChiResults(result, fromCache) {
                 }
               }
               const wM = wilsonInterval(withData.wins, withData.total);
-              wilsonMStr = ' <span style="color:var(--text2);font-size:10px;">[' + (wM.low*100).toFixed(1) + '–' + (wM.high*100).toFixed(1) + '%]</span>';
+              wilsonMStr = ' <span style="color:var(--text2);font-size:10px;">[' + wM.low.toFixed(1) + '–' + wM.high.toFixed(1) + '%]</span>';
               const diffM = wrWO != null ? ((wrW - wrWO)*100).toFixed(1) : null;
               const dirM = diffM != null && parseFloat(diffM) >= 0 ? 'dir-pos' : 'dir-neg';
               const dirLM = diffM != null && parseFloat(diffM) >= 0 ? '▲ +' : '▼ −';
-              mullHtml += '<div style="padding:4px 10px 4px 24px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface2);opacity:0.9;">' +
-                '<div style="font-size:10px;color:var(--text2);min-width:50px;">' + mullLabels[m] + '</div>' +
-                '<div style="font-size:10px;color:var(--text2);">' + withData.total + 'g</div>' +
-                '<div style="font-size:10px;">WR&nbsp;' + (wrW*100).toFixed(1) + '%' + wilsonMStr + '</div>' +
-                (diffM != null ? '<span class="' + dirM + '" style="font-size:10px;">' + dirLM + Math.abs(parseFloat(diffM)) + '%</span>' : '') +
-                chiStr +
+              // Match column order of main rows: label | games | chi2 | delta [wilson] | sig
+              const sigMFinal = chiStr.includes('sig-high') ? '**' : chiStr.includes('sig-med') ? '*' : chiStr ? 'ns' : '';
+              const sigMCls2  = chiStr.includes('sig-high') ? 'sig-high' : chiStr.includes('sig-med') ? 'sig-med' : 'sig-low';
+              const chi2DisplayM = chiStr ? chiStr.replace(/ <span.*?<\/span>/,'').trim() : '';
+              mullHtml += '<div style="padding:4px 10px 4px 24px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;background:var(--surface2);">' +
+                '<div style="font-size:10px;color:var(--text2);min-width:48px;">' + mullLabels[m] + '</div>' +
+                '<div style="font-size:10px;color:var(--text2);min-width:36px;">' + withData.total + 'g</div>' +
+                '<div style="font-size:10px;min-width:70px;">' + (chi2DisplayM || '—') + '</div>' +
+                '<div style="font-size:10px;min-width:0;flex:1;">' +
+                  (diffM != null ? '<span class="' + dirM + '">' + dirLM + Math.abs(parseFloat(diffM)) + '%</span>' : '') +
+                  wilsonMStr +
+                '</div>' +
+                (sigMFinal ? '<span class="' + sigMCls2 + '" style="font-size:10px;">' + sigMFinal + '</span>' : '') +
                 '</div>';
             }
             if (mullHtml) html += mullHtml;
@@ -5573,7 +5526,82 @@ function renderChiResults(result, fromCache) {
   };
 
   if (result.scope === 'compare') {
-    el.innerHTML = '<div class="compare-grid"><div>' + renderTable(result.myResults, 'My data') + '</div><div>' + renderTable(result.allResults, 'All data') + '</div></div>';
+    // Build unified card list sorted by best p-value across both datasets
+    const allCardNames = new Set([
+      ...result.myResults.map(r => r.card),
+      ...result.allResults.map(r => r.card)
+    ]);
+    const myByCard  = {};
+    const allByCard = {};
+    result.myResults.forEach(r  => { if (!myByCard[r.card])  myByCard[r.card]  = []; myByCard[r.card].push(r); });
+    result.allResults.forEach(r => { if (!allByCard[r.card]) allByCard[r.card] = []; allByCard[r.card].push(r); });
+
+    // Sort cards by best p-value in my data (or all data if no my data)
+    const sortedCards = [...allCardNames].sort((a, b) => {
+      const getBest = (byCard, name) => {
+        const rows = (byCard[name] || []).filter(r => !r.insufficientData);
+        return rows.length ? Math.min(...rows.map(r => r.p)) : Infinity;
+      };
+      const bestA = Math.min(getBest(myByCard, a),  getBest(allByCard, a));
+      const bestB = Math.min(getBest(myByCard, b),  getBest(allByCard, b));
+      if (state.chiSortKey === 'name') return a.localeCompare(b);
+      return bestA - bestB;
+    });
+
+    const renderCardBlock = (cardName, cardRows, isCommunity) => {
+      if (!cardRows || !cardRows.length) {
+        return '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;padding:16px;color:var(--text2);font-size:12px;">No data</div>';
+      }
+      // Reuse existing per-card render logic
+      const sufficientRows = cardRows.filter(r => !r.insufficientData);
+      const bestRow = sufficientRows.length > 0
+        ? sufficientRows.reduce((a, b) => a.p < b.p ? a : b)
+        : cardRows[0];
+      const sigClass = bestRow.insufficientData ? 'sig-low'
+        : bestRow.p < 0.01 ? 'sig-high' : bestRow.p < 0.05 ? 'sig-med' : 'sig-low';
+      const sigLabel = bestRow.insufficientData ? '⚠'
+        : bestRow.p < 0.01 ? '**' : bestRow.p < 0.05 ? '*' : 'ns';
+      let html = '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;">';
+      html += '<div style="background:var(--surface2);padding:6px 10px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div style="font-size:12px;font-weight:700;">' + cardName + (isCommunity ? ' <span style="font-size:10px;color:var(--warning);">⚠all</span>' : '') + '</div>' +
+        '<span class="' + sigClass + '" style="font-size:11px;">' + sigLabel + '</span>' +
+        '</div>';
+      for (const r of cardRows.sort((a, b) => a.copyCount - b.copyCount)) {
+        const dirClass = r.direction === 'positive' ? 'dir-pos' : 'dir-neg';
+        const dirLabel = r.direction === 'positive' ? '▲ +' : '▼ −';
+        const wrDiff = ((r.wrWith - r.wrWithout) * 100).toFixed(1);
+        const wilsonStr = r.wilsonLow != null
+          ? ' <span style="color:var(--text2);font-size:10px;">[' + r.wilsonLow.toFixed(1) + '–' + r.wilsonHigh.toFixed(1) + '%]</span>' : '';
+        if (r.insufficientData) {
+          html += '<div style="padding:5px 10px;border-top:1px solid var(--border);display:flex;gap:6px;align-items:center;opacity:0.6;">' +
+            '<span style="font-size:10px;color:var(--text2);min-width:24px;">' + r.copyCount + '×</span>' +
+            '<span style="font-size:10px;color:var(--text2);">' + r.sampleWith + 'g</span>' +
+            '<span style="font-size:10px;color:var(--warning);">⚠</span>' +
+            '<span class="' + dirClass + '" style="font-size:10px;">' + dirLabel + Math.abs(wrDiff) + '%</span>' +
+            '</div>';
+        } else {
+          const rowSigCls = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
+          html += '<div style="padding:5px 10px;border-top:1px solid var(--border);display:flex;gap:6px;align-items:center;">' +
+            '<span style="font-size:10px;color:var(--text2);min-width:24px;">' + r.copyCount + '×</span>' +
+            '<span style="font-size:10px;color:var(--text2);min-width:36px;">' + r.sampleWith + 'g</span>' +
+            '<span style="font-size:10px;min-width:60px;">χ²&nbsp;' + r.chi2.toFixed(2) + '</span>' +
+            '<span style="font-size:10px;min-width:50px;">p&nbsp;' + (r.p < 0.0001 ? '&lt;0.0001' : r.p.toFixed(4)) + '</span>' +
+            '<span style="flex:1;"><span class="' + dirClass + '" style="font-size:10px;">' + dirLabel + Math.abs(wrDiff) + '%</span>' + wilsonStr + '</span>' +
+            '<span class="' + rowSigCls + '" style="font-size:10px;">' + (r.p < 0.01 ? '**' : r.p < 0.05 ? '*' : 'ns') + '</span>' +
+            '</div>';
+        }
+      }
+      html += '</div>';
+      return html;
+    };
+
+    let leftHtml  = '<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">My data</div>';
+    let rightHtml = '<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">All data</div>';
+    for (const cardName of sortedCards.slice(0, 100)) {
+      leftHtml  += renderCardBlock(cardName, myByCard[cardName],  false);
+      rightHtml += renderCardBlock(cardName, allByCard[cardName], true);
+    }
+    el.innerHTML = '<div class="compare-grid"><div>' + leftHtml + '</div><div>' + rightHtml + '</div></div>';
   } else {
     const rows = result.scope === 'mine' ? result.myResults : result.allResults;
     el.innerHTML = '<div class="card" style="padding:12px;">' + renderTable(rows, '') + '</div>';
