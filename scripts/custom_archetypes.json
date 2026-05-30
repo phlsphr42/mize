@@ -338,9 +338,164 @@
           "Marionette Apprentice",
           "Gravecrawler"
         ]
+      },
+      "Eldrazi Saga": {
+        "description": "Eldrazi artifact synergy deck using Darksteel Citadel and Urza's Saga",
+        "shared_cards": [
+          "Darksteel Citadel",
+          "Devourer of Destiny",
+          "Chalice of the Void"
+        ]
       }
     },
     "archetypes": [
+      {
+        "Name": "LivingEndAlt",
+        "MizeName": "Living End",
+        "Supertype": "Living End",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ardent Plea"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Curator of Mysteries"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Violent Outburst"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Crashing Footfalls"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "JeskaiBlink",
+        "MizeName": "Jeskai Blink",
+        "Supertype": "Blink",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Phelia, Exuberant Shepherd"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Quantum Riddler"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Ragavan, Nimble Pilferer",
+              "Lightning Bolt",
+              "Galvanic Discharge"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Thoughtseize"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Overlord of the Balemurk"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "EldraziSaga",
+        "MizeName": "Eldrazi Saga",
+        "Supertype": "Eldrazi Saga",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Darksteel Citadel"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Devourer of Destiny"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Chalice of the Void",
+              "Urza's Saga"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Utopia Sprawl"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Urza's Tower"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Basking Broodscale"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "DredgePhoenix",
+        "MizeName": "Dredge Phoenix",
+        "Supertype": "Dredge",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arclight Phoenix"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Creeping Chill"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Exhibition Tidecaller",
+              "Burning Inquiry",
+              "Stinkweed Imp"
+            ]
+          },
+          {
+            "Type": "DoesNotContain",
+            "Cards": [
+              "Lion's Eye Diamond"
+            ]
+          }
+        ]
+      },
       {
         "Name": "WoodlandsOmniscience",
         "MizeName": "Gruul Omniscience",
@@ -379,60 +534,6 @@
             "Type": "InMainboard",
             "Cards": [
               "Adeliz, the Cinder Wind"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "WBBlink",
-        "MizeName": "Orzhov Blink",
-        "Supertype": "Blink",
-        "_name": "WBBlink",
-        "_mize_name": "Orzhov Blink",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ephemerate"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Solitude"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Overlord of the Balemurk"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "UWBlink",
-        "MizeName": "Orzhov Blink",
-        "Supertype": "Blink",
-        "_name": "UWBlink",
-        "_mize_name": "Orzhov Blink",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ephemerate"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Solitude"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Overlord of the Balemurk"
             ]
           }
         ]
