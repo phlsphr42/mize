@@ -1095,40 +1095,6 @@
         ]
       },
       {
-        "Name": "Affinity",
-        "MizeName": "Affinity",
-        "Supertype": "Affinity",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Memnite"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ornithopter"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Razortide Bridge"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Cranial Plating",
-              "Forging the Anchor",
-              "Frogmite",
-              "Patchwork Automaton"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "GruulThroughtheBreach",
         "MizeName": "Gruul Through the Breach",
         "Supertype": "Gruul Through the Breach",
@@ -1216,6 +1182,219 @@
               "Phlage, Titan of Fire's Fury",
               "Teferi, Time Raveler",
               "Terminus"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "EldraziRamp",
+        "MizeName": "Eldrazi Ramp",
+        "Supertype": "Eldrazi Ramp",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Eldrazi Temple"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Kozilek's Command"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Malevolent Rumble"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Ancient Stirrings",
+              "Emrakul, the Promised End",
+              "Forest",
+              "World Breaker"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "OrzhovBlink",
+        "MizeName": "Orzhov Blink",
+        "Supertype": "Orzhov Blink",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Aether Vial"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fatal Push"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Marsh Flats"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Ephemerate",
+              "Recruiter of the Guard"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "SamCombo",
+        "MizeName": "Sam Combo",
+        "Supertype": "Sam Combo",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Birthing Ritual"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Boggart Trawler"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Cauldron Familiar"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "BroodscaleCombo",
+        "MizeName": "Broodscale Combo",
+        "Supertype": "Broodscale Combo",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ancient Stirrings"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Basking Broodscale"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Blade of the Bloodchief"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Grove of the Burnwillows",
+              "Walking Ballista"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Affinity",
+        "MizeName": "Affinity",
+        "Supertype": "Affinity",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Emry, Lurker of the Loch"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Hallowed Fountain"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Kappa Cannoneer"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Seachrome Coast",
+              "Tormod's Crypt"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "BlueBelcher",
+        "MizeName": "Blue Belcher",
+        "Supertype": "Blue Belcher",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Beyeen Veil"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Disrupting Shoal"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fallaji Archaeologist"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "BorosEnergy",
+        "MizeName": "Boros Energy",
+        "Supertype": "Boros Energy",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ajani, Nacatl Pariah"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Amped Raptor"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arid Mesa"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Flooded Strand",
+              "Plains",
+              "Static Prison"
             ]
           }
         ]
@@ -2246,50 +2425,6 @@
         ]
       },
       {
-        "Name": "EldraziRamp",
-        "MizeName": "Eldrazi Ramp",
-        "Supertype": "Eldrazi Ramp",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Utopia Sprawl"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ugin's Labyrinth"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Sowing Mycospawn",
-              "Malevolent Rumble"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Urza's Tower"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Basking Broodscale"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Eldrazi Linebreaker"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "EldraziAggro",
         "MizeName": "Eldrazi Aggro",
         "Supertype": "Eldrazi Aggro",
@@ -2317,37 +2452,6 @@
             "Type": "DoesNotContain",
             "Cards": [
               "Basking Broodscale"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Urza's Tower"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "BroodscaleCombo",
-        "MizeName": "Broodscale Combo",
-        "Supertype": "Broodscale Combo",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Basking Broodscale"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Blade of the Bloodchief"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Utopia Sprawl"
             ]
           },
           {
@@ -2922,62 +3026,6 @@
         ]
       },
       {
-        "Name": "OrzhovBlink",
-        "MizeName": "Orzhov Blink",
-        "Supertype": "Blink",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ephemerate"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Solitude"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Overlord of the Balemurk"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Ocelot Pride",
-              "Guide of Souls"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Thoughtseize"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Goryo's Vengeance"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Counterspell"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Quantum Riddler"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "DomainZoo",
         "MizeName": "Domain Zoo",
         "Supertype": "Domain Zoo",
@@ -3005,55 +3053,6 @@
             "Cards": [
               "Leyline Binding",
               "Lightning Bolt"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "BorosEnergy",
-        "MizeName": "Boros Energy",
-        "Supertype": "Energy",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ocelot Pride"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Guide of Souls"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ajani, Nacatl Pariah"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Orcish Bowmasters"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Thoughtseize"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Ob Nixilis, the Adversary"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Ephemerate"
             ]
           }
         ]
@@ -3120,38 +3119,6 @@
               "Simic Growth Chamber",
               "Golgari Rot Farm",
               "Gruul Turf"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "BlueBelcher",
-        "MizeName": "Blue Belcher",
-        "Supertype": "Blue Belcher",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Goblin Charbelcher"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Lotus Bloom"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Tameshi, Reality Architect",
-              "Waterlogged Teachings"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Through the Breach"
             ]
           }
         ]
@@ -4144,38 +4111,6 @@
             "Cards": [
               "Summoner's Pact",
               "Eldritch Evolution"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "SamCombo",
-        "MizeName": "Sam Combo",
-        "Supertype": "Sam Combo",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Samwise Gamgee"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Cauldron Familiar"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Gilded Goose"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Carrion Feeder",
-              "Viscera Seer"
             ]
           }
         ]
