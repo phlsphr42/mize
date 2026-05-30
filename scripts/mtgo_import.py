@@ -719,28 +719,38 @@ def main():
         if not hand_cards:
             continue
         mainboard = {card: hand_cards.count(card) for card in set(hand_cards)}
-        is_valid  = test_conditions(declared_def.get('Conditions', []), mainboard, {})
-        if is_valid:
-            continue
-        corrected = detect_archetype_from_cards(hand_cards, fingerprints)
-        if corrected and corrected != declared_arch:
+        # Use similarity matching against fingerprint to validate the declared archetype
+        best_arch, score = detect_archetype_from_deck(
+            {'Mainboard': [{'CardName': c, 'Count': v} for c, v in mainboard.items()]},
+            fingerprints
+        )
+        # If the hand doesn't match the declared archetype but does match another, flag it
+        if best_arch and best_arch != declared_arch:
             corrections.append({
                 'id':          game['id'],
                 'external_id': game['external_id'],
                 'pilot_name':  game['pilot_name'],
                 'format':      fmt,
                 'declared':    declared_arch,
-                'corrected':   corrected,
-                'hand':        hand_cards
+                'corrected':   best_arch,
+                'hand':        hand_cards,
+                'score':       round(score, 3)
             })
 
     print(f'Corrections needed: {len(corrections)}')
     if corrections:
+        sb_hdrs = {
+            'apikey':        SUPABASE_KEY,
+            'Authorization': f'Bearer {SUPABASE_KEY}',
+            'Content-Type':  'application/json',
+            'Prefer':        'return=minimal'
+        }
         for fix in corrections:
             r = requests.patch(
                 f'{SUPABASE_URL}/rest/v1/raw_game_log?id=eq.{fix["id"]}',
-                headers={**headers, 'Prefer': 'return=minimal'},
-                data=json.dumps({'deck_archetype': fix['corrected']})
+                headers=sb_hdrs,
+                data=json.dumps({'deck_archetype': fix['corrected']}),
+                timeout=10
             )
             if r.status_code not in [200, 204]:
                 print(f'  Error updating {fix["external_id"]}: {r.status_code}')
