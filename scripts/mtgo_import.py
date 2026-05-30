@@ -185,22 +185,12 @@ def load_reference_fingerprints(fmt):
         }
         deck_counts: dict of archetype_name -> number of reference decks stored
     """
-    # Fetch all rows with pagination to handle large tables
-    rows = []
-    offset = 0
-    while True:
-        print(f'    Fetching reference_decklists offset={offset}...', flush=True)
-        batch = sb_get('reference_decklists',
-            f'?format=eq.{fmt}&main_side=eq.Main&select=archetype_name,card_name,quantity'
-            f'&limit=1000&offset={offset}'
-        )
-        if not batch:
-            break
-        rows.extend(batch)
-        print(f'    Got {len(batch)} rows (total so far: {len(rows)})', flush=True)
-        if len(batch) < 1000:
-            break
-        offset += 1000
+    # Fetch all rows — sb_get handles pagination internally
+    print(f'    Fetching reference_decklists for {fmt}...', flush=True)
+    rows = sb_get('reference_decklists',
+        f'?format=eq.{fmt}&main_side=eq.Main&select=archetype_name,card_name,quantity'
+    )
+    print(f'    Got {len(rows)} total rows for {fmt}', flush=True)
     if not rows:
         return {}, {}
 
