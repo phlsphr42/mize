@@ -2072,6 +2072,193 @@ async function loadCustomTaxonomy() {
     return null;
   }
 }
+// ── RE-SCAN UNKNOWN DECKS QUEUE ───────────────────────────────────────────────
+
+const RESCAN_THRESHOLD = 0.60;  // weighted similarity threshold (matches mtgo_import.py)
+
+async function buildReferenceFingerprints(format) {
+  // Fetch all reference decklists for this format (mainboard only)
+  const { data, error } = await db.from('reference_decklists')
+    .select('archetype_name, card_name, quantity')
+    .eq('format', format)
+    .eq('main_side', 'Main')
+    .limit(50000);
+
+  if (error || !data?.length) return {};
+
+  // Group by archetype — average quantity per card across all reference decks
+  const byArch = {};
+  data.forEach(r => {
+    if (!byArch[r.archetype_name]) byArch[r.archetype_name] = {};
+    if (!byArch[r.archetype_name][r.card_name]) byArch[r.archetype_name][r.card_name] = [];
+    byArch[r.archetype_name][r.card_name].push(r.quantity);
+  });
+
+  const fingerprints = {};
+  for (const [arch, cards] of Object.entries(byArch)) {
+    const avg = {};
+    for (const [card, qtys] of Object.entries(cards)) {
+      avg[card] = qtys.reduce((a, b) => a + b, 0) / qtys.length;
+    }
+    fingerprints[arch] = avg;
+  }
+  return fingerprints;
+}
+
+function weightedSimilarity(deckCards, fingerprint) {
+  // Same algorithm as mtgo_import.py
+  const score = Object.entries(fingerprint)
+    .reduce((s, [card, refQty]) => s + Math.min(deckCards[card] || 0, refQty), 0);
+  const deckTotal = Object.values(deckCards).reduce((a, b) => a + b, 0);
+  const refTotal  = Object.values(fingerprint).reduce((a, b) => a + b, 0);
+  const total = Math.max(deckTotal, refTotal);
+  return total > 0 ? score / total : 0;
+}
+
+function bestMatch(deckCards, fingerprints) {
+  let bestArch = null, bestScore = 0;
+  for (const [arch, fp] of Object.entries(fingerprints)) {
+    const score = weightedSimilarity(deckCards, fp);
+    if (score > bestScore) { bestScore = score; bestArch = arch; }
+  }
+  return bestScore >= RESCAN_THRESHOLD ? { arch: bestArch, score: bestScore } : null;
+}
+
+async function reScanUnknownDecks() {
+  const format    = document.getElementById('ud-format')?.value || 'Modern';
+  const progressEl = document.getElementById('ud-rescan-progress');
+  const statsEl    = document.getElementById('ud-stats');
+
+  progressEl.style.display = '';
+  progressEl.textContent = 'Building reference fingerprints...';
+
+  // Load fingerprints
+  const fingerprints = await buildReferenceFingerprints(format);
+  const archCount = Object.keys(fingerprints).length;
+  if (!archCount) {
+    progressEl.textContent = 'No reference decklists found for ' + format + '. Upload reference_decks_seed.json first.';
+    return;
+  }
+  progressEl.textContent = `Loaded ${archCount} archetypes. Fetching unknown decks...`;
+
+  // Fetch all unreviewed unknown decks for this format in batches
+  let allDecks = [];
+  let offset = 0;
+  while (true) {
+    const { data, error } = await db.from('mtgo_unknown_decks')
+      .select('id, event_id, player_name, format, finish, mainboard, sideboard')
+      .eq('format', format)
+      .eq('reviewed', false)
+      .range(offset, offset + 499);
+    if (error || !data?.length) break;
+    allDecks.push(...data);
+    if (data.length < 500) break;
+    offset += 500;
+  }
+
+  if (!allDecks.length) {
+    progressEl.textContent = 'No unreviewed decks found.';
+    return;
+  }
+
+  progressEl.textContent = `Scanning ${allDecks.length} decks...`;
+
+  let matched = 0, processed = 0;
+  const newRefRows = [];
+  const refCounts = {}; // track how many refs we have per arch during scan
+
+  // Get current ref counts
+  const { data: refData } = await db.from('reference_decklists')
+    .select('archetype_name')
+    .eq('format', format)
+    .eq('main_side', 'Main')
+    .limit(50000);
+  if (refData) {
+    refData.forEach(r => {
+      refCounts[r.archetype_name] = (refCounts[r.archetype_name] || 0) + 1;
+    });
+    // Convert card counts to deck counts (roughly 60 cards per deck)
+    Object.keys(refCounts).forEach(k => {
+      refCounts[k] = Math.round(refCounts[k] / 60);
+    });
+  }
+
+  for (const deck of allDecks) {
+    const mb = typeof deck.mainboard === 'string'
+      ? JSON.parse(deck.mainboard) : deck.mainboard;
+
+    const match = bestMatch(mb, fingerprints);
+    if (match) {
+      // Update mtgo_unknown_decks
+      await db.from('mtgo_unknown_decks').update({
+        assigned_name:      match.arch,
+        assigned_supertype: null,
+        reviewed:           true,
+        reviewed_at:        new Date().toISOString(),
+        reviewed_by:        'rescan'
+      }).eq('id', deck.id);
+
+      // Update mtgo_results and mtgo_matches
+      await db.from('mtgo_results')
+        .update({ archetype_canonical: match.arch, archetype_raw: match.arch })
+        .eq('event_id', deck.event_id)
+        .eq('player_name', deck.player_name);
+      await db.from('mtgo_matches')
+        .update({ player1_arch: match.arch })
+        .eq('event_id', deck.event_id)
+        .eq('player1', deck.player_name);
+      await db.from('mtgo_matches')
+        .update({ player2_arch: match.arch })
+        .eq('event_id', deck.event_id)
+        .eq('player2', deck.player_name);
+
+      // Add to reference decklists if needed
+      const currentCount = refCounts[match.arch] || 0;
+      if (currentCount < 5) {
+        const sb = typeof deck.sideboard === 'string'
+          ? JSON.parse(deck.sideboard || '{}') : (deck.sideboard || {});
+        const deckIndex = currentCount + 1;
+        const rows = [
+          ...Object.entries(mb).filter(([c]) => c).map(([card, qty]) => ({
+            archetype_name: match.arch, format,
+            card_name: card, quantity: qty,
+            main_side: 'Main', source: 'rescan',
+            deck_index: deckIndex
+          })),
+          ...Object.entries(sb).filter(([c]) => c).map(([card, qty]) => ({
+            archetype_name: match.arch, format,
+            card_name: card, quantity: qty,
+            main_side: 'Side', source: 'rescan',
+            deck_index: deckIndex
+          }))
+        ];
+        newRefRows.push(...rows);
+        refCounts[match.arch] = deckIndex;
+      }
+
+      matched++;
+    }
+
+    processed++;
+    if (processed % 50 === 0) {
+      progressEl.textContent = `Scanned ${processed}/${allDecks.length} — matched ${matched} so far...`;
+      await new Promise(r => setTimeout(r, 0)); // yield to UI
+    }
+  }
+
+  // Batch insert new reference rows
+  if (newRefRows.length) {
+    const BATCH = 500;
+    for (let i = 0; i < newRefRows.length; i += BATCH) {
+      await db.from('reference_decklists').insert(newRefRows.slice(i, i + BATCH));
+    }
+  }
+
+  progressEl.textContent = `✓ Complete — ${matched} of ${allDecks.length} decks matched and assigned. ${allDecks.length - matched} remain unknown.`;
+
+  // Refresh stats and deck list
+  await loadUnknownDecks();
+}
 
 async function loadUnknownDecks() {
   const format  = document.getElementById('ud-format')?.value || 'Modern';
@@ -4202,7 +4389,13 @@ container.innerHTML = `
               Load decks
             </button>
           </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn btn-primary" onclick="reScanUnknownDecks()" style="margin-bottom:0;">
+              ↻ Re-scan queue
+            </button>
+          </div>
         </div>
+        <div id="ud-rescan-progress" style="display:none;margin-bottom:8px;font-size:12px;color:var(--text2);"></div>
         <div id="ud-stats" style="font-size:12px;color:var(--text2);"></div>
       </div>
       <div id="ud-deck-container"></div>
