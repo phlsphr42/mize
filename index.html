@@ -2196,10 +2196,18 @@ async function renderUnknownDeck() {
             </select>
           </div>
         </div>
-        <div style="margin-bottom:8px;">
-          <label class="label">Or create new subtype name</label>
-          <input type="text" id="ud-custom-name" placeholder="e.g. Grixis Shadow"
-            style="margin-bottom:0;font-size:12px;" oninput="udCustomNameChanged()">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px;">— or create new —</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <div style="flex:1;min-width:160px;">
+            <label class="label">New supertype name</label>
+            <input type="text" id="ud-custom-supertype" placeholder="e.g. Temur Control"
+              style="margin-bottom:0;font-size:12px;" oninput="udCustomSupertypeChanged()">
+          </div>
+          <div style="flex:1;min-width:160px;">
+            <label class="label">New subtype name</label>
+            <input type="text" id="ud-custom-name" placeholder="e.g. Grixis Shadow"
+              style="margin-bottom:0;font-size:12px;" oninput="udCustomNameChanged()">
+          </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="udAssign()" style="margin-bottom:0;">
@@ -2243,7 +2251,6 @@ async function udSupertypeChanged() {
 }
 
 function udCustomNameChanged() {
-  // Clear subtype dropdown when typing custom name
   const custom = document.getElementById('ud-custom-name')?.value.trim();
   if (custom) {
     const subtypeSel = document.getElementById('ud-subtype');
@@ -2251,19 +2258,33 @@ function udCustomNameChanged() {
   }
 }
 
+function udCustomSupertypeChanged() {
+  const customST = document.getElementById('ud-custom-supertype')?.value.trim();
+  if (customST) {
+    // Clear supertype dropdown when typing custom supertype
+    const supertypeSel = document.getElementById('ud-supertype');
+    if (supertypeSel) supertypeSel.value = '-- Select supertype --';
+    // Also clear subtype dropdown since supertype changed
+    const subtypeSel = document.getElementById('ud-subtype');
+    if (subtypeSel) subtypeSel.innerHTML = '<option value="">-- Enter subtype name below --</option>';
+  }
+}
+
 async function udAssign() {
   const deck      = udDecks[udDeckIndex];
-  const supertype = document.getElementById('ud-supertype')?.value;
-  const subtype   = document.getElementById('ud-subtype')?.value;
-  const custom    = document.getElementById('ud-custom-name')?.value.trim();
-  const mizeName  = custom || subtype;
+  const supertypeSelect  = document.getElementById('ud-supertype')?.value;
+  const subtypeSelect    = document.getElementById('ud-subtype')?.value;
+  const customName       = document.getElementById('ud-custom-name')?.value.trim();
+  const customSupertype  = document.getElementById('ud-custom-supertype')?.value.trim();
+  const mizeName         = customName || subtypeSelect;
+  const supertype        = customSupertype || supertypeSelect;
 
   if (!mizeName || mizeName === '-- Select supertype first --') {
     showToast('Please select or enter a subtype name', 'error');
     return;
   }
   if (!supertype || supertype === '-- Select supertype --') {
-    showToast('Please select a supertype', 'error');
+    showToast('Please select or enter a supertype', 'error');
     return;
   }
 
@@ -2344,7 +2365,8 @@ async function udSuggestDefinition() {
   const fours  = Object.entries(mb).filter(([,n]) => n >= 4).map(([c]) => c).sort();
   const threes = Object.entries(mb).filter(([,n]) => n === 3).map(([c]) => c).sort();
   const custom = document.getElementById('ud-custom-name')?.value.trim();
-  const supertype = document.getElementById('ud-supertype')?.value;
+  const customST = document.getElementById('ud-custom-supertype')?.value.trim();
+  const supertype = customST || document.getElementById('ud-supertype')?.value;
   const mizeName  = custom || document.getElementById('ud-subtype')?.value || 'Unknown';
 
   // Build a suggested JSON definition
@@ -3051,7 +3073,24 @@ function resolveBadaroName(badaroName, refNames) {
     'Creativity':       'Indomitable Creativity',
     'BassimAffinit':    'Affinity',
     'Lantern':          'Lantern Control',
-    'GoryoReanimator':  "Goryo's Vengeance",
+    "Goryo's Vengeance": "Goryo's Vengeance",
+    // Community name variants -> canonical Mize names (verified by card evidence)
+    '4c GenericBlink':      'Domain Zoo',      // Scion of Draco + Leyline Binding confirmed
+    '4C GenericBlink':      'Domain Zoo',
+    'Esper GenericBlink':   'Esper Blink',     // Solitude + Ephemerate confirmed
+    'Orzhov GenericBlink':  'Orzhov Blink',    // Phelia + Aether Vial confirmed
+    'Mardu GenericBlink':   'Orzhov Blink',
+    'Azorius GenericBlink': 'Esper Blink',
+    'WBBlink':              'Orzhov Blink',
+    'UWBlink':              'Esper Blink',
+    'Esper Goryo's':       "Goryo's Vengeance",
+    'Gruul Basking Broodscale Combo': 'Broodscale Combo', // combo pieces confirmed
+    'Mono-Green Basking Broodscale Combo': 'Broodscale Combo',
+    'Mono-Blue Tron':       'Blue Tron',       // Tron lands + Expedition Map confirmed
+    // NOTE: 'Eldrazi' NOT mapped — could be Aggro/Ramp/Tron, needs card evidence
+    // NOTE: 'Tron' NOT mapped — is Pauper Tron, correct as-is
+    // NOTE: 'Combo' NOT mapped — too vague
+    // NOTE: 'Grixis Phoenix' NOT mapped — actually Dredge, needs manual review
   };
 
   if (EXPLICIT_MAP[badaroName]) return EXPLICIT_MAP[badaroName];
@@ -4976,7 +5015,8 @@ async function fetchSummaryData(scope, filter, deck, panel, opponent, playdraw) 
   let query = db.from('raw_game_log')
     .select('pilot_name,deck_archetype,game_number,pre_post,opponent_archetype,card1,card2,card3,card4,card5,card6,card7,game_result,play_draw,mulligan_count')
     .not('game_result', 'is', null);
-  if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
+  if (scope === 'mine')   query = query.eq('pilot_name', state.pilot.pilot_name);
+  if (scope === 'others') query = query.neq('pilot_name', state.pilot.pilot_name);
   if (deck) query = query.eq('deck_archetype', deck);
   if (opponent) query = query.eq('opponent_archetype', opponent);
   const format = document.getElementById('analysis-format')?.value || '';
@@ -5072,7 +5112,7 @@ async function calcBayesian() {
     let myData = [], allData = [];
     if (scope === 'mine'    || scope === 'compare') { setProgress('b', 20); const playdrawB = document.getElementById('b-playdraw')?.value || '';
       myData  = await fetchSummaryData('mine', filter, deck, 'b', opponent, playdrawB); }
-    if (scope === 'all'     || scope === 'compare') { setProgress('b', 50); allData = await fetchSummaryData('all',  filter, deck, 'b', opponent, playdrawB); }
+    if (scope === 'all'     || scope === 'compare') { setProgress('b', 50); allData = await fetchSummaryData(scope === 'compare' ? 'others' : 'all', filter, deck, 'b', opponent, playdrawB); }
     setProgress('b', 80);
     const M = 20;
     const myScores  = scope !== 'all'  ? computeBayesianScores(myData,  M) : [];
@@ -5098,7 +5138,7 @@ async function calcChiSquared() {
   try {
     let myData = [], allData = [];
     if (scope === 'mine'    || scope === 'compare') { setProgress('c', 20); myData  = await fetchSummaryData('mine', filter, deck, 'c', opponent, playdraw); }
-    if (scope === 'all'     || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all',  filter, deck, 'c', opponent, playdraw); }
+    if (scope === 'all'     || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData(scope === 'compare' ? 'others' : 'all', filter, deck, 'c', opponent, playdraw); }
     setProgress('c', 80);
 const myResults  = scope !== 'all'  ? computeChiSquared(myData)  : [];
     const allResults = scope !== 'mine' ? computeChiSquared(allData) : [];
@@ -5466,6 +5506,7 @@ function renderChiResults(result, fromCache) {
               const wrWO = withoutData ? withoutData.wins / withoutData.total : null;
               // Chi-squared for this mulligan bucket
               let chiStr = '', wilsonMStr = '';
+              let pValMStr = '';
               if (withoutData && withoutData.total >= 3) {
                 const a = withData.wins, b = withData.total - withData.wins;
                 const c = withoutData.wins, d = withoutData.total - withoutData.wins;
@@ -5477,7 +5518,9 @@ function renderChiResults(result, fromCache) {
                     const pm = 1 - chi2CDF(chi2m, 1);
                     const sigM = pm < 0.01 ? '**' : pm < 0.05 ? '*' : 'ns';
                     const sigMCls = pm < 0.01 ? 'sig-high' : pm < 0.05 ? 'sig-med' : 'sig-low';
-                    chiStr = ' χ²&nbsp;' + chi2m.toFixed(2) + ' <span class="' + sigMCls + '" style="font-size:10px;">' + sigM + '</span>';
+                    chiStr   = 'χ²&nbsp;' + chi2m.toFixed(2);
+                    pValMStr = 'p&nbsp;' + (pm < 0.0001 ? '&lt;0.0001' : pm.toFixed(4)) +
+                               ' <span class="' + sigMCls + '" style="font-size:10px;">' + sigM + '</span>';
                   }
                 }
               }
@@ -5486,19 +5529,16 @@ function renderChiResults(result, fromCache) {
               const diffM = wrWO != null ? ((wrW - wrWO)*100).toFixed(1) : null;
               const dirM = diffM != null && parseFloat(diffM) >= 0 ? 'dir-pos' : 'dir-neg';
               const dirLM = diffM != null && parseFloat(diffM) >= 0 ? '▲ +' : '▼ −';
-              // Match column order of main rows: label | games | chi2 | delta [wilson] | sig
-              const sigMFinal = chiStr.includes('sig-high') ? '**' : chiStr.includes('sig-med') ? '*' : chiStr ? 'ns' : '';
-              const sigMCls2  = chiStr.includes('sig-high') ? 'sig-high' : chiStr.includes('sig-med') ? 'sig-med' : 'sig-low';
-              const chi2DisplayM = chiStr ? chiStr.replace(/ <span.*?<\/span>/,'').trim() : '';
+              // Column order matching main rows: label | games | chi2 | p-value | delta [wilson] | sig
               mullHtml += '<div style="padding:4px 10px 4px 24px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;background:var(--surface2);">' +
                 '<div style="font-size:10px;color:var(--text2);min-width:48px;">' + mullLabels[m] + '</div>' +
                 '<div style="font-size:10px;color:var(--text2);min-width:36px;">' + withData.total + 'g</div>' +
-                '<div style="font-size:10px;min-width:70px;">' + (chi2DisplayM || '—') + '</div>' +
-                '<div style="font-size:10px;min-width:0;flex:1;">' +
+                '<div style="font-size:10px;min-width:64px;">' + (chiStr || '—') + '</div>' +
+                '<div style="font-size:10px;min-width:70px;">' + (pValMStr || '') + '</div>' +
+                '<div style="font-size:10px;flex:1;">' +
                   (diffM != null ? '<span class="' + dirM + '">' + dirLM + Math.abs(parseFloat(diffM)) + '%</span>' : '') +
                   wilsonMStr +
                 '</div>' +
-                (sigMFinal ? '<span class="' + sigMCls2 + '" style="font-size:10px;">' + sigMFinal + '</span>' : '') +
                 '</div>';
             }
             if (mullHtml) html += mullHtml;
@@ -5550,7 +5590,7 @@ function renderChiResults(result, fromCache) {
 
     const renderCardBlock = (cardName, cardRows, isCommunity) => {
       if (!cardRows || !cardRows.length) {
-        return '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;padding:16px;color:var(--text2);font-size:12px;">No data</div>';
+        return '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;padding:8px 10px;color:var(--text2);font-size:12px;background:var(--surface2);opacity:0.4;">No data for this pilot</div>';
       }
       // Reuse existing per-card render logic
       const sufficientRows = cardRows.filter(r => !r.insufficientData);
