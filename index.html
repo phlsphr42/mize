@@ -1741,18 +1741,15 @@ function showScreen(id) {
     } else {
       oppBuildSupertypeGrid();
     }
-    state.opponent = null;
-    const oppSearch = document.getElementById('opponent-search'); if (oppSearch) oppSearch.value = '';
-    document.getElementById('opponent-selected').style.display = 'none';
-    document.getElementById('btn-confirm-opponent').disabled = true;
-    document.getElementById('archetype-list').innerHTML = '';
+    // Show last opponent shortcut if available
     if (state.lastOpponent) {
       const sec = document.getElementById('opponent-prefill-section');
       const btn = document.getElementById('btn-use-last-opponent');
-      sec.style.display = 'block';
-      btn.textContent = 'Use last opponent: ' + state.lastOpponent;
+      if (sec) sec.style.display = 'block';
+      if (btn) btn.textContent = 'Use last opponent: ' + state.lastOpponent;
     } else {
-      document.getElementById('opponent-prefill-section').style.display = 'none';
+      const sec = document.getElementById('opponent-prefill-section');
+      if (sec) sec.style.display = 'none';
     }
   }
   if (id === 'screen-admin') {
@@ -4571,21 +4568,21 @@ container.innerHTML = `
   } finally {
     setProgress('admin', 0);
   }
-} // end initAdminPanel
+  })();
+};
 
 window.adminTab = function(tab) {
   ['overview','users','features','activity','sources','import','cleanup','sightings'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
   });
-  // Only initialize panels once — check if already populated
   const panel = document.getElementById('apanel-' + tab);
   if (panel && panel.dataset.initialized) return;
   if (panel) panel.dataset.initialized = 'true';
-  initAdminPanel(tab);
+  loadAdminPanel(tab);
 };
 
-function initAdminPanel(tab) {
+async function loadAdminPanel(tab) {
 // ── MTGO META SCREEN ──────────────────────────────────────────────
 
 let mtgoTab = 'archetypes';
