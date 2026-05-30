@@ -2566,98 +2566,9 @@ function udCustomSupertypeChanged() {
 
 let anAllNames = []; // full list for filtering
 
-async function loadArchetypeNames() {
-  const format    = document.getElementById('an-format')?.value || '';
-  const statsEl   = document.getElementById('an-stats');
-  const container = document.getElementById('an-names-container');
-  const searchRow = document.getElementById('an-search-row');
-  if (!container) return;
 
-  container.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0;">Loading...</div>';
 
-  // Fetch all distinct deck_archetype values from raw_game_log
-  let query = db.from('raw_game_log')
-    .select('deck_archetype, format')
-    .not('deck_archetype', 'is', null);
-  if (format) query = query.eq('format', format);
-  const { data, error } = await query.limit(100000);
-  if (error || !data) { container.innerHTML = '<div style="color:var(--danger);">Error loading data</div>'; return; }
 
-  // Count occurrences per name
-  const counts = {};
-  data.forEach(r => {
-    const n = r.deck_archetype;
-    counts[n] = (counts[n] || 0) + 1;
-  });
-
-  anAllNames = Object.entries(counts)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([name, count]) => ({ name, count }));
-
-  statsEl.textContent = `${anAllNames.length} distinct archetype names across ${data.length} games`;
-  searchRow.style.display = '';
-  document.getElementById('an-search').value = '';
-  renderArchetypeNames(anAllNames);
-}
-
-function filterArchetypeNames() {
-  const q = document.getElementById('an-search')?.value.toLowerCase() || '';
-  const filtered = q ? anAllNames.filter(n => n.name.toLowerCase().includes(q)) : anAllNames;
-  renderArchetypeNames(filtered);
-}
-
-function renderArchetypeNames(names) {
-  const container = document.getElementById('an-names-container');
-  if (!names.length) {
-    container.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">No names found.</div>';
-    return;
-  }
-
-  container.innerHTML = names.map(({ name, count }) => `
-    <div id="an-row-${CSS.escape(name)}" style="border:1px solid var(--border);border-radius:6px;margin-bottom:4px;padding:8px 10px;display:flex;align-items:center;gap:8px;background:var(--surface);">
-      <div style="flex:1;">
-        <span style="font-size:13px;font-weight:600;">${name}</span>
-        <span style="font-size:11px;color:var(--text2);margin-left:8px;">${count} game${count !== 1 ? 's' : ''}</span>
-      </div>
-      <input type="text" id="an-input-${CSS.escape(name)}" value="${name}"
-        style="width:200px;margin-bottom:0;font-size:12px;"
-        onkeydown="if(event.key==='Enter') renameArchetype('${name.replace(/'/g, "\'")}')">
-      <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-bottom:0;white-space:nowrap;"
-        onclick="renameArchetype('${name.replace(/'/g, "\'")}')">Rename</button>
-    </div>
-  `).join('');
-}
-
-async function renameArchetype(oldName) {
-  const inputEl = document.getElementById('an-input-' + CSS.escape(oldName));
-  if (!inputEl) return;
-  const newName = inputEl.value.trim();
-  if (!newName || newName === oldName) { showToast('Name unchanged', 'error'); return; }
-
-  const format = document.getElementById('an-format')?.value || '';
-  let q1 = db.from('raw_game_log').update({ deck_archetype: newName }).eq('deck_archetype', oldName);
-  let q2 = db.from('raw_game_log').update({ opponent_archetype: newName }).eq('opponent_archetype', oldName);
-  if (format) { q1 = q1.eq('format', format); q2 = q2.eq('format', format); }
-
-  const [r1, r2] = await Promise.all([q1, q2]);
-  if (r1.error || r2.error) {
-    showToast('Error renaming: ' + (r1.error || r2.error).message, 'error');
-    return;
-  }
-
-  showToast(`Renamed "${oldName}" → "${newName}"`, 'success');
-
-  // Update local list and re-render
-  const existing = anAllNames.find(n => n.name === newName);
-  const old      = anAllNames.find(n => n.name === oldName);
-  if (existing && old) {
-    existing.count += old.count;
-    anAllNames = anAllNames.filter(n => n.name !== oldName);
-  } else if (old) {
-    old.name = newName;
-  }
-  filterArchetypeNames();
-}
 
 async function loadPendingDefinitions() {
   const el = document.getElementById('ud-pending-defs');
@@ -2979,50 +2890,66 @@ function udNext() {
 }
 
 async function udSuggestDefinition() {
-  const deck = udDecks[udDeckIndex];
-  const el   = document.getElementById('ud-suggestion');
+  const deck     = udDecks[udDeckIndex];
+  const el       = document.getElementById('ud-suggestion');
   if (!el) return;
-  el.innerHTML = '<div style="font-size:12px;color:var(--text2);">Generating suggestion...</div>';
+  el.innerHTML = '<div style="font-size:12px;color:var(--text2);">Analysing deck...</div>';
 
-  const mb = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
+  const mb       = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
+  const mizeName = document.getElementById('ud-custom-name')?.value.trim()
+    || document.getElementById('ud-subtype')?.value || 'Unknown';
+  const format   = document.getElementById('ud-format')?.value || 'Modern';
 
-  // Find 4-ofs and 3-ofs
-  const fours  = Object.entries(mb).filter(([,n]) => n >= 4).map(([c]) => c).sort();
-  const threes = Object.entries(mb).filter(([,n]) => n === 3).map(([c]) => c).sort();
-  const custom = document.getElementById('ud-custom-name')?.value.trim();
-  const customST = document.getElementById('ud-custom-supertype')?.value.trim();
-  const supertype = customST || document.getElementById('ud-supertype')?.value;
-  const mizeName  = custom || document.getElementById('ud-subtype')?.value || 'Unknown';
+  // Get cards with 3+ copies, sorted by quantity desc
+  const candidates = Object.entries(mb)
+    .filter(([,n]) => n >= 3)
+    .sort((a, b) => b[1] - a[1])
+    .map(([c]) => c);
 
-  // Build a suggested JSON definition
-  const badaroName = mizeName.replace(/[^a-zA-Z0-9]/g, '');
-  const conditions = [];
+  // Cross-reference against other assigned decks of same archetype
+  const { data: siblings } = await db.from('mtgo_unknown_decks')
+    .select('mainboard')
+    .eq('format', format)
+    .eq('assigned_name', mizeName)
+    .eq('reviewed', true)
+    .limit(20);
 
-  // Require top 2-3 most distinctive 4-ofs
-  const reqCards = fours.slice(0, 3);
-  reqCards.forEach(card => {
-    conditions.push({ Type: 'InMainboard', Cards: [card] });
-  });
-
-  // OneOrMoreInMainboard for 3-ofs if any
-  if (threes.length >= 2) {
-    conditions.push({ Type: 'OneOrMoreInMainboard', Cards: threes.slice(0, 4) });
+  let bestThree = [];
+  if (siblings?.length >= 2) {
+    const siblingCardSets = siblings.map(s => {
+      const m = typeof s.mainboard === 'string' ? JSON.parse(s.mainboard) : s.mainboard;
+      return new Set(Object.keys(m));
+    });
+    const scores = {};
+    candidates.forEach(card => {
+      scores[card] = siblingCardSets.filter(s => s.has(card)).length;
+    });
+    bestThree = [...candidates]
+      .sort((a, b) => (scores[b] || 0) - (scores[a] || 0))
+      .slice(0, 3);
+  } else {
+    bestThree = candidates.slice(0, 3);
   }
 
-  const definition = {
-    Name:       badaroName,
-    MizeName:   mizeName,
-    Supertype:  supertype || '',
-    Conditions: conditions
-  };
+  if (bestThree.length < 3) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--warning);">Not enough high-copy cards found. Assign more decks of this type first to improve the suggestion.</div>';
+    return;
+  }
+
+  const entry = JSON.stringify({ [mizeName]: bestThree }, null, 2);
 
   el.innerHTML = `
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;margin-top:4px;">
-      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Suggested definition (edit before adding to custom_archetypes.json):</div>
-      <pre style="font-size:11px;overflow-x:auto;margin:0;white-space:pre-wrap;">${JSON.stringify(definition, null, 2)}</pre>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px;">
-        ⚠ Review carefully — 4-ofs may not be the best identifiers. Add DoesNotContain conditions to avoid false positives.
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;margin-top:4px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">
+        Add to <code>key_cards → ${format}</code> in custom_archetypes.json:
       </div>
+      <pre style="font-size:12px;overflow-x:auto;margin:0;white-space:pre-wrap;color:var(--accent);">${entry}</pre>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;">
+        These 3 cards appear most consistently across known ${mizeName} decks.
+        Verify they are not present in other archetypes before adding.
+      </div>
+      <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(${JSON.stringify(entry)}).then(()=>showToast('Copied','success'))"
+        style="margin-top:6px;margin-bottom:0;font-size:11px;padding:3px 10px;">Copy to clipboard</button>
     </div>
   `;
 }
@@ -4277,7 +4204,6 @@ container.innerHTML = `
         <div class="analysis-tab"         onclick="adminTab('sources')"   id="atab-sources">Sources</div>
         <div class="analysis-tab"         onclick="adminTab('import')"    id="atab-import">Import</div>
         <div class="analysis-tab"         onclick="adminTab('cleanup')"        id="atab-cleanup">Unknown Decks</div>
-        <div class="analysis-tab"         onclick="adminTab('archnames')"       id="atab-archnames">Archetype Names</div>
         <div class="analysis-tab"         onclick="adminTab('sightings')"       id="atab-sightings">Sightings</div>
       </div>
       <div id="apanel-overview"></div>
@@ -4287,7 +4213,6 @@ container.innerHTML = `
       <div id="apanel-sources"       style="display:none;"></div>
       <div id="apanel-import"        style="display:none;"></div>
       <div id="apanel-cleanup"       style="display:none;"></div>
-      <div id="apanel-archnames"     style="display:none;"></div>
       <div id="apanel-sightings"     style="display:none;"></div>
     `;
 
@@ -4638,39 +4563,6 @@ container.innerHTML = `
     `;
 
     // ── ARCHETYPE NAMES ──
-    document.getElementById('apanel-archnames').innerHTML = `
-      <div class="card">
-        <div class="card-title">Archetype Names</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
-          Review and rename archetype names stored in community game log data.
-          Changes are applied to both deck_archetype and opponent_archetype fields.
-        </p>
-        <div class="row" style="gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <div>
-            <label class="label">Format</label>
-            <select id="an-format">
-              <option value="">All formats</option>
-              <option value="Modern">Modern</option>
-              <option value="Legacy">Legacy</option>
-              <option value="Pioneer">Pioneer</option>
-              <option value="Pauper">Pauper</option>
-              <option value="Vintage">Vintage</option>
-            </select>
-          </div>
-          <div style="display:flex;align-items:flex-end;">
-            <button class="btn btn-secondary" onclick="loadArchetypeNames()" style="margin-bottom:0;">
-              Load names
-            </button>
-          </div>
-        </div>
-        <div id="an-stats" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
-        <div id="an-search-row" style="display:none;margin-bottom:8px;">
-          <input type="text" id="an-search" placeholder="Filter by name..." 
-            style="margin-bottom:0;font-size:12px;" oninput="filterArchetypeNames()">
-        </div>
-      </div>
-      <div id="an-names-container"></div>
-    `;
 
 
   } catch(e) {
@@ -4679,14 +4571,21 @@ container.innerHTML = `
   } finally {
     setProgress('admin', 0);
   }
-}
+} // end initAdminPanel
 
 window.adminTab = function(tab) {
-  ['overview','users','features','activity','sources','import','cleanup','archnames','sightings'].forEach(t => {
+  ['overview','users','features','activity','sources','import','cleanup','sightings'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
   });
+  // Only initialize panels once — check if already populated
+  const panel = document.getElementById('apanel-' + tab);
+  if (panel && panel.dataset.initialized) return;
+  if (panel) panel.dataset.initialized = 'true';
+  initAdminPanel(tab);
 };
+
+function initAdminPanel(tab) {
 // ── MTGO META SCREEN ──────────────────────────────────────────────
 
 let mtgoTab = 'archetypes';
