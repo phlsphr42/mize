@@ -409,6 +409,23 @@ def compute_pilot_summary(results, date_from, date_to, fmt='Modern'):
 def main():
     print(f'Mize MTGO Import — {datetime.now(timezone.utc).isoformat()}')
 
+    # ── Parse arguments ───────────────────────────────────────────────────────
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--lookback-days', type=int, default=365,
+                        help='Only import events within this many days (default: 365)')
+    parser.add_argument('--full', action='store_true',
+                        help='Import all available history, ignoring lookback window')
+    args = parser.parse_args()
+
+    lookback_days = None if args.full else args.lookback_days
+    cutoff_date   = None
+    if lookback_days:
+        cutoff_date = (datetime.now(timezone.utc).date() - timedelta(days=lookback_days))
+        print(f'Lookback window: {lookback_days} days (events on or after {cutoff_date})')
+    else:
+        print('Full import mode — no date cutoff')
+
     # Load reference fingerprints for all formats
     print('Loading reference decklist fingerprints...')
     fingerprints_by_format = {}
@@ -428,11 +445,16 @@ def main():
         'Premodern': ['premodern-challenge'],
     }
 
-    # Discover events
-    years = ['2023', '2024', '2025', '2026']
+    # Discover events — only scan years within the lookback window
+    current_year = datetime.now(timezone.utc).year
+    if cutoff_date:
+        start_year = cutoff_date.year
+    else:
+        start_year = 2023
+    years = [str(y) for y in range(start_year, current_year + 1)]
     all_format_events = []
 
-    print('Discovering events from fbettega...')
+    print(f'Discovering events from fbettega (scanning years: {years})...')
     for year in years:
         print(f'  Scanning {year}...')
         months = gh_get_json(f'{GITHUB_API}/repos/{FBETTEGA_REPO}/contents/Tournaments/MTGO/{year}')
@@ -468,6 +490,20 @@ def main():
                         })
 
     all_format_events.sort(key=lambda x: x['name'])
+
+    # Filter by cutoff date — event name contains the date e.g. "modern-challenge-32-2024-06-15..."
+    if cutoff_date:
+        before = len(all_format_events)
+        def event_date_str(e):
+            # Extract date from event name: last 10 chars of the date portion
+            # e.g. "modern-challenge-32-2024-06-1512345678" -> "2024-06-15"
+            import re
+            m = re.search(r'(\d{4}-\d{2}-\d{2})', e['name'])
+            return m.group(1) if m else '0000-00-00'
+        cutoff_str = cutoff_date.isoformat()
+        all_format_events = [e for e in all_format_events if event_date_str(e) >= cutoff_str]
+        print(f'Date filter: {before} → {len(all_format_events)} events (cutoff: {cutoff_str})')
+
     print(f'Total events found: {len(all_format_events)}')
     for fmt, count in sorted(Counter(e['format'] for e in all_format_events).items()):
         print(f'  {fmt}: {count}')
