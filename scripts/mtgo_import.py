@@ -679,10 +679,6 @@ def main():
         hand_cards = [game.get(f'card{i}') for i in range(1, 8) if game.get(f'card{i}')]
         if not hand_cards:
             continue
-        mainboard = {card: hand_cards.count(card) for card in set(hand_cards)}
-        is_valid  = test_conditions(declared_def.get('Conditions', []), mainboard, {})
-        if is_valid:
-            continue
         corrected = detect_archetype_from_cards(hand_cards, fingerprints)
         if corrected and corrected != declared_arch:
             corrections.append({
