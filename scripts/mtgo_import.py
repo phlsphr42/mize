@@ -465,8 +465,14 @@ def main():
     else:
         print('Full import mode — no date cutoff')
 
+    import_start = time.time()
+    def ts(label):
+        elapsed = int(time.time() - import_start)
+        m, s = divmod(elapsed, 60)
+        print(f'[{m:02d}:{s:02d}] {label}', flush=True)
+
     # Load reference fingerprints for all formats
-    print('Loading reference decklist fingerprints...')
+    ts('Loading reference decklist fingerprints...')
     fingerprints_by_format = {}
     deck_counts_by_format  = {}
     for fmt in VALIDATABLE_FORMATS:
@@ -493,7 +499,7 @@ def main():
     years = [str(y) for y in range(start_year, current_year + 1)]
     all_format_events = []
 
-    print(f'Discovering events from fbettega (scanning years: {years})...')
+    ts(f'Discovering events from fbettega (scanning years: {years})...')
     for year in years:
         print(f'  Scanning {year}...')
         months = gh_get_json(f'{GITHUB_API}/repos/{FBETTEGA_REPO}/contents/Tournaments/MTGO/{year}')
@@ -543,7 +549,7 @@ def main():
         all_format_events = [e for e in all_format_events if event_date_str(e) >= cutoff_str]
         print(f'Date filter: {before} → {len(all_format_events)} events (cutoff: {cutoff_str})')
 
-    print(f'Total events found: {len(all_format_events)}')
+    ts(f'Total events found: {len(all_format_events)}')
     for fmt, count in sorted(Counter(e['format'] for e in all_format_events).items()):
         print(f'  {fmt}: {count}')
 
@@ -551,7 +557,7 @@ def main():
     existing_events = sb_get('mtgo_events', '?select=event_id')
     existing_ids    = set(r['event_id'] for r in existing_events)
     new_events      = [e for e in all_format_events if e['name'] not in existing_ids]
-    print(f'New events to process: {len(new_events)}')
+    ts(f'New events to process: {len(new_events)}')
     for fmt, count in sorted(Counter(e['format'] for e in new_events).items()):
         print(f'  {fmt}: {count} new')
 
@@ -675,28 +681,28 @@ def main():
                 })
 
         if (idx + 1) % 25 == 0:
-            print(f'  Processed {idx+1}/{len(new_events)}... ({len(result_rows)} results, {len(match_rows)} matches)')
+            ts(f'  Processed {idx+1}/{len(new_events)}... ({len(result_rows)} results, {len(match_rows)} matches)')
         time.sleep(0.3)
 
-    print(f'Events processed: {len(event_rows)} | Skipped: {skipped} | Errors: {len(errors)}')
+    ts(f'Events processed: {len(event_rows)} | Skipped: {skipped} | Errors: {len(errors)}')
     print(f'Result rows: {len(result_rows)} | Match rows: {len(match_rows)}')
 
     # Insert new events, results, and matches
     if event_rows:
-        print(f'Inserting {len(event_rows)} events...')
+        ts(f'Inserting {len(event_rows)} events...')
         sb_insert('mtgo_events', event_rows)
     if result_rows:
-        print(f'Inserting {len(result_rows)} results...')
+        ts(f'Inserting {len(result_rows)} results...')
         sb_insert('mtgo_results', result_rows, batch_size=300)
     if match_rows:
-        print(f'Inserting {len(match_rows)} match rows...')
+        ts(f'Inserting {len(match_rows)} match rows...')
         sb_insert('mtgo_matches', match_rows, batch_size=300)
     if unknown_deck_rows:
-        print(f'Inserting {len(unknown_deck_rows)} unknown decks for review...')
+        ts(f'Inserting {len(unknown_deck_rows)} unknown decks for review...')
         sb_insert('mtgo_unknown_decks', unknown_deck_rows, batch_size=100)
 
     # ── Validate mymtgo game log imports ──────────────────────────────────────
-    print('\nValidating mymtgo game log archetypes...')
+    ts('Validating mymtgo game log archetypes...')
     mymtgo_games = sb_get('raw_game_log',
         '?select=id,pilot_name,deck_archetype,format,card1,card2,card3,card4,card5,card6,card7,external_id'
         '&external_id=not.is.null'
@@ -758,7 +764,7 @@ def main():
         print(f'Applied {len(corrections)} corrections.')
 
     # ── Compute summaries ─────────────────────────────────────────────────────
-    print('\nComputing summaries...')
+    ts('Computing summaries...')
     all_results      = sb_get('mtgo_results',
         '?select=event_id,player_name,archetype_canonical,finish_position,points,match_win_pct,game_win_pct,opp_match_win_pct'
     )
@@ -807,14 +813,14 @@ def main():
     print(f'Total pilot summary rows: {len(all_summaries_pilot)}')
 
     # Write summaries
-    print('Clearing existing summaries...')
+    ts('Clearing existing summaries...')
     sb_delete('mtgo_archetype_summary', '?id=neq.00000000-0000-0000-0000-000000000000')
     sb_delete('mtgo_pilot_summary',     '?id=neq.00000000-0000-0000-0000-000000000000')
     time.sleep(1)
 
-    print(f'Writing {len(all_summaries_arch)} archetype summary rows...')
+    ts(f'Writing {len(all_summaries_arch)} archetype summary rows...')
     sb_insert('mtgo_archetype_summary', all_summaries_arch, batch_size=300)
-    print(f'Writing {len(all_summaries_pilot)} pilot summary rows...')
+    ts(f'Writing {len(all_summaries_pilot)} pilot summary rows...')
     sb_insert('mtgo_pilot_summary', all_summaries_pilot, batch_size=300)
 
     # ── Final summary ─────────────────────────────────────────────────────────
