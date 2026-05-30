@@ -2379,6 +2379,34 @@ async function udAssign() {
 
   if (deckErr) { showToast('Error saving assignment', 'error'); return; }
 
+  // Add to reference_decklists if archetype needs more examples
+  try {
+    const { count } = await db.from('reference_decklists')
+      .select('id', { count: 'exact', head: true })
+      .eq('archetype_name', mizeName)
+      .eq('format', deck.format);
+    if (count < 5) {
+      const mb = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
+      const sb = typeof deck.sideboard === 'string' ? JSON.parse(deck.sideboard || '{}') : (deck.sideboard || {});
+      const deckIndex = Math.floor(count / 60) + 1; // rough deck index
+      const refRows = [
+        ...Object.entries(mb).filter(([c]) => c).map(([card, qty]) => ({
+          archetype_name: mizeName, format: deck.format,
+          card_name: card, quantity: qty, main_side: 'Main',
+          source: 'manual_review', deck_index: deckIndex
+        })),
+        ...Object.entries(sb).filter(([c]) => c).map(([card, qty]) => ({
+          archetype_name: mizeName, format: deck.format,
+          card_name: card, quantity: qty, main_side: 'Side',
+          source: 'manual_review', deck_index: deckIndex
+        }))
+      ];
+      if (refRows.length > 0) {
+        await db.from('reference_decklists').insert(refRows);
+      }
+    }
+  } catch(e) { console.warn('Could not add to reference_decklists:', e); }
+
   // Update mtgo_results and mtgo_matches with the correct name
   await db.from('mtgo_results')
     .update({ archetype_canonical: mizeName, archetype_raw: mizeName })
