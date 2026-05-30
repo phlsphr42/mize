@@ -2261,13 +2261,94 @@ function udCustomNameChanged() {
 function udCustomSupertypeChanged() {
   const customST = document.getElementById('ud-custom-supertype')?.value.trim();
   if (customST) {
-    // Clear supertype dropdown when typing custom supertype
     const supertypeSel = document.getElementById('ud-supertype');
     if (supertypeSel) supertypeSel.value = '-- Select supertype --';
-    // Also clear subtype dropdown since supertype changed
     const subtypeSel = document.getElementById('ud-subtype');
     if (subtypeSel) subtypeSel.innerHTML = '<option value="">-- Enter subtype name below --</option>';
   }
+}
+
+async function loadPendingDefinitions() {
+  const el = document.getElementById('ud-pending-defs');
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--text2);">Loading...</div>';
+
+  const format = document.getElementById('ud-format')?.value || 'Modern';
+  const { data, error } = await db.from('mtgo_pending_definitions')
+    .select('id,mize_name,supertype,format,definition,applied,created_at')
+    .eq('format', format)
+    .eq('applied', false)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error || !data?.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text2);">No pending definitions.</div>';
+    return;
+  }
+
+  // Deduplicate by mize_name — keep most recent per name
+  const seen = {};
+  const unique = data.filter(d => {
+    if (seen[d.mize_name]) return false;
+    seen[d.mize_name] = true;
+    return true;
+  });
+
+  el.innerHTML = unique.map(d => `
+    <div style="border:1px solid var(--border);border-radius:6px;margin-bottom:8px;overflow:hidden;">
+      <div style="background:var(--surface2);padding:6px 10px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <span style="font-size:13px;font-weight:600;">${d.mize_name}</span>
+          <span style="font-size:11px;color:var(--text2);margin-left:8px;">${d.supertype}</span>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-bottom:0;"
+            onclick="copyPendingDef(${d.id})">Copy</button>
+          <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-bottom:0;"
+            onclick="markDefApplied(${d.id})">Mark applied</button>
+        </div>
+      </div>
+      <pre style="font-size:10px;padding:8px 10px;margin:0;overflow-x:auto;white-space:pre-wrap;">${d.definition}</pre>
+    </div>
+  `).join('');
+}
+
+async function copyPendingDef(id) {
+  const { data } = await db.from('mtgo_pending_definitions')
+    .select('definition').eq('id', id).single();
+  if (data) {
+    navigator.clipboard.writeText(data.definition);
+    showToast('Definition copied to clipboard', 'success');
+  }
+}
+
+async function copyAllPendingDefs() {
+  const format = document.getElementById('ud-format')?.value || 'Modern';
+  const { data } = await db.from('mtgo_pending_definitions')
+    .select('mize_name,definition')
+    .eq('format', format)
+    .eq('applied', false)
+    .order('created_at', { ascending: false });
+
+  if (!data?.length) { showToast('No pending definitions', 'error'); return; }
+
+  // Deduplicate
+  const seen = {};
+  const defs = data
+    .filter(d => { if (seen[d.mize_name]) return false; seen[d.mize_name] = true; return true; })
+    .map(d => d.definition)
+    .join(',
+');
+  navigator.clipboard.writeText('[
+' + defs + '
+]');
+  showToast(`Copied ${Object.keys(seen).length} definitions to clipboard`, 'success');
+}
+
+async function markDefApplied(id) {
+  await db.from('mtgo_pending_definitions').update({ applied: true }).eq('id', id);
+  showToast('Marked as applied', 'success');
+  loadPendingDefinitions();
 }
 
 async function udAssign() {
@@ -2318,6 +2399,30 @@ async function udAssign() {
     .eq('player2', deck.player_name);
 
   showToast(`Assigned: ${mizeName}`, 'success');
+
+  // Auto-generate a suggested definition and save it as a pending definition
+  try {
+    const mb = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
+    const fours  = Object.entries(mb).filter(([c,n]) => n >= 4 && c).map(([c]) => c).sort();
+    const threes = Object.entries(mb).filter(([c,n]) => n === 3 && c).map(([c]) => c).sort();
+    const badaroName = mizeName.replace(/[^a-zA-Z0-9]/g, '');
+    const conditions = [];
+    fours.slice(0, 3).forEach(card => conditions.push({ Type: 'InMainboard', Cards: [card] }));
+    if (threes.length >= 2) conditions.push({ Type: 'OneOrMoreInMainboard', Cards: threes.slice(0, 4) });
+    const definition = { Name: badaroName, MizeName: mizeName, Supertype: supertype, Conditions: conditions };
+    await db.from('mtgo_pending_definitions').insert({
+      mize_name:   mizeName,
+      supertype:   supertype,
+      format:      deck.format,
+      definition:  JSON.stringify(definition, null, 2),
+      source_deck: JSON.stringify({ event_id: deck.event_id, player: deck.player_name }),
+      created_by:  state.pilot?.pilot_name,
+      applied:     false,
+      created_at:  new Date().toISOString()
+    });
+  } catch(e) {
+    console.warn('Could not save pending definition:', e);
+  }
 
   // Remove from local list and advance
   udDecks.splice(udDeckIndex, 1);
@@ -3940,6 +4045,22 @@ container.innerHTML = `
         <div id="ud-stats" style="font-size:12px;color:var(--text2);"></div>
       </div>
       <div id="ud-deck-container"></div>
+      <div class="card" style="margin-top:8px;">
+        <div class="card-title">Pending Definitions</div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">
+          Suggested definitions generated from your deck reviews. Copy into
+          <code>scripts/custom_archetypes.json</code> and commit to your repo.
+        </p>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button class="btn btn-secondary" onclick="loadPendingDefinitions()" style="margin-bottom:0;font-size:12px;">
+            Load pending
+          </button>
+          <button class="btn btn-secondary" onclick="copyAllPendingDefs()" style="margin-bottom:0;font-size:12px;">
+            Copy all as JSON
+          </button>
+        </div>
+        <div id="ud-pending-defs"></div>
+      </div>
     `;
 
   } catch(e) {
@@ -5590,7 +5711,7 @@ function renderChiResults(result, fromCache) {
 
     const renderCardBlock = (cardName, cardRows, isCommunity) => {
       if (!cardRows || !cardRows.length) {
-        return '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;padding:8px 10px;color:var(--text2);font-size:12px;background:var(--surface2);opacity:0.4;">No data for this pilot</div>';
+        return '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text2);font-size:12px;background:var(--surface2);opacity:0.4;height:100%;box-sizing:border-box;">No data for this pilot</div>';
       }
       // Reuse existing per-card render logic
       const sufficientRows = cardRows.filter(r => !r.insufficientData);
@@ -5601,7 +5722,7 @@ function renderChiResults(result, fromCache) {
         : bestRow.p < 0.01 ? 'sig-high' : bestRow.p < 0.05 ? 'sig-med' : 'sig-low';
       const sigLabel = bestRow.insufficientData ? '⚠'
         : bestRow.p < 0.01 ? '**' : bestRow.p < 0.05 ? '*' : 'ns';
-      let html = '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;">';
+      let html = '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;height:100%;box-sizing:border-box;">';
       html += '<div style="background:var(--surface2);padding:6px 10px;display:flex;justify-content:space-between;align-items:center;">' +
         '<div style="font-size:12px;font-weight:700;">' + cardName + (isCommunity ? ' <span style="font-size:10px;color:var(--warning);">⚠all</span>' : '') + '</div>' +
         '<span class="' + sigClass + '" style="font-size:11px;">' + sigLabel + '</span>' +
@@ -5635,13 +5756,21 @@ function renderChiResults(result, fromCache) {
       return html;
     };
 
-    let leftHtml  = '<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">My data</div>';
-    let rightHtml = '<div class="compare-col-header" style="text-align:left;margin-bottom:6px;">All data</div>';
+    // Use a paired-row grid: each card occupies one row across both columns
+    // This guarantees left and right cards always align horizontally
+    let gridHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">';
+    // Header row
+    gridHtml += '<div class="compare-col-header" style="margin-bottom:4px;">My data</div>';
+    gridHtml += '<div class="compare-col-header" style="margin-bottom:4px;">All data (excl. me)</div>';
     for (const cardName of sortedCards.slice(0, 100)) {
-      leftHtml  += renderCardBlock(cardName, myByCard[cardName],  false);
-      rightHtml += renderCardBlock(cardName, allByCard[cardName], true);
+      // Wrap each pair in a subgrid row so they match height
+      gridHtml += '<div style="display:contents;">';
+      gridHtml += '<div style="margin-bottom:4px;">' + renderCardBlock(cardName, myByCard[cardName],  false) + '</div>';
+      gridHtml += '<div style="margin-bottom:4px;">' + renderCardBlock(cardName, allByCard[cardName], true)  + '</div>';
+      gridHtml += '</div>';
     }
-    el.innerHTML = '<div class="compare-grid"><div>' + leftHtml + '</div><div>' + rightHtml + '</div></div>';
+    gridHtml += '</div>';
+    el.innerHTML = gridHtml;
   } else {
     const rows = result.scope === 'mine' ? result.myResults : result.allResults;
     el.innerHTML = '<div class="card" style="padding:12px;">' + renderTable(rows, '') + '</div>';
