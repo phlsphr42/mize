@@ -409,40 +409,6 @@
         ]
       },
       {
-        "Name": "4CControl",
-        "MizeName": "4C Control",
-        "Supertype": "4C Control",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Arid Mesa"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Flooded Strand"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Orim's Chant"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Brainsurge",
-              "Phlage, Titan of Fire's Fury",
-              "Teferi, Time Raveler",
-              "Terminus"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "EldraziRigging",
         "MizeName": "Eldrazi Rigging",
         "Supertype": "Eldrazi Rigging",
@@ -853,40 +819,6 @@
         ]
       },
       {
-        "Name": "JeskaiControl",
-        "MizeName": "Jeskai Control",
-        "Supertype": "Jeskai Control",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Arid Mesa"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Flooded Strand"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Solitude"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Consign to Memory",
-              "Flame of Anor",
-              "Flare of Denial",
-              "Phlage, Titan of Fire's Fury"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "AzoriusBlink",
         "MizeName": "Azorius Blink",
         "Supertype": "Azorius Blink",
@@ -915,31 +847,6 @@
               "Ephemerate",
               "Flagstones of Trokair",
               "Plains"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "LivingEnd",
-        "MizeName": "Living End",
-        "Supertype": "Living End",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Endurance"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Force of Negation"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Misty Rainforest"
             ]
           }
         ]
@@ -1129,6 +1036,99 @@
         ]
       },
       {
+        "Name": "SimicWoodland",
+        "MizeName": "Simic Woodland",
+        "Supertype": "Simic Woodland",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fallaji Archaeologist"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flare of Denial"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Malevolent Rumble"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "JeskaiControl",
+        "MizeName": "Jeskai Control",
+        "Supertype": "Jeskai Control",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Counterspell"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flooded Strand"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Galvanic Discharge"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Phlage, Titan of Fire's Fury",
+              "Scalding Tarn",
+              "Solitude",
+              "Wrath of the Skies"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Affinity",
+        "MizeName": "Affinity",
+        "Supertype": "Affinity",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Memnite"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ornithopter"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Razortide Bridge"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Cranial Plating",
+              "Forging the Anchor",
+              "Frogmite",
+              "Patchwork Automaton"
+            ]
+          }
+        ]
+      },
+      {
         "Name": "GruulThroughtheBreach",
         "MizeName": "Gruul Through the Breach",
         "Supertype": "Gruul Through the Breach",
@@ -1154,26 +1154,68 @@
         ]
       },
       {
-        "Name": "SimicWoodland",
-        "MizeName": "Simic Woodland",
-        "Supertype": "Simic Woodland",
+        "Name": "LivingEnd",
+        "MizeName": "Living End",
+        "Supertype": "Living End",
         "Conditions": [
           {
             "Type": "InMainboard",
             "Cards": [
-              "Fallaji Archaeologist"
+              "Ardent Plea"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Flare of Denial"
+              "Curator of Mysteries"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Malevolent Rumble"
+              "Endurance"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Living End",
+              "Waker of Waves",
+              "Windcaller Aven"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "4CControl",
+        "MizeName": "4C Control",
+        "Supertype": "4C Control",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arid Mesa"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flooded Strand"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Orim's Chant"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Brainsurge",
+              "Phlage, Titan of Fire's Fury",
+              "Teferi, Time Raveler",
+              "Terminus"
             ]
           }
         ]
@@ -2411,57 +2453,6 @@
             "Type": "DoesNotContain",
             "Cards": [
               "Utopia Sprawl"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "Affinity",
-        "MizeName": "Affinity",
-        "Supertype": "Affinity",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Mox Opal"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Urza's Saga"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Weapons Manufacturing",
-              "Pinnacle Emissary",
-              "Kappa Cannoneer"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Lantern of Insight"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "The Underworld Cookbook"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Colossus Hammer"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Cori-Steel Cutter"
             ]
           }
         ]
