@@ -6463,13 +6463,6 @@ async function calcMatrix() {
           if (batch) fmtMatchups.push(...batch);
         }
         const matchupMap = {};
-// Get reference deck names for resolving Badaro archetype names
-        const { data: refDecks } = await db.from('raw_game_log')
-          .select('deck_archetype')
-          .eq('format', format || 'Modern')
-          .not('deck_archetype', 'is', null)
-          .limit(50000);
-        const refNames = [...new Set((refDecks || []).map(r => r.deck_archetype))];
 
         for (const m of fmtMatchups || []) {
           const deck = resolveBadaroName(m.player1_arch, refNames);
@@ -6500,6 +6493,14 @@ async function calcMatrix() {
     }
 
     setProgress('mx', 60);
+
+    // Fetch reference names for Badaro name resolution (always needed)
+    const { data: refDecks } = await db.from('raw_game_log')
+      .select('deck_archetype')
+      .eq('format', format || 'Modern')
+      .not('deck_archetype', 'is', null)
+      .limit(50000);
+    const refNames = [...new Set((refDecks || []).map(r => r.deck_archetype))];
 
     const matchups   = {};
     const deckCounts = {};
