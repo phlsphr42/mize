@@ -270,11 +270,11 @@ def avg(arr):
     return sum(arr) / len(arr) if arr else None
 
 # ── Summary computation ───────────────────────────────────────────────────────
-def compute_archetype_summary(results, date_from, date_to):
+def compute_archetype_summary(results, date_from, date_to, fmt='Modern'):
     by_arch = defaultdict(lambda: {
         'appearances': [], 'top8': 0, 'events': set(),
         'points': [], 'mwp': [], 'gwp': [], 'omwp': [],
-        'format': 'Modern'
+        'format': fmt
     })
     total = len(results)
     for r in results:
@@ -282,7 +282,7 @@ def compute_archetype_summary(results, date_from, date_to):
         pos  = r.get('finish_position')
         by_arch[arch]['appearances'].append(pos)
         by_arch[arch]['events'].add(r['event_id'])
-        by_arch[arch]['format'] = r.get('_format', 'Modern')
+        by_arch[arch]['format'] = fmt  # always use the explicit format, never infer
         if pos and pos <= 8:
             by_arch[arch]['top8'] += 1
         for key, field in [('points','points'),('mwp','match_win_pct'),
@@ -333,7 +333,7 @@ def compute_archetype_summary(results, date_from, date_to):
         })
     return sorted(rows, key=lambda x: x['meta_adjusted_score'], reverse=True)
 
-def compute_pilot_summary(results, date_from, date_to):
+def compute_pilot_summary(results, date_from, date_to, fmt='Modern'):
     by_pilot = defaultdict(lambda: {
         'appearances': [], 'top8': 0, 'events': set(),
         'points': [], 'mwp': [], 'gwp': [], 'omwp': [],
@@ -668,7 +668,7 @@ def main():
     )
     all_events_db    = sb_get('mtgo_events', '?select=event_id,event_date,format')
     event_date_map   = {e['event_id']: e['event_date'] for e in all_events_db}
-    event_format_map = {e['event_id']: e.get('format', 'Modern') for e in all_events_db}
+    event_format_map = {e['event_id']: e.get('format') for e in all_events_db}  # None if missing
     print(f'Total results: {len(all_results)} | Total events: {len(all_events_db)}')
 
     now     = datetime.now(timezone.utc).date()
@@ -686,7 +686,9 @@ def main():
         filtered  = [r for r in all_results if not cutoff or
                      event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
         for r in filtered:
-            r['_format'] = event_format_map.get(r['event_id'], 'Modern')
+            r['_format'] = event_format_map.get(r['event_id'])  # None if event unknown
+        # Drop results whose event format is unknown — prevents cross-format contamination
+        filtered = [r for r in filtered if r['_format'] is not None]
         if not filtered:
             continue
 
@@ -696,8 +698,8 @@ def main():
             fmt_results = [r for r in filtered if r['_format'] == fmt]
             label = ('all time' if not w['days'] else f'{w["days"]}d') + f' / {fmt}'
             print(f'Window {label}: {len(fmt_results)} results')
-            arch_rows  = compute_archetype_summary(fmt_results, date_from, date_to)
-            pilot_rows = compute_pilot_summary(fmt_results, date_from, date_to)
+            arch_rows  = compute_archetype_summary(fmt_results, date_from, date_to, fmt)
+            pilot_rows = compute_pilot_summary(fmt_results, date_from, date_to, fmt)
             for r in arch_rows:
                 r['window_days'] = w['days'] if w['days'] else 0
             for r in pilot_rows:
