@@ -6411,6 +6411,14 @@ async function calcMatrix() {
   document.getElementById('btn-calc-mx').disabled = true;
 
   try {
+    // Fetch reference names first — needed by both MTGO and community processing
+    const { data: refDecks } = await db.from('raw_game_log')
+      .select('deck_archetype')
+      .eq('format', format || 'Modern')
+      .not('deck_archetype', 'is', null)
+      .limit(50000);
+    const refNames = [...new Set((refDecks || []).map(r => r.deck_archetype))];
+
     // ── Query community game log ──────────────────────────────────────
     const dateRange = getDateRange('mx');
     
@@ -6493,14 +6501,6 @@ async function calcMatrix() {
     }
 
     setProgress('mx', 60);
-
-    // Fetch reference names for Badaro name resolution (always needed)
-    const { data: refDecks } = await db.from('raw_game_log')
-      .select('deck_archetype')
-      .eq('format', format || 'Modern')
-      .not('deck_archetype', 'is', null)
-      .limit(50000);
-    const refNames = [...new Set((refDecks || []).map(r => r.deck_archetype))];
 
     const matchups   = {};
     const deckCounts = {};
