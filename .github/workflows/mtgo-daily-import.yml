@@ -2,18 +2,27 @@ name: MTGO Daily Import
 
 on:
   schedule:
+    # Runs at 18:00 UTC daily (after fbettega updates at ~17:00 UTC)
     - cron: '0 18 * * *'
   workflow_dispatch:
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    inputs:
+      full_import:
+        description: 'Run full historical import (ignores 1-year lookback window)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      lookback_days:
+        description: 'Number of days to look back (default: 365)'
+        required: false
+        default: '365'
 
 jobs:
   import:
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      contents: read
+    timeout-minutes: 90
 
     steps:
       - name: Checkout repository
@@ -34,21 +43,26 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GITHUB_TOKEN: ${{ secrets.MTGO_GITHUB_TOKEN }}
         run: |
-          python scripts/mtgo_import.py 2>&1 | tee import_output.txt
-          if grep -q 'ARCHETYPE CORRECTIONS APPLIED' import_output.txt; then
-            echo "has_corrections=true" >> $GITHUB_OUTPUT
+          if [ "${{ github.event.inputs.full_import }}" = "true" ]; then
+            echo "Running full historical import..."
+            python scripts/mtgo_import.py --full 2>&1 | tee import_output.txt
           else
-            echo "has_corrections=false" >> $GITHUB_OUTPUT
+            DAYS="${{ github.event.inputs.lookback_days }}"
+            DAYS="${DAYS:-365}"
+            echo "Running import with ${DAYS}-day lookback window..."
+            python scripts/mtgo_import.py --lookback-days "${DAYS}" 2>&1 | tee import_output.txt
           fi
+          echo "corrections=$(grep -c 'ARCHETYPE CORRECTIONS APPLIED' import_output.txt || echo 0)" >> $GITHUB_OUTPUT
 
       - name: Notify on archetype corrections
-        if: steps.import.outputs.has_corrections == 'true'
+        if: contains(steps.import.outputs.corrections, '1') || contains(steps.import.outputs.corrections, '2') || contains(steps.import.outputs.corrections, '3') || contains(steps.import.outputs.corrections, '4') || contains(steps.import.outputs.corrections, '5')
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const output = fs.readFileSync('import_output.txt', 'utf8');
             const correctionSection = output.split('ARCHETYPE CORRECTIONS APPLIED:')[1] || '';
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
