@@ -35,18 +35,34 @@ headers = {
 VALIDATABLE_FORMATS = {'Modern', 'Legacy', 'Pauper', 'Pioneer', 'Standard', 'Vintage'}
 
 # ── Supabase helpers ──────────────────────────────────────────────────────────
+SB_TIMEOUT = 30  # seconds — all Supabase requests timeout after this
+
 def sb_get(table, params=''):
     all_rows = []
-    limit = 1000
-    offset = 0
+    limit    = 1000
+    offset   = 0
+    retries  = 3
     while True:
         sep = '&' if '?' in params else '?'
         url = f'{SUPABASE_URL}/rest/v1/{table}{params}{sep}limit={limit}&offset={offset}'
-        r = requests.get(url, headers=headers)
-        if r.status_code != 200:
-            print(f'Error fetching {table}: {r.status_code} {r.text[:200]}')
-            break
-        batch = r.json()
+        for attempt in range(retries):
+            try:
+                r = requests.get(url, headers=headers, timeout=SB_TIMEOUT)
+                if r.status_code != 200:
+                    print(f'  Error fetching {table}: {r.status_code} {r.text[:200]}')
+                    return all_rows
+                batch = r.json()
+                break
+            except requests.exceptions.Timeout:
+                print(f'  Timeout fetching {table} offset={offset} (attempt {attempt+1}/{retries})')
+                if attempt < retries - 1:
+                    time.sleep(5)
+                else:
+                    print(f'  Giving up on {table} after {retries} timeouts')
+                    return all_rows
+            except Exception as e:
+                print(f'  Error fetching {table}: {e}')
+                return all_rows
         if not batch:
             break
         all_rows.extend(batch)
@@ -60,24 +76,37 @@ def sb_insert(table, rows, batch_size=300):
     total = 0
     for i in range(0, len(rows), batch_size):
         batch = rows[i:i+batch_size]
-        r = requests.post(
-            f'{SUPABASE_URL}/rest/v1/{table}',
-            headers=headers,
-            data=json.dumps(batch)
-        )
-        if r.status_code not in [200, 201]:
-            print(f'Insert error on {table} batch {i}: {r.status_code} {r.text[:300]}')
-        else:
-            total += len(batch)
+        for attempt in range(3):
+            try:
+                r = requests.post(
+                    f'{SUPABASE_URL}/rest/v1/{table}',
+                    headers=headers,
+                    data=json.dumps(batch),
+                    timeout=SB_TIMEOUT
+                )
+                if r.status_code not in [200, 201]:
+                    print(f'  Insert error on {table} batch {i}: {r.status_code} {r.text[:300]}')
+                else:
+                    total += len(batch)
+                break
+            except requests.exceptions.Timeout:
+                print(f'  Timeout inserting {table} batch {i} (attempt {attempt+1})')
+                if attempt < 2:
+                    time.sleep(5)
         time.sleep(0.1)
     return total
 
 def sb_delete(table, params):
-    r = requests.delete(
-        f'{SUPABASE_URL}/rest/v1/{table}{params}',
-        headers=headers
-    )
-    return r.status_code
+    try:
+        r = requests.delete(
+            f'{SUPABASE_URL}/rest/v1/{table}{params}',
+            headers=headers,
+            timeout=SB_TIMEOUT
+        )
+        return r.status_code
+    except requests.exceptions.Timeout:
+        print(f'  Timeout deleting from {table}')
+        return 0
 
 # ── GitHub helpers ────────────────────────────────────────────────────────────
 def gh_get_json(url, retries=3):
@@ -160,6 +189,7 @@ def load_reference_fingerprints(fmt):
     rows = []
     offset = 0
     while True:
+        print(f'    Fetching reference_decklists offset={offset}...', flush=True)
         batch = sb_get('reference_decklists',
             f'?format=eq.{fmt}&main_side=eq.Main&select=archetype_name,card_name,quantity'
             f'&limit=1000&offset={offset}'
@@ -167,6 +197,7 @@ def load_reference_fingerprints(fmt):
         if not batch:
             break
         rows.extend(batch)
+        print(f'    Got {len(batch)} rows (total so far: {len(rows)})', flush=True)
         if len(batch) < 1000:
             break
         offset += 1000
