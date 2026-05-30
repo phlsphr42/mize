@@ -2077,18 +2077,26 @@ async function loadCustomTaxonomy() {
 const RESCAN_THRESHOLD = 0.60;  // weighted similarity threshold (matches mtgo_import.py)
 
 async function buildReferenceFingerprints(format) {
-  // Fetch all reference decklists for this format (mainboard only)
-  const { data, error } = await db.from('reference_decklists')
-    .select('archetype_name, card_name, quantity')
-    .eq('format', format)
-    .eq('main_side', 'Main')
-    .limit(50000);
+  // Fetch all reference decklists with pagination to bypass Supabase 1000-row default
+  const allRows = [];
+  let offset = 0;
+  while (true) {
+    const { data, error } = await db.from('reference_decklists')
+      .select('archetype_name, card_name, quantity')
+      .eq('format', format)
+      .eq('main_side', 'Main')
+      .range(offset, offset + 999);
+    if (error || !data?.length) break;
+    allRows.push(...data);
+    if (data.length < 1000) break;
+    offset += 1000;
+  }
 
-  if (error || !data?.length) return {};
+  if (!allRows.length) return {};
 
   // Group by archetype — average quantity per card across all reference decks
   const byArch = {};
-  data.forEach(r => {
+  allRows.forEach(r => {
     if (!byArch[r.archetype_name]) byArch[r.archetype_name] = {};
     if (!byArch[r.archetype_name][r.card_name]) byArch[r.archetype_name][r.card_name] = [];
     byArch[r.archetype_name][r.card_name].push(r.quantity);
@@ -2167,21 +2175,25 @@ async function reScanUnknownDecks() {
   const newRefRows = [];
   const refCounts = {}; // track how many refs we have per arch during scan
 
-  // Get current ref counts
-  const { data: refData } = await db.from('reference_decklists')
-    .select('archetype_name')
-    .eq('format', format)
-    .eq('main_side', 'Main')
-    .limit(50000);
-  if (refData) {
+  // Get current ref counts (paginated)
+  let refOffset = 0;
+  while (true) {
+    const { data: refData } = await db.from('reference_decklists')
+      .select('archetype_name')
+      .eq('format', format)
+      .eq('main_side', 'Main')
+      .range(refOffset, refOffset + 999);
+    if (!refData?.length) break;
     refData.forEach(r => {
       refCounts[r.archetype_name] = (refCounts[r.archetype_name] || 0) + 1;
     });
-    // Convert card counts to deck counts (roughly 60 cards per deck)
-    Object.keys(refCounts).forEach(k => {
-      refCounts[k] = Math.round(refCounts[k] / 60);
-    });
+    if (refData.length < 1000) break;
+    refOffset += 1000;
   }
+  // Convert card counts to deck counts (roughly 60 cards per deck)
+  Object.keys(refCounts).forEach(k => {
+    refCounts[k] = Math.round(refCounts[k] / 60);
+  });
 
   for (const deck of allDecks) {
     const mb = typeof deck.mainboard === 'string'
