@@ -52,7 +52,9 @@ jobs:
             echo "Running import with ${DAYS}-day lookback window..."
             python scripts/mtgo_import.py --lookback-days "${DAYS}" 2>&1 | tee import_output.txt
           fi
-          echo "corrections=$(grep -c 'ARCHETYPE CORRECTIONS APPLIED' import_output.txt || echo 0)" >> $GITHUB_OUTPUT
+          CORRECTIONS=$(grep -c 'ARCHETYPE CORRECTIONS APPLIED' import_output.txt || true)
+          CORRECTIONS=${CORRECTIONS:-0}
+          echo "corrections=${CORRECTIONS}" >> $GITHUB_OUTPUT
 
       - name: Notify on archetype corrections
         if: contains(steps.import.outputs.corrections, '1') || contains(steps.import.outputs.corrections, '2') || contains(steps.import.outputs.corrections, '3') || contains(steps.import.outputs.corrections, '4') || contains(steps.import.outputs.corrections, '5')
