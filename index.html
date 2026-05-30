@@ -2337,11 +2337,8 @@ async function copyAllPendingDefs() {
   const defs = data
     .filter(d => { if (seen[d.mize_name]) return false; seen[d.mize_name] = true; return true; })
     .map(d => d.definition)
-    .join(',
-');
-  navigator.clipboard.writeText('[
-' + defs + '
-]');
+    .join(',\n');
+  navigator.clipboard.writeText('[\n' + defs + '\n]');
   showToast(`Copied ${Object.keys(seen).length} definitions to clipboard`, 'success');
 }
 
