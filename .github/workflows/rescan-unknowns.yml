@@ -1,0 +1,42 @@
+name: rescan-unknown-decks
+
+on:
+  workflow_dispatch:
+    inputs:
+      format:
+        description: 'Format to rescan (leave blank for all)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - Modern
+          - Legacy
+          - Pioneer
+          - Pauper
+          - Vintage
+
+jobs:
+  rescan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run rescan
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          if [ -n "${{ github.event.inputs.format }}" ]; then
+            python scripts/rescan_unknowns.py --format "${{ github.event.inputs.format }}"
+          else
+            python scripts/rescan_unknowns.py
+          fi
