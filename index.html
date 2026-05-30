@@ -1285,7 +1285,9 @@ let state = {
   artCardName: null, artPrintings: [], artSelectedUrl: null,
   scopeB: 'mine', scopeC: 'mine', chiSortKey: 'p',
   cache: { b: null, c: null },
-  lastCalc: { b: 0, c: 0 }
+  lastCalc: { b: 0, c: 0 },
+  oppTaxonomy: null, oppCardsSeen: null,
+  matchFormat: null
 };
 
 // ── UTILITIES ──────────────────────────────────────────────────────
@@ -3761,36 +3763,6 @@ async function searchCards(query) {
   } catch(e) { el.innerHTML = ''; console.error('searchCards:', e); }
 }
 
-async function loadArtOptions() {
-  const cardName = document.getElementById('art-card-select').value;
-  if (!cardName) { document.getElementById('art-options-wrap').style.display = 'none'; return; }
-  state.artCardName = cardName;
-  state.artSelectedUrl = null;
-  document.getElementById('art-options-wrap').style.display = 'block';
-  document.getElementById('art-loading').style.display = 'block';
-  document.getElementById('art-options').innerHTML = '';
-  try {
-    await loadScryfallBulk();
-    const nameLower = cardName.toLowerCase();
-    // Get all printings of this card
-    const printings = scryfallCards
-      .filter(c => c.name.toLowerCase() === nameLower && getCardImage(c))
-      .map(c => ({ id: c.id, set: c.set_name, collector: c.collector_number, imageUrl: getCardImage(c) }));
-    state.artPrintings = printings;
-    document.getElementById('art-loading').style.display = 'none';
-    const el = document.getElementById('art-options');
-    const currentCard = (state.currentDeck?.cards || []).find(c => c.card_name === cardName);
-    el.innerHTML = printings.map((p, i) =>
-      '<div class="art-option ' + (currentCard && currentCard.preferred_image_url === p.imageUrl ? 'selected' : '') + '" id="art-opt-' + i + '" onclick="selectArt(' + i + ')">' +
-      '<img src="' + p.imageUrl + '" alt="' + p.set + '" loading="lazy">' +
-      '<div style="font-size:10px;color:var(--text2);padding:2px 4px;text-align:center;">' + p.set + '</div></div>'
-    ).join('');
-    if (currentCard?.preferred_image_url) state.artSelectedUrl = currentCard.preferred_image_url;
-  } catch(e) {
-    document.getElementById('art-loading').style.display = 'none';
-    showToast('Error loading printings', 'error');
-  }
-}
 
 async function parseImport() {
   const text = document.getElementById('import-text').value.trim();
@@ -4568,21 +4540,15 @@ container.innerHTML = `
   } finally {
     setProgress('admin', 0);
   }
-  })();
-};
+} // end loadAdminPanel
 
 window.adminTab = function(tab) {
   ['overview','users','features','activity','sources','import','cleanup','sightings'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
   });
-  const panel = document.getElementById('apanel-' + tab);
-  if (panel && panel.dataset.initialized) return;
-  if (panel) panel.dataset.initialized = 'true';
-  loadAdminPanel(tab);
 };
 
-async function loadAdminPanel(tab) {
 // ── MTGO META SCREEN ──────────────────────────────────────────────
 
 let mtgoTab = 'archetypes';
