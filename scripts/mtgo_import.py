@@ -80,24 +80,63 @@ def sb_delete(table, params):
     return r.status_code
 
 # ── GitHub helpers ────────────────────────────────────────────────────────────
-def gh_get_json(url):
-    r = requests.get(url, headers={
+def gh_get_json(url, retries=3):
+    headers = {
         'Accept': 'application/json',
         'User-Agent': 'Mize-Scraper',
         'Authorization': f'token {GITHUB_TOKEN}'
-    })
-    if r.status_code == 200:
-        return r.json()
-    print(f'GitHub error {r.status_code}: {url}')
+    }
+    for attempt in range(retries):
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+            if r.status_code == 200:
+                return r.json()
+            if r.status_code == 403:
+                # Rate limited — check reset time
+                reset = int(r.headers.get('X-RateLimit-Reset', 0))
+                wait  = max(reset - int(time.time()), 1)
+                wait  = min(wait, 60)  # cap at 60s
+                print(f'  Rate limited. Waiting {wait}s...')
+                time.sleep(wait)
+                continue
+            if r.status_code == 429:
+                wait = int(r.headers.get('Retry-After', 10))
+                print(f'  429 Too Many Requests. Waiting {wait}s...')
+                time.sleep(wait)
+                continue
+            print(f'  GitHub error {r.status_code}: {url}')
+            return None
+        except requests.exceptions.Timeout:
+            print(f'  Timeout on attempt {attempt+1}: {url}')
+            if attempt < retries - 1:
+                time.sleep(5)
+        except Exception as e:
+            print(f'  Request error: {e}')
+            return None
     return None
 
-def gh_get_raw(url):
-    r = requests.get(url, headers={
+def gh_get_raw(url, retries=3):
+    headers = {
         'User-Agent': 'Mize-Scraper',
         'Authorization': f'token {GITHUB_TOKEN}'
-    })
-    if r.status_code == 200:
-        return r.text
+    }
+    for attempt in range(retries):
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+            if r.status_code == 200:
+                return r.text
+            if r.status_code in (403, 429):
+                wait = int(r.headers.get('Retry-After', 10))
+                time.sleep(min(wait, 30))
+                continue
+            return None
+        except requests.exceptions.Timeout:
+            print(f'  Timeout on raw fetch attempt {attempt+1}')
+            if attempt < retries - 1:
+                time.sleep(5)
+        except Exception as e:
+            print(f'  Raw fetch error: {e}')
+            return None
     return None
 
 # ── Reference decklist similarity matching ────────────────────────────────────
@@ -678,6 +717,10 @@ def main():
             continue
         hand_cards = [game.get(f'card{i}') for i in range(1, 8) if game.get(f'card{i}')]
         if not hand_cards:
+            continue
+        mainboard = {card: hand_cards.count(card) for card in set(hand_cards)}
+        is_valid  = test_conditions(declared_def.get('Conditions', []), mainboard, {})
+        if is_valid:
             continue
         corrected = detect_archetype_from_cards(hand_cards, fingerprints)
         if corrected and corrected != declared_arch:
