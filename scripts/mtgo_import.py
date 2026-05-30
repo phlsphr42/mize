@@ -101,35 +101,6 @@ def gh_get_raw(url):
     return None
 
 # ── Archetype definitions ─────────────────────────────────────────────────────
-def load_archetype_defs_for_format(fmt):
-    folder_map = {
-        'Modern': 'Modern', 'Legacy': 'Legacy', 'Pauper': 'Pauper',
-        'Pioneer': 'Pioneer', 'Standard': 'Standard', 'Vintage': 'Vintage',
-    }
-    folder = folder_map.get(fmt)
-    if not folder:
-        return []
-    arch_url   = f'{GITHUB_API}/repos/{FORMAT_REPO}/contents/Formats/{folder}/Archetypes'
-    arch_files = gh_get_json(arch_url)
-    if not arch_files:
-        print(f'  Could not fetch {fmt} archetype definitions.')
-        return []
-    arch_defs = []
-    for f in arch_files:
-        if not f['name'].endswith('.json'):
-            continue
-        name    = f['name'].replace('.json', '')
-        raw_def = gh_get_raw(f['download_url'])
-        if raw_def:
-            try:
-                d = json.loads(raw_def)
-                d['_name'] = name
-                arch_defs.append(d)
-            except:
-                pass
-        time.sleep(0.05)
-    return arch_defs
-
 def load_custom_arch_defs():
     """Load Mize custom archetype definitions from the repo."""
     url = f'{GITHUB_API}/repos/{MIZE_REPO}/contents/{CUSTOM_ARCHETYPES_PATH}'
@@ -155,19 +126,14 @@ def load_custom_arch_defs():
         return {}
 
 def load_all_arch_defs():
-    """Load archetype definitions — custom Mize defs take priority over Badaro."""
-    print('  Loading custom Mize archetype definitions...')
+    """Load only Mize custom archetype definitions — no Badaro fallback."""
+    print('  Loading Mize custom archetype definitions...')
     custom_by_format = load_custom_arch_defs()
     all_defs = {}
     for fmt in VALIDATABLE_FORMATS:
-        print(f'  Loading {fmt} archetype definitions...')
-        badaro_defs  = load_archetype_defs_for_format(fmt)
-        custom_defs  = custom_by_format.get(fmt, {}).get('archetypes', [])
-        custom_names = {d['_name'] for d in custom_defs}
-        badaro_only  = [d for d in badaro_defs if d['_name'] not in custom_names]
-        combined     = custom_defs + badaro_only
-        all_defs[fmt] = combined
-        print(f'    {len(custom_defs)} custom + {len(badaro_only)} Badaro = {len(combined)} total')
+        custom_defs = custom_by_format.get(fmt, {}).get('archetypes', [])
+        all_defs[fmt] = custom_defs
+        print(f'  {fmt}: {len(custom_defs)} definitions loaded')
     return all_defs
 
 # ── Archetype detection ───────────────────────────────────────────────────────
@@ -228,7 +194,7 @@ def detect_archetype_from_deck(deck_data, arch_defs):
     for d in arch_defs:
         if test_conditions(d.get('Conditions', []), mainboard, sideboard):
             return d.get('_mize_name') or d.get('MizeName') or d['_name']
-    return 'Unknown'
+    return None  # None = unknown, caller stores for review
 
 # ── Utility functions ─────────────────────────────────────────────────────────
 def determine_event_type(event_name):
@@ -445,11 +411,12 @@ def main():
         print(f'  {fmt}: {count} new')
 
     # Process new events
-    event_rows  = []
-    result_rows = []
-    match_rows  = []
-    errors      = []
-    skipped     = 0
+    event_rows        = []
+    result_rows       = []
+    match_rows        = []
+    unknown_deck_rows = []
+    errors            = []
+    skipped           = 0
 
     for idx, event in enumerate(new_events):
         raw = gh_get_raw(event['download_url'])
@@ -482,7 +449,23 @@ def main():
             player_name = player.get('Player')
             deck_data   = decks_by_player.get(player_name, {})
             arch_defs   = arch_defs_by_format.get(event['format'], [])
-            player_arch_map[player_name] = detect_archetype_from_deck(deck_data, arch_defs) if deck_data else 'Unknown'
+            detected    = detect_archetype_from_deck(deck_data, arch_defs) if deck_data else None
+            player_arch_map[player_name] = detected  # None = unknown
+
+            # Store unknown decks for admin review
+            if detected is None and deck_data:
+                mb = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Mainboard', [])}
+                sb = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Sideboard', [])}
+                unknown_deck_rows.append({
+                    'event_id':    event['name'],
+                    'player_name': player_name,
+                    'format':      event['format'],
+                    'finish':      player.get('Rank'),
+                    'mainboard':   json.dumps(mb),
+                    'sideboard':   json.dumps(sb),
+                    'reviewed':    False,
+                    'created_at':  datetime.now(timezone.utc).isoformat()
+                })
 
         event_rows.append({
             'event_id':   event['name'],
@@ -495,7 +478,7 @@ def main():
 
         for player in standings:
             player_name = player.get('Player')
-            archetype   = player_arch_map.get(player_name, 'Unknown')
+            archetype   = player_arch_map.get(player_name) or 'Unknown'
             result_rows.append({
                 'event_id':            event['name'],
                 'player_name':         player_name,
@@ -555,6 +538,9 @@ def main():
     if match_rows:
         print(f'Inserting {len(match_rows)} match rows...')
         sb_insert('mtgo_matches', match_rows, batch_size=300)
+    if unknown_deck_rows:
+        print(f'Inserting {len(unknown_deck_rows)} unknown decks for review...')
+        sb_insert('mtgo_unknown_decks', unknown_deck_rows, batch_size=100)
 
     # ── Validate mymtgo game log imports ──────────────────────────────────────
     print('\nValidating mymtgo game log archetypes...')
@@ -674,6 +660,7 @@ def main():
     print(f'New results imported:   {len(result_rows)}')
     print(f'New matches imported:   {len(match_rows)}')
     print(f'Archetype corrections:  {len(corrections)}')
+    print(f'Unknown decks queued:   {len(unknown_deck_rows)}')
     print(f'Errors:                 {len(errors)}')
 
     if corrections:
