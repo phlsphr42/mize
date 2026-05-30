@@ -891,6 +891,16 @@
     </div>
     <div class="row">
       <div>
+        <label class="label">Play / Draw</label>
+        <select id="b-playdraw">
+          <option value="">Both</option>
+          <option value="Play">Play</option>
+          <option value="Draw">Draw</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
         <label class="label">Date range</label>
         <select id="b-date-preset" onchange="applyDatePreset('b')">
           <option value="all">All time</option>
@@ -963,6 +973,16 @@
           </div>
         </div>
         <input type="hidden" id="c-opponent" value="">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label class="label">Play / Draw</label>
+        <select id="c-playdraw">
+          <option value="">Both</option>
+          <option value="Play">Play</option>
+          <option value="Draw">Draw</option>
+        </select>
       </div>
     </div>
     <div class="row">
@@ -2032,6 +2052,336 @@ function clearCleanupRenames() {
   cleanupRenames = {};
   updateCleanupPending();
 }
+// ── UNKNOWN DECKS REVIEW ──────────────────────────────────────────────────────
+
+let udCurrentDeck    = null;
+let udDecks          = [];
+let udDeckIndex      = 0;
+let udCustomTaxonomy = null; // cached supertype/subtype list
+
+async function loadCustomTaxonomy() {
+  if (udCustomTaxonomy) return udCustomTaxonomy;
+  try {
+    const r = await fetch(
+      'https://raw.githubusercontent.com/phlsphr42/mize/main/scripts/custom_archetypes.json'
+    );
+    if (!r.ok) throw new Error('Could not fetch custom_archetypes.json');
+    const data = await r.json();
+    udCustomTaxonomy = data;
+    return data;
+  } catch(e) {
+    console.error('Error loading taxonomy:', e);
+    return null;
+  }
+}
+
+async function loadUnknownDecks() {
+  const format  = document.getElementById('ud-format')?.value || 'Modern';
+  const show    = document.getElementById('ud-show')?.value   || 'unreviewed';
+  const el      = document.getElementById('ud-deck-container');
+  const statsEl = document.getElementById('ud-stats');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">Loading...</div>';
+
+  // Count totals
+  const { count: totalCount } = await db.from('mtgo_unknown_decks')
+    .select('id', { count: 'exact', head: true })
+    .eq('format', format);
+  const { count: unreviewedCount } = await db.from('mtgo_unknown_decks')
+    .select('id', { count: 'exact', head: true })
+    .eq('format', format)
+    .eq('reviewed', false);
+  statsEl.textContent = `${unreviewedCount} unreviewed of ${totalCount} total unknown ${format} decks`;
+
+  // Fetch decks
+  let q = db.from('mtgo_unknown_decks')
+    .select('id,event_id,player_name,format,finish,mainboard,sideboard,assigned_name,reviewed,created_at')
+    .eq('format', format)
+    .order('finish', { ascending: true });
+  if (show === 'unreviewed') q = q.eq('reviewed', false);
+  const { data, error } = await q.limit(200);
+
+  if (error || !data?.length) {
+    el.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">No unknown decks found for this format.</div>';
+    return;
+  }
+
+  udDecks     = data;
+  udDeckIndex = 0;
+  renderUnknownDeck();
+}
+
+async function renderUnknownDeck() {
+  const el = document.getElementById('ud-deck-container');
+  if (!udDecks.length) {
+    el.innerHTML = '<div class="card" style="color:var(--success);font-size:13px;">All decks reviewed!</div>';
+    return;
+  }
+
+  const deck    = udDecks[udDeckIndex];
+  const format  = document.getElementById('ud-format')?.value || 'Modern';
+  const total   = udDecks.length;
+
+  // Load taxonomy for dropdowns
+  const taxonomy = await loadCustomTaxonomy();
+  const supertypes = taxonomy?.[format]?.supertypes || {};
+  const archetypes = taxonomy?.[format]?.archetypes || [];
+
+  // Build mainboard display sorted by count desc
+  const mb = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
+  const sb = typeof deck.sideboard === 'string' ? JSON.parse(deck.sideboard || '{}') : (deck.sideboard || {});
+  const mbSorted = Object.entries(mb).sort((a,b) => b[1]-a[1]);
+  const sbSorted = Object.entries(sb).sort((a,b) => b[1]-a[1]);
+
+  // Build supertype options
+  const supertypeOpts = ['-- Select supertype --', ...Object.keys(supertypes).sort()]
+    .map(s => `<option value="${s}">${s}</option>`).join('');
+
+  // Build subtype options (populated on supertype change)
+  const subtypeOpts = '<option value="">-- Select supertype first --</option>';
+
+  const mbHtml = mbSorted.map(([card, count]) =>
+    `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <span>${card}</span><span style="color:var(--text2);">${count}</span>
+    </div>`
+  ).join('');
+
+  const sbHtml = sbSorted.length ? sbSorted.map(([card, count]) =>
+    `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);">
+      <span>${card}</span><span>${count}</span>
+    </div>`
+  ).join('') : '<div style="font-size:12px;color:var(--text2);">No sideboard data</div>';
+
+  el.innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:13px;color:var(--text2);">Deck ${udDeckIndex+1} of ${total}</div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
+            onclick="udPrev()" ${udDeckIndex === 0 ? 'disabled' : ''}>← Prev</button>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-bottom:0;"
+            onclick="udNext()" ${udDeckIndex >= total-1 ? 'disabled' : ''}>Next →</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <div style="font-size:14px;font-weight:600;">${deck.player_name}</div>
+        <div style="font-size:12px;color:var(--text2);">
+          ${deck.event_id} · Finish: ${deck.finish ?? '—'} · ${deck.format}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">MAINBOARD (${mbSorted.reduce((s,[,n])=>s+n,0)} cards)</div>
+          <div style="max-height:300px;overflow-y:auto;">${mbHtml}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">SIDEBOARD</div>
+          <div style="max-height:300px;overflow-y:auto;">${sbHtml}</div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:12px;">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Assign archetype:</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <div style="flex:1;min-width:160px;">
+            <label class="label">Supertype</label>
+            <select id="ud-supertype" onchange="udSupertypeChanged()" style="margin-bottom:0;">
+              ${supertypeOpts}
+            </select>
+          </div>
+          <div style="flex:1;min-width:160px;">
+            <label class="label">Subtype (Mize name)</label>
+            <select id="ud-subtype" style="margin-bottom:0;">
+              ${subtypeOpts}
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:8px;">
+          <label class="label">Or create new subtype name</label>
+          <input type="text" id="ud-custom-name" placeholder="e.g. Grixis Shadow"
+            style="margin-bottom:0;font-size:12px;" oninput="udCustomNameChanged()">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="udAssign()" style="margin-bottom:0;">
+            Assign &amp; Next
+          </button>
+          <button class="btn btn-secondary" onclick="udSkip()" style="margin-bottom:0;">
+            Skip
+          </button>
+          <button class="btn btn-secondary" onclick="udSuggestDefinition()" style="margin-bottom:0;">
+            Suggest Definition
+          </button>
+        </div>
+        <div id="ud-suggestion" style="margin-top:8px;"></div>
+      </div>
+    </div>
+  `;
+
+  // Restore previous selection if deck was already assigned
+  if (deck.assigned_name) {
+    document.getElementById('ud-custom-name').value = deck.assigned_name;
+  }
+}
+
+async function udSupertypeChanged() {
+  const format    = document.getElementById('ud-format')?.value || 'Modern';
+  const supertype = document.getElementById('ud-supertype')?.value;
+  const subtypeSel = document.getElementById('ud-subtype');
+  if (!subtypeSel) return;
+
+  const taxonomy  = await loadCustomTaxonomy();
+  const archetypes = (taxonomy?.[format]?.archetypes || [])
+    .filter(a => a.Supertype === supertype);
+
+  if (!archetypes.length) {
+    subtypeSel.innerHTML = '<option value="">No subtypes defined yet</option>';
+    return;
+  }
+  subtypeSel.innerHTML = ['<option value="">-- Select subtype --</option>',
+    ...archetypes.map(a => `<option value="${a.MizeName}">${a.MizeName}</option>`)
+  ].join('');
+}
+
+function udCustomNameChanged() {
+  // Clear subtype dropdown when typing custom name
+  const custom = document.getElementById('ud-custom-name')?.value.trim();
+  if (custom) {
+    const subtypeSel = document.getElementById('ud-subtype');
+    if (subtypeSel) subtypeSel.value = '';
+  }
+}
+
+async function udAssign() {
+  const deck      = udDecks[udDeckIndex];
+  const supertype = document.getElementById('ud-supertype')?.value;
+  const subtype   = document.getElementById('ud-subtype')?.value;
+  const custom    = document.getElementById('ud-custom-name')?.value.trim();
+  const mizeName  = custom || subtype;
+
+  if (!mizeName || mizeName === '-- Select supertype first --') {
+    showToast('Please select or enter a subtype name', 'error');
+    return;
+  }
+  if (!supertype || supertype === '-- Select supertype --') {
+    showToast('Please select a supertype', 'error');
+    return;
+  }
+
+  // Update the unknown deck record
+  const { error: deckErr } = await db.from('mtgo_unknown_decks')
+    .update({
+      assigned_name:      mizeName,
+      assigned_supertype: supertype,
+      reviewed:           true,
+      reviewed_at:        new Date().toISOString(),
+      reviewed_by:        state.pilot?.pilot_name
+    })
+    .eq('id', deck.id);
+
+  if (deckErr) { showToast('Error saving assignment', 'error'); return; }
+
+  // Update mtgo_results and mtgo_matches with the correct name
+  await db.from('mtgo_results')
+    .update({ archetype_canonical: mizeName, archetype_raw: mizeName })
+    .eq('event_id', deck.event_id)
+    .eq('player_name', deck.player_name);
+
+  await db.from('mtgo_matches')
+    .update({ player1_arch: mizeName })
+    .eq('event_id', deck.event_id)
+    .eq('player1', deck.player_name);
+
+  await db.from('mtgo_matches')
+    .update({ player2_arch: mizeName })
+    .eq('event_id', deck.event_id)
+    .eq('player2', deck.player_name);
+
+  showToast(`Assigned: ${mizeName}`, 'success');
+
+  // Remove from local list and advance
+  udDecks.splice(udDeckIndex, 1);
+  if (udDeckIndex >= udDecks.length) udDeckIndex = Math.max(0, udDecks.length - 1);
+
+  // Update stats
+  const statsEl = document.getElementById('ud-stats');
+  if (statsEl) {
+    const format = document.getElementById('ud-format')?.value || 'Modern';
+    const { count } = await db.from('mtgo_unknown_decks')
+      .select('id', { count: 'exact', head: true })
+      .eq('format', format).eq('reviewed', false);
+    statsEl.textContent = `${count} unreviewed remaining`;
+  }
+
+  renderUnknownDeck();
+}
+
+function udSkip() {
+  if (udDeckIndex < udDecks.length - 1) {
+    udDeckIndex++;
+  } else {
+    udDeckIndex = 0;
+  }
+  renderUnknownDeck();
+}
+
+function udPrev() {
+  if (udDeckIndex > 0) { udDeckIndex--; renderUnknownDeck(); }
+}
+
+function udNext() {
+  if (udDeckIndex < udDecks.length - 1) { udDeckIndex++; renderUnknownDeck(); }
+}
+
+async function udSuggestDefinition() {
+  const deck = udDecks[udDeckIndex];
+  const el   = document.getElementById('ud-suggestion');
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--text2);">Generating suggestion...</div>';
+
+  const mb = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
+
+  // Find 4-ofs and 3-ofs
+  const fours  = Object.entries(mb).filter(([,n]) => n >= 4).map(([c]) => c).sort();
+  const threes = Object.entries(mb).filter(([,n]) => n === 3).map(([c]) => c).sort();
+  const custom = document.getElementById('ud-custom-name')?.value.trim();
+  const supertype = document.getElementById('ud-supertype')?.value;
+  const mizeName  = custom || document.getElementById('ud-subtype')?.value || 'Unknown';
+
+  // Build a suggested JSON definition
+  const badaroName = mizeName.replace(/[^a-zA-Z0-9]/g, '');
+  const conditions = [];
+
+  // Require top 2-3 most distinctive 4-ofs
+  const reqCards = fours.slice(0, 3);
+  reqCards.forEach(card => {
+    conditions.push({ Type: 'InMainboard', Cards: [card] });
+  });
+
+  // OneOrMoreInMainboard for 3-ofs if any
+  if (threes.length >= 2) {
+    conditions.push({ Type: 'OneOrMoreInMainboard', Cards: threes.slice(0, 4) });
+  }
+
+  const definition = {
+    Name:       badaroName,
+    MizeName:   mizeName,
+    Supertype:  supertype || '',
+    Conditions: conditions
+  };
+
+  el.innerHTML = `
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;margin-top:4px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Suggested definition (edit before adding to custom_archetypes.json):</div>
+      <pre style="font-size:11px;overflow-x:auto;margin:0;white-space:pre-wrap;">${JSON.stringify(definition, null, 2)}</pre>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;">
+        ⚠ Review carefully — 4-ofs may not be the best identifiers. Add DoesNotContain conditions to avoid false positives.
+      </div>
+    </div>
+  `;
+}
+
 
 function selectToggle(el, group, value) {
   el.closest('.toggle-group').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
@@ -3120,7 +3470,7 @@ eventsRes,
       db.from('raw_game_log').select('deck_archetype').gte('timestamp', day30).not('deck_archetype', 'is', null),
       db.from('raw_game_log').select('timestamp').gte('timestamp', day30).not('migration_flag', 'eq', 'MIGRATED'),
   db.from('app_events').select('pilot_name,event_type,event_data,created_at')
-        .gte('created_at', day90).order('created_at', { ascending: false }),
+        .gte('created_at', day90).neq('pilot_name', state.pilot.pilot_name).order('created_at', { ascending: false }),
       db.from('raw_game_log').select('id', { count: 'exact', head: true }).not('external_id', 'is', null),
       db.from('raw_game_log').select('id', { count: 'exact', head: true }).is('external_id', null),
       db.from('raw_game_log').select('pilot_name,deck_archetype,timestamp')
@@ -3264,15 +3614,17 @@ container.innerHTML = `
         <div class="analysis-tab"         onclick="adminTab('activity')"  id="atab-activity">Activity</div>
         <div class="analysis-tab"         onclick="adminTab('sources')"   id="atab-sources">Sources</div>
         <div class="analysis-tab"         onclick="adminTab('import')"    id="atab-import">Import</div>
-        <div class="analysis-tab"         onclick="adminTab('cleanup')"   id="atab-cleanup">Cleanup</div>
+        <div class="analysis-tab"         onclick="adminTab('cleanup')"        id="atab-cleanup">Cleanup</div>
+        <div class="analysis-tab"         onclick="adminTab('unknowndecks')"   id="atab-unknowndecks">Unknown Decks</div>
       </div>
       <div id="apanel-overview"></div>
-      <div id="apanel-users"    style="display:none;"></div>
-      <div id="apanel-features" style="display:none;"></div>
-      <div id="apanel-activity" style="display:none;"></div>
-      <div id="apanel-sources"  style="display:none;"></div>
-      <div id="apanel-import"   style="display:none;"></div>
-      <div id="apanel-cleanup"  style="display:none;"></div>
+      <div id="apanel-users"         style="display:none;"></div>
+      <div id="apanel-features"      style="display:none;"></div>
+      <div id="apanel-activity"      style="display:none;"></div>
+      <div id="apanel-sources"       style="display:none;"></div>
+      <div id="apanel-import"        style="display:none;"></div>
+      <div id="apanel-cleanup"       style="display:none;"></div>
+      <div id="apanel-unknowndecks"  style="display:none;"></div>
     `;
 
     // ── OVERVIEW ──
@@ -3567,6 +3919,44 @@ container.innerHTML = `
         </div>
       </div>
     `;
+
+    // ── UNKNOWN DECKS ──
+    document.getElementById('apanel-unknowndecks').innerHTML = `
+      <div class="card">
+        <div class="card-title">Unknown Decks Review</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+          Decks imported from MTGO that didn't match any known archetype definition.
+          Assign each deck a supertype and subtype, or create new ones.
+        </p>
+        <div class="row" style="gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <div>
+            <label class="label">Format</label>
+            <select id="ud-format" onchange="loadUnknownDecks()">
+              <option value="Modern">Modern</option>
+              <option value="Legacy">Legacy</option>
+              <option value="Pioneer">Pioneer</option>
+              <option value="Pauper">Pauper</option>
+              <option value="Vintage">Vintage</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Show</label>
+            <select id="ud-show" onchange="loadUnknownDecks()">
+              <option value="unreviewed">Unreviewed only</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn btn-secondary" onclick="loadUnknownDecks()" style="margin-bottom:0;">
+              Load decks
+            </button>
+          </div>
+        </div>
+        <div id="ud-stats" style="font-size:12px;color:var(--text2);"></div>
+      </div>
+      <div id="ud-deck-container"></div>
+    `;
+
   } catch(e) {
     document.getElementById('admin-results').innerHTML =
       `<div class="card" style="color:var(--danger);">Error: ${e.message}</div>`;
@@ -3576,7 +3966,7 @@ container.innerHTML = `
 }
 
 window.adminTab = function(tab) {
-  ['overview','users','features','activity','sources','import','cleanup'].forEach(t => {
+  ['overview','users','features','activity','sources','import','cleanup','unknowndecks'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
   });
@@ -4636,9 +5026,9 @@ function getDateRange(panel) {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
-async function fetchSummaryData(scope, filter, deck, panel, opponent) {
+async function fetchSummaryData(scope, filter, deck, panel, opponent, playdraw) {
   let query = db.from('raw_game_log')
-    .select('pilot_name,deck_archetype,game_number,pre_post,opponent_archetype,card1,card2,card3,card4,card5,card6,card7,game_result')
+    .select('pilot_name,deck_archetype,game_number,pre_post,opponent_archetype,card1,card2,card3,card4,card5,card6,card7,game_result,play_draw,mulligan_count')
     .not('game_result', 'is', null);
   if (scope === 'mine') query = query.eq('pilot_name', state.pilot.pilot_name);
   if (deck) query = query.eq('deck_archetype', deck);
@@ -4651,6 +5041,8 @@ async function fetchSummaryData(scope, filter, deck, panel, opponent) {
   else if (filter === 'Post') query = query.eq('pre_post', 'Post');
   else if (filter === 'Pre_G1')   query = query.eq('pre_post', 'Pre').eq('game_number', 'G1');
   else if (filter === 'Post_G23') query = query.eq('pre_post', 'Post').eq('game_number', 'G23');
+  if (playdraw === 'Play') query = query.eq('play_draw', 'Play');
+  else if (playdraw === 'Draw') query = query.eq('play_draw', 'Draw');
   if (panel) {
     const dateRange = getDateRange(panel);
     if (dateRange.from) query = query.gte('timestamp', dateRange.from);
@@ -4661,9 +5053,14 @@ async function fetchSummaryData(scope, filter, deck, panel, opponent) {
   const games = data || [];
   const cardCounts = {};
   const allCards = new Set();
+
+  // Also track per-mulligan counts for breakdown
+  const cardMulliganCounts = {}; // card -> mulligan_bucket -> copyCount -> {wins,total}
+
   for (const g of games) {
     const isWin = g.game_result === 'Win';
     const hand = [g.card1,g.card2,g.card3,g.card4,g.card5,g.card6,g.card7].filter(c => c && c.trim());
+    const mull = g.mulligan_count != null ? Math.min(g.mulligan_count, 3) : null; // 0,1,2,3+
     const counts = {};
     for (const card of hand) {
       counts[card] = (counts[card] || 0) + 1;
@@ -4674,10 +5071,19 @@ async function fetchSummaryData(scope, filter, deck, panel, opponent) {
       if (!cardCounts[card][count]) cardCounts[card][count] = { wins: 0, total: 0 };
       cardCounts[card][count].wins += isWin ? 1 : 0;
       cardCounts[card][count].total += 1;
+      // Mulligan breakdown
+      if (mull !== null) {
+        if (!cardMulliganCounts[card]) cardMulliganCounts[card] = {};
+        if (!cardMulliganCounts[card][mull]) cardMulliganCounts[card][mull] = {};
+        if (!cardMulliganCounts[card][mull][count]) cardMulliganCounts[card][mull][count] = { wins: 0, total: 0 };
+        cardMulliganCounts[card][mull][count].wins += isWin ? 1 : 0;
+        cardMulliganCounts[card][mull][count].total += 1;
+      }
     }
   }
   for (const g of games) {
     const isWin = g.game_result === 'Win';
+    const mull = g.mulligan_count != null ? Math.min(g.mulligan_count, 3) : null;
     const hand = new Set([g.card1,g.card2,g.card3,g.card4,g.card5,g.card6,g.card7].filter(c => c && c.trim()));
     for (const card of allCards) {
       if (!hand.has(card)) {
@@ -4685,13 +5091,25 @@ async function fetchSummaryData(scope, filter, deck, panel, opponent) {
         if (!cardCounts[card][0]) cardCounts[card][0] = { wins: 0, total: 0 };
         cardCounts[card][0].wins += isWin ? 1 : 0;
         cardCounts[card][0].total += 1;
+        if (mull !== null) {
+          if (!cardMulliganCounts[card]) cardMulliganCounts[card] = {};
+          if (!cardMulliganCounts[card][mull]) cardMulliganCounts[card][mull] = {};
+          if (!cardMulliganCounts[card][mull][0]) cardMulliganCounts[card][mull][0] = { wins: 0, total: 0 };
+          cardMulliganCounts[card][mull][0].wins += isWin ? 1 : 0;
+          cardMulliganCounts[card][mull][0].total += 1;
+        }
       }
     }
   }
   const rows = [];
   for (const [card, copies] of Object.entries(cardCounts)) {
     for (const [copyCount, stats] of Object.entries(copies)) {
-      rows.push({ card_name: card, copy_count: parseInt(copyCount), wins: stats.wins, total: stats.total, win_rate: stats.total > 0 ? stats.wins / stats.total : 0 });
+      rows.push({
+        card_name: card, copy_count: parseInt(copyCount),
+        wins: stats.wins, total: stats.total,
+        win_rate: stats.total > 0 ? stats.wins / stats.total : 0,
+        mulligan_data: cardMulliganCounts[card] || null
+      });
     }
   }
   return rows;
@@ -4706,8 +5124,9 @@ async function calcBayesian() {
   document.getElementById('btn-calc-b').disabled = true;
   try {
     let myData = [], allData = [];
-    if (scope === 'mine'    || scope === 'compare') { setProgress('b', 20); myData  = await fetchSummaryData('mine', filter, deck, 'b', opponent); }
-    if (scope === 'all'     || scope === 'compare') { setProgress('b', 50); allData = await fetchSummaryData('all',  filter, deck, 'b', opponent); }
+    if (scope === 'mine'    || scope === 'compare') { setProgress('b', 20); const playdrawB = document.getElementById('b-playdraw')?.value || '';
+      myData  = await fetchSummaryData('mine', filter, deck, 'b', opponent, playdrawB); }
+    if (scope === 'all'     || scope === 'compare') { setProgress('b', 50); allData = await fetchSummaryData('all',  filter, deck, 'b', opponent, playdrawB); }
     setProgress('b', 80);
     const M = 20;
     const myScores  = scope !== 'all'  ? computeBayesianScores(myData,  M) : [];
@@ -4726,13 +5145,14 @@ async function calcChiSquared() {
   const filter   = document.getElementById('c-filter').value;
   const deck     = document.getElementById('c-deck').value;
   const opponent = document.getElementById('c-opponent').value;
+  const playdraw = document.getElementById('c-playdraw')?.value || '';
   const scope    = state.scopeC;
   setProgress('c', 10);
   document.getElementById('btn-calc-c').disabled = true;
   try {
     let myData = [], allData = [];
-    if (scope === 'mine'    || scope === 'compare') { setProgress('c', 20); myData  = await fetchSummaryData('mine', filter, deck, 'c', opponent); }
-    if (scope === 'all'     || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all',  filter, deck, 'c', opponent); }
+    if (scope === 'mine'    || scope === 'compare') { setProgress('c', 20); myData  = await fetchSummaryData('mine', filter, deck, 'c', opponent, playdraw); }
+    if (scope === 'all'     || scope === 'compare') { setProgress('c', 50); allData = await fetchSummaryData('all',  filter, deck, 'c', opponent, playdraw); }
     setProgress('c', 80);
 const myResults  = scope !== 'all'  ? computeChiSquared(myData)  : [];
     const allResults = scope !== 'mine' ? computeChiSquared(allData) : [];
@@ -4903,7 +5323,7 @@ function computeChiSquared(rows) {
   const byCard = {};
   rows.forEach(r => {
     if (!byCard[r.card_name]) byCard[r.card_name] = {};
-    byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total };
+    byCard[r.card_name][r.copy_count] = { wins: r.wins, total: r.total, mulligan_data: r.mulligan_data };
   });
   const results = [];
   Object.entries(byCard).forEach(function(entry) {
@@ -4926,23 +5346,29 @@ function computeChiSquared(rows) {
 
       if (insufficientData) {
         // Include the card but flag it
+        const wilsonWI = wilsonInterval(cd.wins, cd.total);
         results.push({
           card: card, copyCount: k,
           chi2: null, p: null,
           direction: wrWith > wrWithout ? 'positive' : 'negative',
           wrWith: wrWith, wrWithout: wrWithout,
           sampleWith: cd.total, sampleWithout: base.total,
+          wilsonLow: wilsonWI.low, wilsonHigh: wilsonWI.high,
+          mulliganData: copies[k]?.mulligan_data || null,
           insufficientData: true
         });
       } else {
         const chi2 = n * Math.pow(a*d - b*c, 2) / ((a+b)*(c+d)*(a+c)*(b+d));
         const p = 1 - chi2CDF(chi2, 1);
+        const wilsonW = wilsonInterval(cd.wins, cd.total);
         results.push({
           card: card, copyCount: k,
           chi2: chi2, p: p,
           direction: wrWith > wrWithout ? 'positive' : 'negative',
           wrWith: wrWith, wrWithout: wrWithout,
           sampleWith: cd.total, sampleWithout: base.total,
+          wilsonLow: wilsonW.low, wilsonHigh: wilsonW.high,
+          mulliganData: rows.find(r => r.card_name === card)?.mulligan_data || null,
           insufficientData: false
         });
       }
@@ -5069,14 +5495,61 @@ function renderChiResults(result, fromCache) {
             '</div>';
     } else if (!r.insufficientData && r.chi2 != null && r.p != null) {
           const rowSigClass = r.p < 0.01 ? 'sig-high' : r.p < 0.05 ? 'sig-med' : 'sig-low';
+          const wilsonStr = r.wilsonLow != null
+            ? ' <span style="color:var(--text2);font-size:10px;">[' + (r.wilsonLow*100).toFixed(1) + '–' + (r.wilsonHigh*100).toFixed(1) + '%]</span>'
+            : '';
           html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
             '<div style="font-size:11px;color:var(--text2);min-width:40px;">' + r.copyCount + '×</div>' +
             '<div style="font-size:11px;color:var(--text2);min-width:50px;">' + r.sampleWith + 'g with</div>' +
             '<div style="font-size:11px;min-width:50px;">χ²&nbsp;' + r.chi2.toFixed(2) + '</div>' +
             '<div style="font-size:11px;min-width:60px;">p&nbsp;' + (r.p < 0.0001 ? '&lt;0.0001' : r.p.toFixed(4)) + '</div>' +
-            '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(wrDiff) + '%</span></div>' +
+            '<div style="flex:1;"><span class="' + dirClass + '" style="font-size:12px;">' + dirLabel + Math.abs(wrDiff) + '%</span>' + wilsonStr + '</div>' +
             '<span class="' + rowSigClass + '" style="font-size:11px;">' + (r.p < 0.01 ? '**' : r.p < 0.05 ? '*' : 'ns') + '</span>' +
             '</div>';
+          // Mulligan breakdown
+          if (r.mulliganData) {
+            const mullLabels = ['0 mull', '1 mull', '2 mull', '3+ mull'];
+            let mullHtml = '';
+            for (let m = 0; m <= 3; m++) {
+              const mData = r.mulliganData[m];
+              if (!mData) continue;
+              const withData    = mData[r.copyCount];
+              const withoutData = mData[0];
+              if (!withData || withData.total < 3) continue;
+              const wrW = withData.wins / withData.total;
+              const wrWO = withoutData ? withoutData.wins / withoutData.total : null;
+              // Chi-squared for this mulligan bucket
+              let chiStr = '', wilsonMStr = '';
+              if (withoutData && withoutData.total >= 3) {
+                const a = withData.wins, b = withData.total - withData.wins;
+                const c = withoutData.wins, d = withoutData.total - withoutData.wins;
+                const n = a+b+c+d;
+                if (n > 0) {
+                  const e1=(a+c)*(a+b)/n,e2=(a+c)*(c+d)/n,e3=(b+d)*(a+b)/n,e4=(b+d)*(c+d)/n;
+                  if (e1>=5&&e2>=5&&e3>=5&&e4>=5) {
+                    const chi2m = n*Math.pow(a*d-b*c,2)/((a+b)*(c+d)*(a+c)*(b+d));
+                    const pm = 1 - chi2CDF(chi2m, 1);
+                    const sigM = pm < 0.01 ? '**' : pm < 0.05 ? '*' : 'ns';
+                    const sigMCls = pm < 0.01 ? 'sig-high' : pm < 0.05 ? 'sig-med' : 'sig-low';
+                    chiStr = ' χ²&nbsp;' + chi2m.toFixed(2) + ' <span class="' + sigMCls + '" style="font-size:10px;">' + sigM + '</span>';
+                  }
+                }
+              }
+              const wM = wilsonInterval(withData.wins, withData.total);
+              wilsonMStr = ' <span style="color:var(--text2);font-size:10px;">[' + (wM.low*100).toFixed(1) + '–' + (wM.high*100).toFixed(1) + '%]</span>';
+              const diffM = wrWO != null ? ((wrW - wrWO)*100).toFixed(1) : null;
+              const dirM = diffM != null && parseFloat(diffM) >= 0 ? 'dir-pos' : 'dir-neg';
+              const dirLM = diffM != null && parseFloat(diffM) >= 0 ? '▲ +' : '▼ −';
+              mullHtml += '<div style="padding:4px 10px 4px 24px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface2);opacity:0.9;">' +
+                '<div style="font-size:10px;color:var(--text2);min-width:50px;">' + mullLabels[m] + '</div>' +
+                '<div style="font-size:10px;color:var(--text2);">' + withData.total + 'g</div>' +
+                '<div style="font-size:10px;">WR&nbsp;' + (wrW*100).toFixed(1) + '%' + wilsonMStr + '</div>' +
+                (diffM != null ? '<span class="' + dirM + '" style="font-size:10px;">' + dirLM + Math.abs(parseFloat(diffM)) + '%</span>' : '') +
+                chiStr +
+                '</div>';
+            }
+            if (mullHtml) html += mullHtml;
+          }
         } else {
           html += '<div style="padding:6px 10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;opacity:0.6;">' +
             '<div style="font-size:11px;color:var(--text2);min-width:40px;">' + r.copyCount + '×</div>' +
@@ -5093,7 +5566,9 @@ function renderChiResults(result, fromCache) {
     html += '<div style="font-size:11px;color:var(--text2);margin-top:8px;">' +
       '** p&lt;0.01 highly significant &nbsp;* p&lt;0.05 significant &nbsp;ns not significant<br>' +
       '▲ positive: win rate higher with card in hand &nbsp;▼ negative: win rate lower<br>' +
-      '⚠ insufficient data: sample size too small for statistical significance</div>';
+      '[x%–y%] = 95% Wilson confidence interval for win rate with card<br>' +
+      '⚠ insufficient data: sample size too small for statistical significance<br>' +
+      'Mulligan rows (indented) show breakdown by number of mulligans taken</div>';
     return html;
   };
 
