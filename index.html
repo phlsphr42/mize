@@ -1285,9 +1285,7 @@ let state = {
   artCardName: null, artPrintings: [], artSelectedUrl: null,
   scopeB: 'mine', scopeC: 'mine', chiSortKey: 'p',
   cache: { b: null, c: null },
-  lastCalc: { b: 0, c: 0 },
-  oppTaxonomy: null, oppCardsSeen: null,
-  matchFormat: null
+  lastCalc: { b: 0, c: 0 }
 };
 
 // ── UTILITIES ──────────────────────────────────────────────────────
@@ -1743,15 +1741,18 @@ function showScreen(id) {
     } else {
       oppBuildSupertypeGrid();
     }
-    // Show last opponent shortcut if available
+    state.opponent = null;
+    const oppSearch = document.getElementById('opponent-search'); if (oppSearch) oppSearch.value = '';
+    document.getElementById('opponent-selected').style.display = 'none';
+    document.getElementById('btn-confirm-opponent').disabled = true;
+    document.getElementById('archetype-list').innerHTML = '';
     if (state.lastOpponent) {
       const sec = document.getElementById('opponent-prefill-section');
       const btn = document.getElementById('btn-use-last-opponent');
-      if (sec) sec.style.display = 'block';
-      if (btn) btn.textContent = 'Use last opponent: ' + state.lastOpponent;
+      sec.style.display = 'block';
+      btn.textContent = 'Use last opponent: ' + state.lastOpponent;
     } else {
-      const sec = document.getElementById('opponent-prefill-section');
-      if (sec) sec.style.display = 'none';
+      document.getElementById('opponent-prefill-section').style.display = 'none';
     }
   }
   if (id === 'screen-admin') {
@@ -2432,9 +2433,14 @@ async function renderUnknownDeck() {
   // Build subtype options (populated on supertype change)
   const subtypeOpts = '<option value="">-- Select supertype first --</option>';
 
+  // Build mainboard with checkboxes for identifier selection
   const mbHtml = mbSorted.map(([card, count]) =>
-    `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--border);font-size:12px;">
-      <span>${card}</span><span style="color:var(--text2);">${count}</span>
+    `<div style="display:flex;align-items:center;padding:2px 0;border-bottom:1px solid var(--border);font-size:12px;gap:6px;">
+      <input type="checkbox" class="id-card-cb" data-card="${card.replace(/"/g,'&quot;')}"
+        id="cb-${CSS.escape(card)}" onchange="udUpdateIdentifierPreview()"
+        style="width:auto;margin:0;padding:0;flex-shrink:0;">
+      <label for="cb-${CSS.escape(card)}" style="flex:1;cursor:pointer;">${card}</label>
+      <span style="color:var(--text2);">${count}</span>
     </div>`
   ).join('');
 
@@ -2466,11 +2472,21 @@ async function renderUnknownDeck() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div>
           <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">MAINBOARD (${mbSorted.reduce((s,[,n])=>s+n,0)} cards)</div>
-          <div style="max-height:300px;overflow-y:auto;">${mbHtml}</div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">☑ Check 3 cards to set as identifier</div>
+          <div style="max-height:340px;overflow-y:auto;">${mbHtml}</div>
         </div>
         <div>
           <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">SIDEBOARD</div>
-          <div style="max-height:300px;overflow-y:auto;">${sbHtml}</div>
+          <div style="max-height:340px;overflow-y:auto;">${sbHtml}</div>
+        </div>
+      </div>
+
+      <!-- Identifier preview -->
+      <div id="ud-identifier-preview" style="margin-bottom:12px;display:none;">
+        <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:6px;padding:8px;">
+          <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px;">IDENTIFIER SELECTED</div>
+          <div id="ud-identifier-cards" style="font-size:12px;"></div>
+          <div id="ud-identifier-warning" style="font-size:11px;color:var(--warning);margin-top:4px;display:none;"></div>
         </div>
       </div>
 
@@ -2510,11 +2526,16 @@ async function renderUnknownDeck() {
           <button class="btn btn-secondary" onclick="udSkip()" style="margin-bottom:0;">
             Skip
           </button>
-          <button class="btn btn-secondary" onclick="udSuggestDefinition()" style="margin-bottom:0;">
-            Suggest Definition
+          <button class="btn btn-secondary" onclick="udSuggestIdentifier()" style="margin-bottom:0;">
+            Auto-suggest Identifier
+          </button>
+          <button class="btn btn-secondary" onclick="udFindSimilarByIdentifier()" id="ud-find-btn"
+            style="margin-bottom:0;display:none;">
+            🔍 Find similar in queue
           </button>
         </div>
         <div id="ud-suggestion" style="margin-top:8px;"></div>
+        <div id="ud-similar-results" style="margin-top:8px;"></div>
       </div>
     </div>
   `;
@@ -2523,6 +2544,9 @@ async function renderUnknownDeck() {
   if (deck.assigned_name) {
     document.getElementById('ud-custom-name').value = deck.assigned_name;
   }
+
+  // Auto-suggest identifier from 4-ofs
+  udAutoCheckIdentifierCards(mb);
 }
 
 async function udSupertypeChanged() {
@@ -2565,9 +2589,98 @@ function udCustomSupertypeChanged() {
 
 let anAllNames = []; // full list for filtering
 
+async function loadArchetypeNames() {
+  const format    = document.getElementById('an-format')?.value || '';
+  const statsEl   = document.getElementById('an-stats');
+  const container = document.getElementById('an-names-container');
+  const searchRow = document.getElementById('an-search-row');
+  if (!container) return;
 
+  container.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0;">Loading...</div>';
 
+  // Fetch all distinct deck_archetype values from raw_game_log
+  let query = db.from('raw_game_log')
+    .select('deck_archetype, format')
+    .not('deck_archetype', 'is', null);
+  if (format) query = query.eq('format', format);
+  const { data, error } = await query.limit(100000);
+  if (error || !data) { container.innerHTML = '<div style="color:var(--danger);">Error loading data</div>'; return; }
 
+  // Count occurrences per name
+  const counts = {};
+  data.forEach(r => {
+    const n = r.deck_archetype;
+    counts[n] = (counts[n] || 0) + 1;
+  });
+
+  anAllNames = Object.entries(counts)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([name, count]) => ({ name, count }));
+
+  statsEl.textContent = `${anAllNames.length} distinct archetype names across ${data.length} games`;
+  searchRow.style.display = '';
+  document.getElementById('an-search').value = '';
+  renderArchetypeNames(anAllNames);
+}
+
+function filterArchetypeNames() {
+  const q = document.getElementById('an-search')?.value.toLowerCase() || '';
+  const filtered = q ? anAllNames.filter(n => n.name.toLowerCase().includes(q)) : anAllNames;
+  renderArchetypeNames(filtered);
+}
+
+function renderArchetypeNames(names) {
+  const container = document.getElementById('an-names-container');
+  if (!names.length) {
+    container.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">No names found.</div>';
+    return;
+  }
+
+  container.innerHTML = names.map(({ name, count }) => `
+    <div id="an-row-${CSS.escape(name)}" style="border:1px solid var(--border);border-radius:6px;margin-bottom:4px;padding:8px 10px;display:flex;align-items:center;gap:8px;background:var(--surface);">
+      <div style="flex:1;">
+        <span style="font-size:13px;font-weight:600;">${name}</span>
+        <span style="font-size:11px;color:var(--text2);margin-left:8px;">${count} game${count !== 1 ? 's' : ''}</span>
+      </div>
+      <input type="text" id="an-input-${CSS.escape(name)}" value="${name}"
+        style="width:200px;margin-bottom:0;font-size:12px;"
+        onkeydown="if(event.key==='Enter') renameArchetype('${name.replace(/'/g, "\'")}')">
+      <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;margin-bottom:0;white-space:nowrap;"
+        onclick="renameArchetype('${name.replace(/'/g, "\'")}')">Rename</button>
+    </div>
+  `).join('');
+}
+
+async function renameArchetype(oldName) {
+  const inputEl = document.getElementById('an-input-' + CSS.escape(oldName));
+  if (!inputEl) return;
+  const newName = inputEl.value.trim();
+  if (!newName || newName === oldName) { showToast('Name unchanged', 'error'); return; }
+
+  const format = document.getElementById('an-format')?.value || '';
+  let q1 = db.from('raw_game_log').update({ deck_archetype: newName }).eq('deck_archetype', oldName);
+  let q2 = db.from('raw_game_log').update({ opponent_archetype: newName }).eq('opponent_archetype', oldName);
+  if (format) { q1 = q1.eq('format', format); q2 = q2.eq('format', format); }
+
+  const [r1, r2] = await Promise.all([q1, q2]);
+  if (r1.error || r2.error) {
+    showToast('Error renaming: ' + (r1.error || r2.error).message, 'error');
+    return;
+  }
+
+  showToast(`Renamed "${oldName}" → "${newName}"`, 'success');
+
+  // Update local list and re-render
+  const existing = anAllNames.find(n => n.name === newName);
+  const old      = anAllNames.find(n => n.name === oldName);
+  if (existing && old) {
+    existing.count += old.count;
+    anAllNames = anAllNames.filter(n => n.name !== oldName);
+  } else if (old) {
+    old.name = newName;
+  }
+  filterArchetypeNames();
+}
 
 async function loadPendingDefinitions() {
   const el = document.getElementById('ud-pending-defs');
@@ -2830,6 +2943,12 @@ async function udAssign() {
 
   showToast(`Assigned: ${mizeName}`, 'success');
 
+  // Save identifier (3-card combo) if 3 cards are checked
+  try {
+    const identifierSaved = await saveIdentifierForCurrentDeck(mizeName, deck.format);
+    if (identifierSaved) showToast(`Identifier saved for ${mizeName}`, 'success');
+  } catch(e) { console.warn('Could not save identifier:', e); }
+
   // Auto-generate a suggested definition and save it as a pending definition
   try {
     const mb = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
@@ -2888,67 +3007,372 @@ function udNext() {
   if (udDeckIndex < udDecks.length - 1) { udDeckIndex++; renderUnknownDeck(); }
 }
 
-async function udSuggestDefinition() {
-  const deck     = udDecks[udDeckIndex];
-  const el       = document.getElementById('ud-suggestion');
-  if (!el) return;
-  el.innerHTML = '<div style="font-size:12px;color:var(--text2);">Analysing deck...</div>';
+// ── IDENTIFIER SELECTION HELPERS ─────────────────────────────────────────────
 
-  const mb       = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
-  const mizeName = document.getElementById('ud-custom-name')?.value.trim()
-    || document.getElementById('ud-subtype')?.value || 'Unknown';
-  const format   = document.getElementById('ud-format')?.value || 'Modern';
+function udAutoCheckIdentifierCards(mb) {
+  // Pre-check the top 3 cards by count (4-ofs first, then 3-ofs, etc.)
+  const sorted = Object.entries(mb).sort((a,b) => b[1]-a[1]);
+  const top3 = sorted.slice(0, 3).map(([card]) => card);
+  top3.forEach(card => {
+    const cb = document.getElementById('cb-' + CSS.escape(card));
+    if (cb) cb.checked = true;
+  });
+  udUpdateIdentifierPreview();
+}
 
-  // Get cards with 3+ copies, sorted by quantity desc
-  const candidates = Object.entries(mb)
-    .filter(([,n]) => n >= 3)
-    .sort((a, b) => b[1] - a[1])
-    .map(([c]) => c);
+function udGetCheckedIdentifierCards() {
+  return [...document.querySelectorAll('.id-card-cb:checked')].map(cb => cb.dataset.card);
+}
 
-  // Cross-reference against other assigned decks of same archetype
-  const { data: siblings } = await db.from('mtgo_unknown_decks')
-    .select('mainboard')
-    .eq('format', format)
-    .eq('assigned_name', mizeName)
-    .eq('reviewed', true)
-    .limit(20);
+function udUpdateIdentifierPreview() {
+  const checked = udGetCheckedIdentifierCards();
+  const preview = document.getElementById('ud-identifier-preview');
+  const cardsEl = document.getElementById('ud-identifier-cards');
+  const warnEl  = document.getElementById('ud-identifier-warning');
+  const findBtn = document.getElementById('ud-find-btn');
 
-  let bestThree = [];
-  if (siblings?.length >= 2) {
-    const siblingCardSets = siblings.map(s => {
-      const m = typeof s.mainboard === 'string' ? JSON.parse(s.mainboard) : s.mainboard;
-      return new Set(Object.keys(m));
-    });
-    const scores = {};
-    candidates.forEach(card => {
-      scores[card] = siblingCardSets.filter(s => s.has(card)).length;
-    });
-    bestThree = [...candidates]
-      .sort((a, b) => (scores[b] || 0) - (scores[a] || 0))
-      .slice(0, 3);
-  } else {
-    bestThree = candidates.slice(0, 3);
-  }
+  if (!preview) return;
 
-  if (bestThree.length < 3) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--warning);">Not enough high-copy cards found. Assign more decks of this type first to improve the suggestion.</div>';
+  if (checked.length === 0) {
+    preview.style.display = 'none';
+    if (findBtn) findBtn.style.display = 'none';
     return;
   }
 
-  const entry = JSON.stringify({ [mizeName]: bestThree }, null, 2);
+  preview.style.display = '';
+  cardsEl.textContent = checked.join(' + ');
+
+  if (checked.length !== 3) {
+    warnEl.textContent = `Select exactly 3 cards (${checked.length} selected)`;
+    warnEl.style.display = '';
+    if (findBtn) findBtn.style.display = 'none';
+  } else {
+    warnEl.style.display = 'none';
+    if (findBtn) findBtn.style.display = '';
+  }
+}
+
+async function udSuggestIdentifier() {
+  // Uncheck all, then check the 3 most uniquely-identifying cards
+  // (4-ofs preferred; among equal count, prefer non-basic, non-generic cards)
+  const deck = udDecks[udDeckIndex];
+  const mb   = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
+
+  const format = document.getElementById('ud-format')?.value || 'Modern';
+
+  // Load all existing identifiers for this format to check for conflicts
+  const { data: existing } = await db.from('archetype_identifiers')
+    .select('card1,card2,card3,archetype_name')
+    .eq('format', format);
+
+  const GENERIC_CARDS = new Set([
+    'Island','Forest','Mountain','Plains','Swamp',
+    'Flooded Strand','Polluted Delta','Windswept Heath','Wooded Foothills','Bloodstained Mire',
+    'Scalding Tarn','Misty Rainforest','Verdant Catacombs','Marsh Flats','Arid Mesa',
+    'Lightning Bolt','Path to Exile','Fatal Push','Thoughtseize','Inquisition of Kozilek',
+    'Counterspell','Brainstorm','Ponder','Preordain','Force of Will','Daze',
+    'Mishra\'s Bauble', 'Urza\'s Bauble'
+  ]);
+
+  const sorted = Object.entries(mb)
+    .filter(([card]) => !GENERIC_CARDS.has(card))
+    .sort((a,b) => b[1]-a[1]);
+
+  // Uncheck all first
+  document.querySelectorAll('.id-card-cb').forEach(cb => { cb.checked = false; });
+
+  // Check best 3
+  const top3 = sorted.slice(0, 3).map(([card]) => card);
+  top3.forEach(card => {
+    const cb = document.getElementById('cb-' + CSS.escape(card));
+    if (cb) cb.checked = true;
+  });
+
+  udUpdateIdentifierPreview();
+
+  // Warn if this combo already exists for another archetype
+  if (top3.length === 3 && existing) {
+    const sorted3 = [...top3].sort();
+    const conflict = existing.find(r => {
+      const s = [r.card1, r.card2, r.card3].sort();
+      return s[0]===sorted3[0] && s[1]===sorted3[1] && s[2]===sorted3[2];
+    });
+    if (conflict) {
+      const warnEl = document.getElementById('ud-identifier-warning');
+      if (warnEl) {
+        warnEl.textContent = `⚠ This combo already identifies "${conflict.archetype_name}" — pick different cards.`;
+        warnEl.style.display = '';
+      }
+    }
+  }
+}
+
+async function udFindSimilarByIdentifier() {
+  const checked = udGetCheckedIdentifierCards();
+  if (checked.length !== 3) {
+    showToast('Select exactly 3 identifier cards first', 'error');
+    return;
+  }
+  const el = document.getElementById('ud-similar-results');
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--text2);">Scanning queue for matching decks...</div>';
+
+  const format = document.getElementById('ud-format')?.value || 'Modern';
+  // Search all unreviewed decks in this format
+  let allDecks = [];
+  let offset = 0;
+  while (true) {
+    const { data, error } = await db.from('mtgo_unknown_decks')
+      .select('id,event_id,player_name,finish,mainboard')
+      .eq('format', format)
+      .eq('reviewed', false)
+      .range(offset, offset + 499);
+    if (error || !data?.length) break;
+    allDecks.push(...data);
+    if (data.length < 500) break;
+    offset += 500;
+  }
+
+  const cardSet = new Set(checked);
+  const matches = allDecks.filter(d => {
+    const mb = typeof d.mainboard === 'string' ? JSON.parse(d.mainboard) : d.mainboard;
+    return checked.every(card => mb[card] > 0);
+  }).filter(d => d.id !== udDecks[udDeckIndex]?.id);
+
+  if (!matches.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0;">No other unreviewed decks contain all 3 cards.</div>';
+    return;
+  }
+
+  const mizeName  = document.getElementById('ud-custom-name')?.value.trim()
+    || document.getElementById('ud-subtype')?.value
+    || '';
 
   el.innerHTML = `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;margin-top:4px;">
-      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">
-        Add to <code>key_cards → ${format}</code> in custom_archetypes.json:
+    <div class="card" style="margin-top:8px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;">
+        🔍 ${matches.length} matching deck${matches.length !== 1 ? 's' : ''} found in queue
       </div>
-      <pre style="font-size:12px;overflow-x:auto;margin:0;white-space:pre-wrap;color:var(--accent);">${entry}</pre>
-      <div style="font-size:11px;color:var(--text2);margin-top:6px;">
-        These 3 cards appear most consistently across known ${mizeName} decks.
-        Verify they are not present in other archetypes before adding.
+      ${mizeName ? `
+        <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">
+          These decks all contain ${checked.join(' + ')}. Assign them all as "${mizeName}"?
+        </p>
+        <button class="btn btn-primary" onclick="udBulkAssignSimilar(${JSON.stringify(matches.map(d=>d.id))})"
+          style="margin-bottom:8px;font-size:13px;">
+          Assign all ${matches.length} as "${mizeName}"
+        </button>
+      ` : `
+        <p style="font-size:12px;color:var(--warning);margin-bottom:8px;">
+          Enter a deck name above first to bulk-assign these decks.
+        </p>
+      `}
+      <div style="max-height:200px;overflow-y:auto;">
+        ${matches.map(d => `
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);">
+            <span>${d.player_name}</span>
+            <span style="color:var(--text2);">${d.event_id?.slice(0,30) || '—'} · #${d.finish ?? '?'}</span>
+          </div>
+        `).join('')}
       </div>
-      <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(${JSON.stringify(entry)}).then(()=>showToast('Copied','success'))"
-        style="margin-top:6px;margin-bottom:0;font-size:11px;padding:3px 10px;">Copy to clipboard</button>
+    </div>
+  `;
+}
+
+async function udBulkAssignSimilar(deckIds) {
+  const deck       = udDecks[udDeckIndex];
+  const format     = document.getElementById('ud-format')?.value || 'Modern';
+  const customName = document.getElementById('ud-custom-name')?.value.trim();
+  const subtypeSel = document.getElementById('ud-subtype')?.value;
+  const customST   = document.getElementById('ud-custom-supertype')?.value.trim();
+  const supertypeSel = document.getElementById('ud-supertype')?.value;
+  const mizeName   = customName || subtypeSel;
+  const supertype  = customST  || supertypeSel;
+
+  if (!mizeName) { showToast('Enter a deck name first', 'error'); return; }
+
+  const now = new Date().toISOString();
+  let done = 0;
+  for (const id of deckIds) {
+    await db.from('mtgo_unknown_decks').update({
+      assigned_name:      mizeName,
+      assigned_supertype: supertype || null,
+      reviewed:           true,
+      reviewed_at:        now,
+      reviewed_by:        state.pilot?.pilot_name + '_bulk'
+    }).eq('id', id);
+    done++;
+  }
+
+  // Also update mtgo_results and mtgo_matches for each matched deck
+  const affected = udDecks.filter(d => deckIds.includes(d.id));
+  for (const d of affected) {
+    await db.from('mtgo_results')
+      .update({ archetype_canonical: mizeName, archetype_raw: mizeName })
+      .eq('event_id', d.event_id).eq('player_name', d.player_name);
+    await db.from('mtgo_matches')
+      .update({ player1_arch: mizeName })
+      .eq('event_id', d.event_id).eq('player1', d.player_name);
+    await db.from('mtgo_matches')
+      .update({ player2_arch: mizeName })
+      .eq('event_id', d.event_id).eq('player2', d.player_name);
+  }
+
+  showToast(`Bulk-assigned ${done} decks as "${mizeName}"`, 'success');
+  document.getElementById('ud-similar-results').innerHTML = '';
+
+  // Remove assigned decks from local list
+  udDecks = udDecks.filter(d => !deckIds.includes(d.id));
+  if (udDeckIndex >= udDecks.length) udDeckIndex = Math.max(0, udDecks.length - 1);
+  renderUnknownDeck();
+}
+
+// ── IDENTIFIERS TAB ──────────────────────────────────────────────────────────
+
+let idAllData = [];
+
+async function loadIdentifiers() {
+  const format = document.getElementById('id-format')?.value || 'Modern';
+  const container = document.getElementById('id-list-container');
+  const statsEl   = document.getElementById('id-stats');
+  if (!container) return;
+
+  container.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0;">Loading...</div>';
+
+  const { data, error } = await db.from('archetype_identifiers')
+    .select('id,archetype_name,format,card1,card2,card3,created_at,created_by')
+    .eq('format', format)
+    .order('archetype_name', { ascending: true });
+
+  if (error) {
+    container.innerHTML = `<div class="card" style="color:var(--danger);">Error: ${error.message}</div>`;
+    return;
+  }
+
+  idAllData = data || [];
+  statsEl.textContent = `${idAllData.length} identifiers for ${format}`;
+  renderIdentifiers(idAllData);
+}
+
+function filterIdentifiers() {
+  const q = document.getElementById('id-search')?.value.toLowerCase() || '';
+  if (!q) { renderIdentifiers(idAllData); return; }
+  const filtered = idAllData.filter(r =>
+    r.archetype_name.toLowerCase().includes(q) ||
+    r.card1.toLowerCase().includes(q) ||
+    r.card2.toLowerCase().includes(q) ||
+    r.card3.toLowerCase().includes(q)
+  );
+  renderIdentifiers(filtered);
+}
+
+function renderIdentifiers(data) {
+  const container = document.getElementById('id-list-container');
+  if (!data.length) {
+    container.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">No identifiers found. Assign unknown decks to create them automatically.</div>';
+    return;
+  }
+
+  container.innerHTML = data.map(r => `
+    <div style="border:1px solid var(--border);border-radius:6px;margin-bottom:6px;padding:10px 12px;background:var(--surface);display:flex;align-items:center;gap:10px;">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${r.archetype_name}</div>
+        <div style="font-size:12px;color:var(--accent);margin-top:2px;">${r.card1} + ${r.card2} + ${r.card3}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;">Added ${r.created_at?.slice(0,10) || '—'} by ${r.created_by || '—'}</div>
+      </div>
+      <button class="btn btn-danger" style="padding:4px 10px;font-size:11px;margin-bottom:0;white-space:nowrap;"
+        onclick="deleteIdentifier(${r.id}, '${r.archetype_name.replace(/'/g,"\\'")}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function deleteIdentifier(id, name) {
+  if (!confirm(`Delete identifier for "${name}"?`)) return;
+  const { error } = await db.from('archetype_identifiers').delete().eq('id', id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast(`Deleted identifier for "${name}"`, 'success');
+  loadIdentifiers();
+}
+
+async function saveIdentifierForCurrentDeck(mizeName, format) {
+  // Called from udAssign — saves the 3 checked identifier cards
+  const checked = udGetCheckedIdentifierCards();
+  if (checked.length !== 3) return false; // no identifier to save
+
+  const sorted = [...checked].sort();
+  // Check for conflict
+  const { data: existing } = await db.from('archetype_identifiers')
+    .select('id,archetype_name')
+    .eq('format', format)
+    .eq('card1', sorted[0]).eq('card2', sorted[1]).eq('card3', sorted[2]);
+
+  if (existing?.length) {
+    if (existing[0].archetype_name === mizeName) return true; // already exists, fine
+    showToast(`Identifier conflict: combo already used for "${existing[0].archetype_name}"`, 'error');
+    return false;
+  }
+
+  const { error } = await db.from('archetype_identifiers').insert({
+    archetype_name: mizeName,
+    format:         format,
+    card1:          sorted[0],
+    card2:          sorted[1],
+    card3:          sorted[2],
+    created_by:     state.pilot?.pilot_name,
+    created_at:     new Date().toISOString()
+  });
+
+  if (error) {
+    console.warn('Could not save identifier:', error.message);
+    return false;
+  }
+  return true;
+}
+
+async function udSuggestDefinition() {
+  const deck = udDecks[udDeckIndex];
+  const el   = document.getElementById('ud-suggestion');
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--text2);">Generating suggestion...</div>';
+
+  const mb = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
+
+  // Find 4-ofs and 3-ofs
+  const fours  = Object.entries(mb).filter(([,n]) => n >= 4).map(([c]) => c).sort();
+  const threes = Object.entries(mb).filter(([,n]) => n === 3).map(([c]) => c).sort();
+  const custom = document.getElementById('ud-custom-name')?.value.trim();
+  const customST = document.getElementById('ud-custom-supertype')?.value.trim();
+  const supertype = customST || document.getElementById('ud-supertype')?.value;
+  const mizeName  = custom || document.getElementById('ud-subtype')?.value || 'Unknown';
+
+  // Build a suggested JSON definition
+  const badaroName = mizeName.replace(/[^a-zA-Z0-9]/g, '');
+  const conditions = [];
+
+  // Require top 2-3 most distinctive 4-ofs
+  const reqCards = fours.slice(0, 3);
+  reqCards.forEach(card => {
+    conditions.push({ Type: 'InMainboard', Cards: [card] });
+  });
+
+  // OneOrMoreInMainboard for 3-ofs if any
+  if (threes.length >= 2) {
+    conditions.push({ Type: 'OneOrMoreInMainboard', Cards: threes.slice(0, 4) });
+  }
+
+  const definition = {
+    Name:       badaroName,
+    MizeName:   mizeName,
+    Supertype:  supertype || '',
+    Conditions: conditions
+  };
+
+  el.innerHTML = `
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;margin-top:4px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Suggested definition (edit before adding to custom_archetypes.json):</div>
+      <pre style="font-size:11px;overflow-x:auto;margin:0;white-space:pre-wrap;">${JSON.stringify(definition, null, 2)}</pre>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;">
+        ⚠ Review carefully — 4-ofs may not be the best identifiers. Add DoesNotContain conditions to avoid false positives.
+      </div>
     </div>
   `;
 }
@@ -3763,6 +4187,36 @@ async function searchCards(query) {
   } catch(e) { el.innerHTML = ''; console.error('searchCards:', e); }
 }
 
+async function loadArtOptions() {
+  const cardName = document.getElementById('art-card-select').value;
+  if (!cardName) { document.getElementById('art-options-wrap').style.display = 'none'; return; }
+  state.artCardName = cardName;
+  state.artSelectedUrl = null;
+  document.getElementById('art-options-wrap').style.display = 'block';
+  document.getElementById('art-loading').style.display = 'block';
+  document.getElementById('art-options').innerHTML = '';
+  try {
+    await loadScryfallBulk();
+    const nameLower = cardName.toLowerCase();
+    // Get all printings of this card
+    const printings = scryfallCards
+      .filter(c => c.name.toLowerCase() === nameLower && getCardImage(c))
+      .map(c => ({ id: c.id, set: c.set_name, collector: c.collector_number, imageUrl: getCardImage(c) }));
+    state.artPrintings = printings;
+    document.getElementById('art-loading').style.display = 'none';
+    const el = document.getElementById('art-options');
+    const currentCard = (state.currentDeck?.cards || []).find(c => c.card_name === cardName);
+    el.innerHTML = printings.map((p, i) =>
+      '<div class="art-option ' + (currentCard && currentCard.preferred_image_url === p.imageUrl ? 'selected' : '') + '" id="art-opt-' + i + '" onclick="selectArt(' + i + ')">' +
+      '<img src="' + p.imageUrl + '" alt="' + p.set + '" loading="lazy">' +
+      '<div style="font-size:10px;color:var(--text2);padding:2px 4px;text-align:center;">' + p.set + '</div></div>'
+    ).join('');
+    if (currentCard?.preferred_image_url) state.artSelectedUrl = currentCard.preferred_image_url;
+  } catch(e) {
+    document.getElementById('art-loading').style.display = 'none';
+    showToast('Error loading printings', 'error');
+  }
+}
 
 async function parseImport() {
   const text = document.getElementById('import-text').value.trim();
@@ -4173,6 +4627,8 @@ container.innerHTML = `
         <div class="analysis-tab"         onclick="adminTab('sources')"   id="atab-sources">Sources</div>
         <div class="analysis-tab"         onclick="adminTab('import')"    id="atab-import">Import</div>
         <div class="analysis-tab"         onclick="adminTab('cleanup')"        id="atab-cleanup">Unknown Decks</div>
+        <div class="analysis-tab"         onclick="adminTab('identifiers')"    id="atab-identifiers">Identifiers</div>
+        <div class="analysis-tab"         onclick="adminTab('archnames')"       id="atab-archnames">Archetype Names</div>
         <div class="analysis-tab"         onclick="adminTab('sightings')"       id="atab-sightings">Sightings</div>
       </div>
       <div id="apanel-overview"></div>
@@ -4182,6 +4638,8 @@ container.innerHTML = `
       <div id="apanel-sources"       style="display:none;"></div>
       <div id="apanel-import"        style="display:none;"></div>
       <div id="apanel-cleanup"       style="display:none;"></div>
+      <div id="apanel-identifiers"   style="display:none;"></div>
+      <div id="apanel-archnames"     style="display:none;"></div>
       <div id="apanel-sightings"     style="display:none;"></div>
     `;
 
@@ -4532,6 +4990,69 @@ container.innerHTML = `
     `;
 
     // ── ARCHETYPE NAMES ──
+    document.getElementById('apanel-archnames').innerHTML = `
+      <div class="card">
+        <div class="card-title">Archetype Names</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+          Review and rename archetype names stored in community game log data.
+          Changes are applied to both deck_archetype and opponent_archetype fields.
+        </p>
+        <div class="row" style="gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <div>
+            <label class="label">Format</label>
+            <select id="an-format">
+              <option value="">All formats</option>
+              <option value="Modern">Modern</option>
+              <option value="Legacy">Legacy</option>
+              <option value="Pioneer">Pioneer</option>
+              <option value="Pauper">Pauper</option>
+              <option value="Vintage">Vintage</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn btn-secondary" onclick="loadArchetypeNames()" style="margin-bottom:0;">
+              Load names
+            </button>
+          </div>
+        </div>
+        <div id="an-stats" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
+        <div id="an-search-row" style="display:none;margin-bottom:8px;">
+          <input type="text" id="an-search" placeholder="Filter by name..." 
+            style="margin-bottom:0;font-size:12px;" oninput="filterArchetypeNames()">
+        </div>
+      </div>
+      <div id="an-names-container"></div>
+    `;
+
+    // ── IDENTIFIERS ──
+    document.getElementById('apanel-identifiers').innerHTML = `
+      <div class="card">
+        <div class="card-title">Archetype Identifiers</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+          Identifiers are 3-card combinations that uniquely define an archetype.
+          They are checked first during import — before fuzzy similarity matching —
+          for fast, precise archetype detection.
+        </p>
+        <div class="row" style="gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <div>
+            <label class="label">Format</label>
+            <select id="id-format" onchange="loadIdentifiers()">
+              <option value="Modern">Modern</option>
+              <option value="Legacy">Legacy</option>
+              <option value="Pioneer">Pioneer</option>
+              <option value="Pauper">Pauper</option>
+              <option value="Vintage">Vintage</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <input type="text" id="id-search" placeholder="Filter by archetype or card..."
+              style="margin-bottom:0;font-size:12px;width:200px;" oninput="filterIdentifiers()">
+          </div>
+        </div>
+        <div id="id-stats" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
+      </div>
+      <div id="id-list-container"></div>
+    `;
 
 
   } catch(e) {
@@ -4540,15 +5061,15 @@ container.innerHTML = `
   } finally {
     setProgress('admin', 0);
   }
-} // end loadAdminPanel
+}
 
 window.adminTab = function(tab) {
-  ['overview','users','features','activity','sources','import','cleanup','sightings'].forEach(t => {
+  ['overview','users','features','activity','sources','import','cleanup','identifiers','archnames','sightings'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('apanel-' + t).style.display = t === tab ? '' : 'none';
   });
+  if (tab === 'identifiers') loadIdentifiers();
 };
-
 // ── MTGO META SCREEN ──────────────────────────────────────────────
 
 let mtgoTab = 'archetypes';
