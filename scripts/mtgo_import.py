@@ -168,7 +168,66 @@ def gh_get_raw(url, retries=3):
             return None
     return None
 
-# ── Reference decklist similarity matching ────────────────────────────────────
+# ── Key-card identification from custom_archetypes.json ───────────────────────
+
+def load_archetype_identifiers(fmt):
+    """Load 3-card identifiers from the archetype_identifiers Supabase table."""
+    rows = sb_get('archetype_identifiers',
+        f'?format=eq.{fmt}&select=archetype_name,card1,card2,card3'
+    )
+    print(f'    {len(rows)} DB identifiers loaded for {fmt}', flush=True)
+    return rows
+
+
+def detect_archetype_by_identifier(deck_data, identifiers):
+    """Return archetype_name if all 3 identifier cards are in the mainboard."""
+    if not identifiers or not deck_data:
+        return None
+    mainboard = {c['CardName'] for c in deck_data.get('Mainboard', [])}
+    for ident in identifiers:
+        if ident['card1'] in mainboard and ident['card2'] in mainboard and ident['card3'] in mainboard:
+            return ident['archetype_name']
+    return None
+
+
+def load_key_cards():
+    """Fetch key_cards from custom_archetypes.json in the mize repo.
+
+    Returns dict: { 'Modern': { archetype: [card1,card2,card3], ... }, 'Legacy': {...}, ... }
+    Falls back to empty dict on any error so the import never hard-fails.
+    """
+    GITHUB_API_URL = f'https://raw.githubusercontent.com/{MIZE_REPO}/main/{CUSTOM_ARCHETYPES_PATH}'
+    raw = gh_get_raw(GITHUB_API_URL)
+    if not raw:
+        print(f'  WARNING: Could not load {CUSTOM_ARCHETYPES_PATH} — key-card identification disabled')
+        return {}
+    try:
+        data = json.loads(raw)
+        key_cards = data.get('key_cards', {})
+        total = sum(len(v) for v in key_cards.values())
+        print(f'  Loaded key_cards: {total} archetypes across {list(key_cards.keys())}')
+        return key_cards
+    except Exception as e:
+        print(f'  WARNING: Failed to parse {CUSTOM_ARCHETYPES_PATH}: {e}')
+        return {}
+
+
+def detect_by_key_cards(deck_data, key_cards_for_format):
+    """Check a deck's mainboard against 3-card key combinations.
+
+    Returns archetype name (str) if all 3 key cards are present, else None.
+    This is checked FIRST — before similarity matching — for fast exact identification.
+    """
+    if not key_cards_for_format or not deck_data:
+        return None
+    mainboard = {c['CardName'] for c in deck_data.get('Mainboard', [])}
+    for archetype, keys in key_cards_for_format.items():
+        if all(k in mainboard for k in keys):
+            return archetype
+    return None
+
+
+
 SIMILARITY_THRESHOLD     = 0.60  # minimum Jaccard similarity for full deck match
 SIMILARITY_THRESHOLD_HAND = 0.35  # lower threshold for 7-card opening hand
 MIN_REFERENCE_DECKS      = 5     # auto-add matched decks until this many refs exist
@@ -492,15 +551,21 @@ def main():
         m, s = divmod(elapsed, 60)
         print(f'[{m:02d}:{s:02d}] {label}', flush=True)
 
+    # Load key cards from custom_archetypes.json — checked first, before similarity
+    ts('Loading key-card identifiers from custom_archetypes.json...')
+    all_key_cards = load_key_cards()
+
     # Load reference fingerprints for all formats
     ts('Loading reference decklist fingerprints...')
     fingerprints_by_format = {}
     deck_counts_by_format  = {}
+    identifiers_by_format  = {}
     for fmt in VALIDATABLE_FORMATS:
         fp, dc = load_reference_fingerprints(fmt)
         fingerprints_by_format[fmt] = fp
         deck_counts_by_format[fmt]  = dc
-        print(f'  {fmt}: {len(fp)} archetype fingerprints loaded')
+        identifiers_by_format[fmt]  = load_archetype_identifiers(fmt)
+        print(f'  {fmt}: {len(fp)} fingerprints, {len(identifiers_by_format[fmt])} DB identifiers loaded')
 
     FORMAT_PATTERNS = {
         'Modern':    ['modern-challenge', 'modern-showcase-challenge'],
@@ -618,18 +683,29 @@ def main():
         # Build player -> archetype map for this event
         player_arch_map = {}
         for player in standings:
-            player_name = player.get('Player')
-            deck_data   = decks_by_player.get(player_name, {})
-            fmt         = event['format']
-            fingerprints = fingerprints_by_format.get(fmt, {})
-            deck_counts  = deck_counts_by_format.get(fmt, {})
+            player_name   = player.get('Player')
+            deck_data     = decks_by_player.get(player_name, {})
+            fmt           = event['format']
+            fingerprints  = fingerprints_by_format.get(fmt, {})
+            deck_counts   = deck_counts_by_format.get(fmt, {})
+            identifiers   = identifiers_by_format.get(fmt, [])
+            key_cards_fmt = all_key_cards.get(fmt, {})
+            detected      = None
+
             if deck_data:
-                detected, score = detect_archetype_from_deck(deck_data, fingerprints)
-                # Auto-add to reference if match found and archetype needs more examples
-                if detected:
-                    add_to_reference_decklists(deck_data, detected, fmt, deck_counts)
-            else:
-                detected, score = None, 0.0
+                # 1. Key-card exact match (custom_archetypes.json) — fastest, most reliable
+                detected = detect_by_key_cards(deck_data, key_cards_fmt)
+
+                # 2. Supabase archetype_identifiers (manually added via admin UI)
+                if not detected:
+                    detected = detect_archetype_by_identifier(deck_data, identifiers)
+
+                # 3. Similarity matching against reference decklists — last resort
+                if not detected:
+                    detected, _score = detect_archetype_from_deck(deck_data, fingerprints)
+                    if detected:
+                        add_to_reference_decklists(deck_data, detected, fmt, deck_counts)
+
             player_arch_map[player_name] = detected  # None = unknown
 
             # Store unknown decks for admin review
@@ -669,7 +745,6 @@ def main():
                 'match_win_pct':       norm_pct(player.get('OMWP')),
                 'game_win_pct':        norm_pct(player.get('GWP')),
                 'opp_match_win_pct':   norm_pct(player.get('OGWP')),
-                'format':              event['format'],   # ← always stamped at insert
                 'created_at':          datetime.now(timezone.utc).isoformat()
             })
 
@@ -785,41 +860,14 @@ def main():
             time.sleep(0.05)
         print(f'Applied {len(corrections)} corrections.')
 
-    # ── Back-fill format column on historical mtgo_results rows ──────────────
-    # Rows imported before this fix have no format column in mtgo_results.
-    # We back-fill by patching each event's results using the event table.
-    # This is safe because event_id → format is 1:1 in mtgo_events.
-    ts('Back-filling format column on legacy result rows...')
-    try:
-        bf_events  = sb_get('mtgo_events', '?select=event_id,format')
-        bf_fmt_map = {e['event_id']: e.get('format') for e in bf_events if e.get('format')}
-        patched = 0
-        for eid, fmt in bf_fmt_map.items():
-            # Only patch rows that are missing format — use PostgREST 'is' filter
-            # on a column that may not exist yet; guard with try/except
-            try:
-                ok = sb_patch('mtgo_results',
-                              f'?event_id=eq.{eid}&format=is.null',
-                              {'format': fmt})
-                # sb_patch returns True on 200/204, False on error
-                # We count as success regardless — rows without the column
-                # will be handled by the event_format_map join below
-            except Exception:
-                pass
-        print(f'  Back-fill patched events: {len(bf_fmt_map)}')
-    except Exception as e:
-        print(f'  Back-fill warning (non-fatal): {e}')
-
     # ── Compute summaries ─────────────────────────────────────────────────────
     ts('Computing summaries...')
-    # Fetch results WITHOUT the format column — it may not exist in the schema yet.
-    # Format is determined authoritatively from mtgo_events via event_format_map.
-    all_results   = sb_get('mtgo_results',
+    all_results      = sb_get('mtgo_results',
         '?select=event_id,player_name,archetype_canonical,finish_position,points,match_win_pct,game_win_pct,opp_match_win_pct'
     )
-    all_events_db  = sb_get('mtgo_events', '?select=event_id,event_date,format')
-    event_date_map = {e['event_id']: e['event_date'] for e in all_events_db}
-    event_format_map = {e['event_id']: e.get('format') for e in all_events_db}
+    all_events_db    = sb_get('mtgo_events', '?select=event_id,event_date,format')
+    event_date_map   = {e['event_id']: e['event_date'] for e in all_events_db}
+    event_format_map = {e['event_id']: e.get('format') for e in all_events_db}  # None if missing
     print(f'Total results: {len(all_results)} | Total events: {len(all_events_db)}')
 
     now     = datetime.now(timezone.utc).date()
@@ -836,10 +884,9 @@ def main():
         date_to   = now.isoformat()
         filtered  = [r for r in all_results if not cutoff or
                      event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
-        # Assign format from mtgo_events — this is the authoritative source.
-        # Drop any result whose event has no known format (prevents cross-format bleed).
         for r in filtered:
-            r['_format'] = event_format_map.get(r['event_id'])
+            r['_format'] = event_format_map.get(r['event_id'])  # None if event unknown
+        # Drop results whose event format is unknown — prevents cross-format contamination
         filtered = [r for r in filtered if r['_format'] is not None]
         if not filtered:
             continue

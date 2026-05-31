@@ -111,8 +111,41 @@ def load_identifiers(fmt):
     rows = sb_get('archetype_identifiers',
         f'?format=eq.{urllib.parse.quote(fmt)}&select=archetype_name,card1,card2,card3'
     )
-    print(f'  {len(rows)} archetype identifiers loaded for {fmt}')
+    print(f'  {len(rows)} DB identifiers loaded for {fmt}')
     return rows
+
+
+def load_key_cards_from_github():
+    """Fetch key_cards section from custom_archetypes.json in the mize GitHub repo."""
+    MIZE_REPO             = 'phlsphr42/mize'
+    CUSTOM_ARCHETYPES_PATH = 'scripts/custom_archetypes.json'
+    GITHUB_TOKEN          = os.environ.get('GITHUB_TOKEN', '')
+    url = f'https://raw.githubusercontent.com/{MIZE_REPO}/main/{CUSTOM_ARCHETYPES_PATH}'
+    headers = {'User-Agent': 'Mize-Rescan'}
+    if GITHUB_TOKEN:
+        headers['Authorization'] = f'token {GITHUB_TOKEN}'
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode())
+            key_cards = data.get('key_cards', {})
+            total = sum(len(v) for v in key_cards.values())
+            print(f'  Loaded key_cards: {total} archetypes from custom_archetypes.json')
+            return key_cards
+    except Exception as e:
+        print(f'  WARNING: Could not load custom_archetypes.json: {e}')
+        return {}
+
+
+def detect_by_key_cards(mb_dict, key_cards_for_format):
+    """Return archetype name if all 3 key cards are present in mainboard dict."""
+    if not key_cards_for_format:
+        return None
+    mb_set = set(mb_dict.keys())
+    for archetype, keys in key_cards_for_format.items():
+        if all(k in mb_set for k in keys):
+            return archetype
+    return None
 
 
 def detect_by_identifier(deck_mb, identifiers):
@@ -167,7 +200,7 @@ def best_match(deck, fingerprints):
     return None, best_score
 
 # ── Main ──────────────────────────────────────────────────────────────────────
-def rescan_format(fmt, fingerprints, deck_counts, identifiers):
+def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
     print(f'\nRescanning {fmt} unknown decks...')
 
     # Fetch all unreviewed unknown decks for this format
@@ -188,14 +221,18 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers):
         if isinstance(mb, str):
             mb = json.loads(mb)
 
-        arch, score = None, 0.0
-        # 1. Try exact identifier match (fast, precise)
-        id_match = detect_by_identifier(mb, identifiers)
-        if id_match:
-            arch, score = id_match, 1.0
-        else:
-            # 2. Fall back to weighted similarity
-            arch, score = best_match(mb, fingerprints)
+        arch = None
+
+        # 1. Key-card exact match (custom_archetypes.json) — fastest
+        arch = detect_by_key_cards(mb, key_cards_fmt)
+
+        # 2. Supabase archetype_identifiers (manually added via admin UI)
+        if not arch:
+            arch = detect_by_identifier(mb, identifiers)
+
+        # 3. Weighted similarity — last resort
+        if not arch:
+            arch, _score = best_match(mb, fingerprints)
 
         if arch:
             # Mark as reviewed
@@ -301,16 +338,21 @@ def main():
     print(f'Formats: {formats}')
     print(f'Threshold: {SIMILARITY_THRESHOLD}')
 
+    # Load key cards once — used for all formats
+    print('Loading key-card identifiers from custom_archetypes.json...')
+    all_key_cards = load_key_cards_from_github()
+
     total_matched  = 0
     total_unmatched = 0
 
     for fmt in formats:
         fingerprints, deck_counts = load_fingerprints(fmt)
-        identifiers = load_identifiers(fmt)
-        if not fingerprints and not identifiers:
-            print(f'  Skipping {fmt} — no fingerprints or identifiers')
+        identifiers   = load_identifiers(fmt)
+        key_cards_fmt = all_key_cards.get(fmt, {})
+        if not fingerprints and not identifiers and not key_cards_fmt:
+            print(f'  Skipping {fmt} — no identification data available')
             continue
-        matched, unmatched = rescan_format(fmt, fingerprints, deck_counts, identifiers)
+        matched, unmatched = rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt)
         total_matched   += matched
         total_unmatched += unmatched
 
