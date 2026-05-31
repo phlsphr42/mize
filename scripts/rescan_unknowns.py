@@ -219,13 +219,50 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
     if not decks:
         return 0, 0
 
+    # Bulk-dismiss decks with no mainboard — they can never be identified
+    # and clog the queue. Mark them reviewed with assigned_name='No Decklist'.
+    no_decklist_ids = [
+        d['id'] for d in decks
+        if not d['mainboard'] or d['mainboard'] == '{}' or d['mainboard'] == {}
+    ]
+    if no_decklist_ids:
+        print(f'  Dismissing {len(no_decklist_ids)} decks with no decklist...')
+        # Patch in chunks of 100 to stay within URL length limits
+        chunk_size = 100
+        dismissed = 0
+        for chunk_start in range(0, len(no_decklist_ids), chunk_size):
+            chunk = no_decklist_ids[chunk_start:chunk_start + chunk_size]
+            id_list = ','.join(str(x) for x in chunk)
+            sb_patch('mtgo_unknown_decks', f'?id=in.({id_list})',
+                     {'reviewed': True, 'assigned_name': 'No Decklist',
+                      'reviewed_by': 'rescan_script',
+                      'reviewed_at': datetime.now(timezone.utc).isoformat()})
+            dismissed += len(chunk)
+        decks = [d for d in decks if d['id'] not in set(no_decklist_ids)]
+        print(f'  Dismissed {dismissed} no-decklist entries. {len(decks)} decks remaining.')
+
     matched   = 0
+    skipped_no_mainboard = 0
     now       = datetime.now(timezone.utc).isoformat()
 
     for i, deck in enumerate(decks):
         mb = deck['mainboard']
+        if mb is None:
+            skipped_no_mainboard += 1
+            continue
         if isinstance(mb, str):
             mb = json.loads(mb)
+        if not mb:  # empty dict
+            skipped_no_mainboard += 1
+            continue
+
+        # Diagnostic: print first deck with actual cards
+        if matched == 0 and skipped_no_mainboard <= i:
+            print(f'  DIAG first deck with cards: id={deck["id"]}')
+            keys = list(mb.keys())[:5]
+            print(f'  DIAG mb sample keys: {keys}')
+            kc_sample = list(key_cards_fmt.items())[:2]
+            print(f'  DIAG key_cards_fmt sample: {kc_sample}')
 
         arch = None
 
@@ -271,10 +308,10 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
             matched += 1
 
         if (i + 1) % 50 == 0:
-            print(f'  Progress: {i+1}/{len(decks)} scanned, {matched} matched')
+            print(f'  Progress: {i+1}/{len(decks)} scanned, {matched} matched, {skipped_no_mainboard} no decklist')
 
-    print(f'  Done: {matched}/{len(decks)} matched, {len(decks)-matched} remain unknown')
-    return matched, len(decks) - matched
+    print(f'  Done: {matched} matched, {len(decks)-matched-skipped_no_mainboard} unidentified, {skipped_no_mainboard} had no decklist')
+    return matched, len(decks) - matched - skipped_no_mainboard
 
 
 def main():

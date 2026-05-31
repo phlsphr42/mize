@@ -713,10 +713,12 @@ def main():
 
             player_arch_map[player_name] = detected  # None = unknown
 
-            # Store unknown decks for admin review
+            # Store unknown decks for admin review — only if mainboard has cards
             if detected is None and deck_data:
                 mb = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Mainboard', [])}
                 sb = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Sideboard', [])}
+                if not mb:
+                    continue  # No decklist available — skip, not useful for review
                 unknown_deck_rows.append({
                     'event_id':    event['name'],
                     'player_name': player_name,
