@@ -5080,8 +5080,9 @@ container.innerHTML = `
       <div class="card">
         <div class="card-title">Deduplicate Archetype Names</div>
         <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
-          Finds archetype names that look like duplicates based on text similarity.
-          Review each group and merge them to a single canonical name.
+          Groups names that look like duplicates. Detects substring matches ("Mill" / "Dimir Mill"),
+          word subsets ("Domain" / "Domain Zoo"), and near-typos. Review each group and pick
+          a canonical name to merge everything into.
         </p>
         <div class="row" style="gap:8px;margin-bottom:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:140px;">
@@ -5096,11 +5097,11 @@ container.innerHTML = `
             </select>
           </div>
           <div style="flex:1;min-width:120px;">
-            <label class="label">Min similarity</label>
+            <label class="label">Sensitivity</label>
             <select id="dd-threshold">
-              <option value="0.65">Loose (65%)</option>
-              <option value="0.75" selected>Medium (75%)</option>
-              <option value="0.85">Strict (85%)</option>
+              <option value="0.55">Low — catch more, review more</option>
+              <option value="0.65" selected>Medium — recommended</option>
+              <option value="0.78">High — only close pairs</option>
             </select>
           </div>
         </div>
@@ -5137,34 +5138,86 @@ window.adminTab = function(tab) {
 
 // ── DEDUPLICATE ARCHETYPE NAMES ──────────────────────────────────────────────
 
-// Normalized Levenshtein similarity: 1.0 = identical, 0 = totally different
+// ── Similarity functions ──
+
+// Character-level Levenshtein similarity (0–1)
 function levenshteinSim(a, b) {
   a = a.toLowerCase().trim();
   b = b.toLowerCase().trim();
   if (a === b) return 1.0;
   const la = a.length, lb = b.length;
   if (!la || !lb) return 0;
-  const dp = Array.from({length: la + 1}, (_, i) =>
-    Array.from({length: lb + 1}, (_, j) => i === 0 ? j : j === 0 ? i : 0)
-  );
+  const prev = Array.from({length: lb + 1}, (_, i) => i);
+  const curr = new Array(lb + 1);
   for (let i = 1; i <= la; i++) {
+    curr[0] = i;
     for (let j = 1; j <= lb; j++) {
-      if (a[i-1] === b[j-1]) dp[i][j] = dp[i-1][j-1];
-      else dp[i][j] = 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+      curr[j] = a[i-1] === b[j-1]
+        ? prev[j-1]
+        : 1 + Math.min(prev[j], curr[j-1], prev[j-1]);
     }
+    prev.set ? prev.set(curr) : curr.forEach((v,k) => prev[k] = v);
+    // (plain arrays, just copy)
+    for (let k = 0; k <= lb; k++) prev[k] = curr[k];
   }
-  return 1 - dp[la][lb] / Math.max(la, lb);
+  return 1 - prev[lb] / Math.max(la, lb);
 }
 
-// Token-sort similarity: ignores word order ("Rakdos Midrange" vs "Midrange Rakdos")
-function tokenSortSim(a, b) {
-  const sort = s => s.toLowerCase().split(/\s+/).sort().join(' ');
-  return levenshteinSim(sort(a), sort(b));
+// Jaccard similarity on word-token sets
+// "Dimir Mill" vs "Mill" → tokens {dimir,mill} ∩ {mill} / {dimir,mill} ∪ {mill} = 0.5
+function tokenJaccard(a, b) {
+  const ta = new Set(a.toLowerCase().split(/[\s\-\/]+/).filter(Boolean));
+  const tb = new Set(b.toLowerCase().split(/[\s\-\/]+/).filter(Boolean));
+  let inter = 0;
+  ta.forEach(t => { if (tb.has(t)) inter++; });
+  const union = ta.size + tb.size - inter;
+  return union > 0 ? inter / union : 0;
 }
 
-// Best of character-level and token-sort
+// Substring containment: does the shorter name appear as a word-boundary substring?
+// "Mill" inside "Dimir Mill" → true
+function subsetContainment(a, b) {
+  const short = a.length <= b.length ? a : b;
+  const long  = a.length <= b.length ? b : a;
+  // Word-boundary check (case-insensitive)
+  const re = new RegExp('(?:^|\\s|\\-)' + short.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(?:$|\\s|\\-)', 'i');
+  return re.test(long) ? 0.8 : 0; // score of 0.8 if one contains the other
+}
+
+// One name's word-tokens are a subset of the other's
+// "Domain" ⊂ "Domain Zoo" → true
+function wordSubset(a, b) {
+  const ta = new Set(a.toLowerCase().split(/[\s\-\/]+/).filter(Boolean));
+  const tb = new Set(b.toLowerCase().split(/[\s\-\/]+/).filter(Boolean));
+  const [small, large] = ta.size <= tb.size ? [ta, tb] : [tb, ta];
+  if (small.size === 0) return 0;
+  let allIn = true;
+  small.forEach(t => { if (!large.has(t)) allIn = false; });
+  // Score based on overlap ratio — 1-word subsets need all tokens to match
+  return allIn ? (small.size / large.size) * 0.9 + 0.1 : 0;
+}
+
+// Combined similarity — takes the best signal from any method
 function nameSim(a, b) {
-  return Math.max(levenshteinSim(a, b), tokenSortSim(a, b));
+  // Identical after normalisation
+  const na = a.toLowerCase().trim(), nb = b.toLowerCase().trim();
+  if (na === nb) return 1.0;
+
+  const scores = [
+    levenshteinSim(a, b),
+    tokenJaccard(a, b),
+    subsetContainment(a, b),
+    wordSubset(a, b),
+  ];
+  return Math.max(...scores);
+}
+
+// ── Union-Find for transitive grouping ──
+function makeUF(n) {
+  const p = Array.from({length: n}, (_, i) => i);
+  function find(x) { return p[x] === x ? x : (p[x] = find(p[x])); }
+  function union(x, y) { p[find(x)] = find(y); }
+  return { find, union };
 }
 
 async function loadDedupGroups() {
@@ -5174,173 +5227,195 @@ async function loadDedupGroups() {
   const container = document.getElementById('dd-groups-container');
   if (!container) return;
 
-  statusEl.textContent = 'Loading archetype names...';
+  statusEl.textContent = 'Loading archetype names…';
   container.innerHTML  = '';
 
-  // Pull all distinct archetype_canonical values from mtgo_results
-  let allNames = [];
-  let offset   = 0;
+  // ── 1. Fetch distinct archetype names + usage counts ──
+  // Pull from mtgo_results in batches; collect counts per name
+  const counts = {};
+  let offset = 0;
   while (true) {
-    const q = db.from('mtgo_results').select('archetype_canonical,format');
-    let qq = q;
-    if (format) qq = qq.eq('format', format);
-    const { data, error } = await qq.not('archetype_canonical','is',null).range(offset, offset + 999);
-    if (error || !data?.length) break;
-    data.forEach(r => { if (r.archetype_canonical) allNames.push(r.archetype_canonical); });
+    let q = db.from('mtgo_results')
+      .select('archetype_canonical')
+      .not('archetype_canonical', 'is', null);
+    if (format) q = q.eq('format', format);
+    const { data, error } = await q.range(offset, offset + 999);
+    if (error) { statusEl.textContent = 'Error: ' + error.message; return; }
+    if (!data?.length) break;
+    data.forEach(r => {
+      const n = r.archetype_canonical?.trim();
+      if (n) counts[n] = (counts[n] || 0) + 1;
+    });
     if (data.length < 1000) break;
     offset += 1000;
+    // Yield to keep UI responsive
+    await new Promise(r => setTimeout(r, 0));
   }
 
-  // Count occurrences
-  const counts = {};
-  allNames.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
   const names = Object.keys(counts).sort();
+  const N = names.length;
 
-  statusEl.textContent = `Analyzing ${names.length} distinct names for similarities...`;
-  await new Promise(r => setTimeout(r, 0));
-
-  // Build similarity groups using Union-Find / greedy clustering
-  const visited = new Set();
-  const groups  = [];
-
-  for (let i = 0; i < names.length; i++) {
-    if (visited.has(names[i])) continue;
-    const group = [names[i]];
-    visited.add(names[i]);
-    for (let j = i + 1; j < names.length; j++) {
-      if (visited.has(names[j])) continue;
-      const sim = nameSim(names[i], names[j]);
-      if (sim >= threshold) {
-        group.push(names[j]);
-        visited.add(names[j]);
-      }
-    }
-    if (group.length > 1) groups.push(group);
-  }
-
-  if (!groups.length) {
-    statusEl.textContent = `No similar names found at ${Math.round(threshold*100)}% threshold.`;
+  if (!N) {
+    statusEl.textContent = 'No archetype names found.';
     return;
   }
 
-  // Sort groups: most-used name first within each group
-  groups.forEach(g => g.sort((a,b) => (counts[b]||0) - (counts[a]||0)));
-  // Sort groups by total usage descending
-  groups.sort((a,b) =>
-    b.reduce((s,n) => s+(counts[n]||0), 0) -
-    a.reduce((s,n) => s+(counts[n]||0), 0)
-  );
+  statusEl.textContent = `Comparing ${N} names… (this may take a moment)`;
+  await new Promise(r => setTimeout(r, 0));
+
+  // ── 2. Pairwise similarity with Union-Find grouping ──
+  const uf = makeUF(N);
+  const idx = {};
+  names.forEach((n, i) => idx[n] = i);
+
+  // Process in chunks to avoid freezing the UI
+  const CHUNK = 50;
+  for (let i = 0; i < N; i += CHUNK) {
+    for (let ii = i; ii < Math.min(i + CHUNK, N); ii++) {
+      for (let j = ii + 1; j < N; j++) {
+        if (nameSim(names[ii], names[j]) >= threshold) {
+          uf.union(ii, j);
+        }
+      }
+    }
+    if (i % 200 === 0) {
+      statusEl.textContent = `Comparing… ${Math.min(i + CHUNK, N)}/${N} names processed`;
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  // ── 3. Collect groups ──
+  const groupMap = {};
+  for (let i = 0; i < N; i++) {
+    const root = uf.find(i);
+    if (!groupMap[root]) groupMap[root] = [];
+    groupMap[root].push(names[i]);
+  }
+
+  const groups = Object.values(groupMap)
+    .filter(g => g.length > 1)
+    // Sort each group: most-used first
+    .map(g => g.sort((a, b) => (counts[b] || 0) - (counts[a] || 0)))
+    // Sort groups: highest total usage first
+    .sort((a, b) =>
+      b.reduce((s, n) => s + (counts[n] || 0), 0) -
+      a.reduce((s, n) => s + (counts[n] || 0), 0)
+    );
+
+  if (!groups.length) {
+    statusEl.textContent = `No similar names found at ${Math.round(threshold * 100)}% threshold. Try lowering it.`;
+    return;
+  }
 
   statusEl.textContent = `Found ${groups.length} groups of similar names. Review and merge as needed.`;
 
+  // ── 4. Render ──
   container.innerHTML = groups.map((group, gi) => {
-    const canonical = group[0]; // most-used by default
-    const totalUses = group.reduce((s,n) => s+(counts[n]||0), 0);
-    const rows = group.map((name, ni) => `
-      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
-        <input type="radio" name="dd-canon-${gi}" id="dd-r-${gi}-${ni}" value="${name.replace(/"/g,'&quot;')}"
-          ${ni === 0 ? 'checked' : ''} style="width:auto;margin:0;padding:0;flex-shrink:0;">
-        <label for="dd-r-${gi}-${ni}" style="flex:1;font-size:13px;cursor:pointer;">
-          ${name}
-        </label>
-        <span style="font-size:11px;color:var(--text2);flex-shrink:0;">${counts[name]||0} uses</span>
-      </div>
-    `).join('');
+    const totalUses = group.reduce((s, n) => s + (counts[n] || 0), 0);
+
+    const rows = group.map((name, ni) => {
+      // Show similarity score vs the most-used name
+      const simScore = ni === 0 ? '—' : (nameSim(group[0], name) * 100).toFixed(0) + '%';
+      const safeVal = name.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      const safeName = name.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      return `
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+          <input type="radio" name="dd-canon-${gi}" id="dd-r-${gi}-${ni}" value="${safeVal}"
+            ${ni === 0 ? 'checked' : ''} style="width:auto;margin:0;padding:0;flex-shrink:0;accent-color:var(--accent);">
+          <label for="dd-r-${gi}-${ni}" style="flex:1;font-size:13px;cursor:pointer;">${safeName}</label>
+          <span style="font-size:11px;color:var(--text2);margin-right:4px;">${counts[name] || 0} uses</span>
+          ${ni > 0 ? `<span style="font-size:10px;color:var(--accent);min-width:30px;text-align:right;">${simScore}</span>` : '<span style="min-width:30px;"></span>'}
+        </div>`;
+    }).join('');
 
     return `
       <div class="card" style="margin-bottom:10px;" id="dd-group-${gi}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <div>
             <span style="font-size:13px;font-weight:600;">${group.length} similar names</span>
             <span style="font-size:11px;color:var(--text2);margin-left:8px;">${totalUses} total uses</span>
           </div>
-          <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-bottom:0;color:var(--text2);"
+          <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px;margin-bottom:0;"
             onclick="ddDismissGroup(${gi})">Dismiss</button>
         </div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:6px;">Select canonical name (radio) then merge:</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">
+          Select canonical name (most-used pre-selected), then merge all others into it:
+        </div>
         ${rows}
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="ddMergeGroup(${gi}, ${JSON.stringify(group).replace(/"/g,'&quot;')})"
-            style="margin-bottom:0;font-size:12px;padding:8px 14px;">
-            Merge → canonical
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-primary" style="margin-bottom:0;font-size:12px;padding:8px 16px;"
+            onclick="ddMergeGroup(${gi}, ${JSON.stringify(group).replace(/"/g,'&quot;')})">
+            ✓ Merge → canonical
           </button>
-          <button class="btn btn-secondary" onclick="ddIgnoreAll(${gi})"
-            style="margin-bottom:0;font-size:12px;padding:8px 14px;">
+          <button class="btn btn-secondary" style="margin-bottom:0;font-size:12px;padding:8px 16px;"
+            onclick="ddIgnoreAll(${gi})">
             Keep all separate
           </button>
         </div>
         <div id="dd-group-status-${gi}" style="font-size:11px;color:var(--text2);margin-top:6px;"></div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
 function ddDismissGroup(gi) {
   const el = document.getElementById('dd-group-' + gi);
-  if (el) el.remove();
+  if (el) el.style.opacity = '0.4';
+  setTimeout(() => { const e = document.getElementById('dd-group-' + gi); if (e) e.remove(); }, 300);
 }
 
 function ddIgnoreAll(gi) {
   ddDismissGroup(gi);
-  showToast('Group kept as-is', 'success');
+  showToast('Kept as separate names', 'success');
 }
 
 async function ddMergeGroup(gi, group) {
-  // Find which radio is selected
+  // Read which radio is selected for this group
   let canonical = null;
   for (let ni = 0; ni < group.length; ni++) {
     const r = document.getElementById(`dd-r-${gi}-${ni}`);
-    if (r?.checked) { canonical = group[ni]; break; }
+    if (r?.checked) { canonical = r.value; break; }
   }
   if (!canonical) { showToast('Select a canonical name first', 'error'); return; }
 
   const others = group.filter(n => n !== canonical);
+  if (!others.length) { showToast('Nothing to merge', 'error'); return; }
+
   const statusEl = document.getElementById('dd-group-status-' + gi);
-  if (statusEl) statusEl.textContent = `Merging ${others.length} names → "${canonical}"...`;
+  if (statusEl) statusEl.textContent = `Merging ${others.length} name${others.length > 1 ? 's' : ''}…`;
 
-  let totalUpdated = 0;
+  const tables = [
+    { table: 'mtgo_results',       field: 'archetype_canonical' },
+    { table: 'mtgo_results',       field: 'archetype_raw' },
+    { table: 'mtgo_matches',       field: 'player1_arch' },
+    { table: 'mtgo_matches',       field: 'player2_arch' },
+    { table: 'raw_game_log',       field: 'deck_archetype' },
+    { table: 'raw_game_log',       field: 'opponent_archetype' },
+    { table: 'reference_decklists',field: 'archetype_name' },
+    { table: 'archetype_identifiers', field: 'archetype_name' },
+    { table: 'mtgo_unknown_decks', field: 'assigned_name' },
+  ];
+
+  let errorCount = 0;
   for (const oldName of others) {
-    // Update mtgo_results
-    const r1 = await db.from('mtgo_results')
-      .update({ archetype_canonical: canonical, archetype_raw: oldName })
-      .eq('archetype_canonical', oldName);
-    // Update mtgo_matches player1
-    const r2 = await db.from('mtgo_matches')
-      .update({ player1_arch: canonical })
-      .eq('player1_arch', oldName);
-    // Update mtgo_matches player2
-    const r3 = await db.from('mtgo_matches')
-      .update({ player2_arch: canonical })
-      .eq('player2_arch', oldName);
-    // Update raw_game_log deck_archetype
-    const r4 = await db.from('raw_game_log')
-      .update({ deck_archetype: canonical })
-      .eq('deck_archetype', oldName);
-    // Update raw_game_log opponent_archetype
-    const r5 = await db.from('raw_game_log')
-      .update({ opponent_archetype: canonical })
-      .eq('opponent_archetype', oldName);
-    // Update archetype_identifiers
-    await db.from('archetype_identifiers')
-      .update({ archetype_name: canonical })
-      .eq('archetype_name', oldName);
-    // Update reference_decklists
-    await db.from('reference_decklists')
-      .update({ archetype_name: canonical })
-      .eq('archetype_name', oldName);
-    // Update mtgo_unknown_decks assigned_name
-    await db.from('mtgo_unknown_decks')
-      .update({ assigned_name: canonical })
-      .eq('assigned_name', oldName);
-
-    if (!r1.error) totalUpdated++;
+    for (const { table, field } of tables) {
+      const { error } = await db.from(table)
+        .update({ [field]: canonical })
+        .eq(field, oldName);
+      if (error) {
+        console.warn(`Merge error ${table}.${field} for "${oldName}":`, error.message);
+        errorCount++;
+      }
+    }
   }
 
-  if (statusEl) statusEl.textContent = `✓ Merged ${others.join(', ')} → "${canonical}"`;
-  showToast(`Merged ${others.length} names → "${canonical}"`, 'success');
-
-  // Fade out after a moment
-  setTimeout(() => ddDismissGroup(gi), 2000);
+  if (errorCount > 0) {
+    if (statusEl) statusEl.textContent = `⚠ Merged with ${errorCount} error(s) — check console`;
+    showToast('Merged with some errors — check console', 'error');
+  } else {
+    if (statusEl) statusEl.textContent = `✓ Merged: ${others.map(n=>`"${n}"`).join(', ')} → "${canonical}"`;
+    showToast(`Merged ${others.length} name${others.length > 1 ? 's' : ''} → "${canonical}"`, 'success');
+    setTimeout(() => ddDismissGroup(gi), 1500);
+  }
 }
 // ── MTGO META SCREEN ──────────────────────────────────────────────
 
@@ -6202,7 +6277,9 @@ function oppSelectUnknown() {
   state.opponent = 'Unknown';
   document.getElementById('opponent-name').textContent = 'Unknown';
   document.getElementById('opponent-selected').style.display = '';
-  document.getElementById('btn-confirm-opponent').style.display = '';
+  const confirmBtn = document.getElementById('btn-confirm-opponent');
+  confirmBtn.style.display = '';
+  confirmBtn.disabled = false;
 }
 
 function oppFinalSelect(name) {
@@ -6212,7 +6289,9 @@ function oppFinalSelect(name) {
   document.getElementById('opp-unknown-card').style.display = 'none';
   document.getElementById('opponent-name').textContent = name;
   document.getElementById('opponent-selected').style.display = '';
-  document.getElementById('btn-confirm-opponent').style.display = '';
+  const confirmBtn = document.getElementById('btn-confirm-opponent');
+  confirmBtn.style.display = '';
+  confirmBtn.disabled = false;
 }
 
 function filterArchetypes(query) {} // legacy stub
