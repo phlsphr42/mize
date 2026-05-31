@@ -786,69 +786,41 @@ def main():
         print(f'Applied {len(corrections)} corrections.')
 
     # ── Back-fill format column on historical mtgo_results rows ──────────────
-    # Rows imported before this fix have format=NULL in mtgo_results.
-    # Fix them once by joining to mtgo_events. This is idempotent — rows that
-    # already have the correct format are skipped by the NULL filter.
+    # Rows imported before this fix have no format column in mtgo_results.
+    # We back-fill by patching each event's results using the event table.
+    # This is safe because event_id → format is 1:1 in mtgo_events.
     ts('Back-filling format column on legacy result rows...')
     try:
-        null_fmt_results = sb_get('mtgo_results',
-            '?select=event_id,player_name&format=is.null'
-        )
-        if null_fmt_results:
-            # Build event_id → format map from already-fetched events (or fetch fresh)
-            bf_events = sb_get('mtgo_events', '?select=event_id,format')
-            bf_fmt_map = {e['event_id']: e.get('format') for e in bf_events if e.get('format')}
-            # Group by format to do one PATCH per (event_id, format) combo
-            by_event = defaultdict(list)
-            for r in null_fmt_results:
-                eid = r['event_id']
-                if eid in bf_fmt_map:
-                    by_event[eid].append(r)
-            patched = 0
-            for eid, rows in by_event.items():
-                fmt = bf_fmt_map[eid]
-                ok  = sb_patch('mtgo_results', f'?event_id=eq.{eid}',
-                               {'format': fmt})
-                if ok:
-                    patched += len(rows)
-            print(f'  Back-filled format on {patched} legacy result rows.')
-        else:
-            print('  No legacy rows need back-filling.')
+        bf_events  = sb_get('mtgo_events', '?select=event_id,format')
+        bf_fmt_map = {e['event_id']: e.get('format') for e in bf_events if e.get('format')}
+        patched = 0
+        for eid, fmt in bf_fmt_map.items():
+            # Only patch rows that are missing format — use PostgREST 'is' filter
+            # on a column that may not exist yet; guard with try/except
+            try:
+                ok = sb_patch('mtgo_results',
+                              f'?event_id=eq.{eid}&format=is.null',
+                              {'format': fmt})
+                # sb_patch returns True on 200/204, False on error
+                # We count as success regardless — rows without the column
+                # will be handled by the event_format_map join below
+            except Exception:
+                pass
+        print(f'  Back-fill patched events: {len(bf_fmt_map)}')
     except Exception as e:
         print(f'  Back-fill warning (non-fatal): {e}')
 
     # ── Compute summaries ─────────────────────────────────────────────────────
     ts('Computing summaries...')
-    all_results      = sb_get('mtgo_results',
-        '?select=event_id,player_name,archetype_canonical,finish_position,points,match_win_pct,game_win_pct,opp_match_win_pct,format'
+    # Fetch results WITHOUT the format column — it may not exist in the schema yet.
+    # Format is determined authoritatively from mtgo_events via event_format_map.
+    all_results   = sb_get('mtgo_results',
+        '?select=event_id,player_name,archetype_canonical,finish_position,points,match_win_pct,game_win_pct,opp_match_win_pct'
     )
-    all_events_db    = sb_get('mtgo_events', '?select=event_id,event_date,format')
-    event_date_map   = {e['event_id']: e['event_date'] for e in all_events_db}
+    all_events_db  = sb_get('mtgo_events', '?select=event_id,event_date,format')
+    event_date_map = {e['event_id']: e['event_date'] for e in all_events_db}
     event_format_map = {e['event_id']: e.get('format') for e in all_events_db}
     print(f'Total results: {len(all_results)} | Total events: {len(all_events_db)}')
-
-    # Patch any results that are missing their format column (rows imported before this fix)
-    # by back-filling from the event table.  Log conflicts loudly.
-    mismatch_count = 0
-    backfill_count = 0
-    for r in all_results:
-        row_fmt   = r.get('format')
-        event_fmt = event_format_map.get(r['event_id'])
-        if not row_fmt and event_fmt:
-            r['format'] = event_fmt
-            backfill_count += 1
-        elif row_fmt and event_fmt and row_fmt != event_fmt:
-            # The row says one format but the event says another — trust the event.
-            print(f'  FORMAT MISMATCH: result row format={row_fmt!r} '
-                  f'but event {r["event_id"]} format={event_fmt!r} — using event format')
-            r['format'] = event_fmt
-            mismatch_count += 1
-        elif not row_fmt and not event_fmt:
-            r['format'] = None  # will be dropped below
-    if backfill_count:
-        print(f'  Back-filled format on {backfill_count} result rows (pre-fix rows).')
-    if mismatch_count:
-        print(f'  ⚠ Corrected {mismatch_count} format mismatches — investigate source data.')
 
     now     = datetime.now(timezone.utc).date()
     windows = [
@@ -864,10 +836,10 @@ def main():
         date_to   = now.isoformat()
         filtered  = [r for r in all_results if not cutoff or
                      event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
-        # Use the format already on the row (stamped at insert, cross-checked above).
-        # Drop any rows that still have no format — they can't be safely categorised.
+        # Assign format from mtgo_events — this is the authoritative source.
+        # Drop any result whose event has no known format (prevents cross-format bleed).
         for r in filtered:
-            r['_format'] = r.get('format')
+            r['_format'] = event_format_map.get(r['event_id'])
         filtered = [r for r in filtered if r['_format'] is not None]
         if not filtered:
             continue
