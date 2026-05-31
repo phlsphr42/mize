@@ -398,108 +398,34 @@
     },
     "archetypes": [
       {
-        "Name": "LivingEndAlt2",
-        "MizeName": "Living End",
-        "Supertype": "Living End",
+        "Name": "EldraziSaga",
+        "MizeName": "Eldrazi Saga",
+        "Supertype": "Eldrazi Saga",
         "Conditions": [
           {
             "Type": "InMainboard",
             "Cards": [
-              "Ardent Plea"
+              "Chalice of the Void"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Generous Ent"
+              "Darksteel Citadel"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Grief"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Architects of Will",
-              "Force of Negation",
-              "Living End",
-              "Striped Riverwinder"
+              "Devourer of Destiny"
             ]
           }
         ]
       },
       {
-        "Name": "JeskaiControl",
-        "MizeName": "Jeskai Control",
-        "Supertype": "Jeskai Control",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Arid Mesa"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Counterspell"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Flooded Strand"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Phlage, Titan of Fire's Fury",
-              "Tune the Narrative",
-              "Wrath of the Skies"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "BorosPonza",
-        "MizeName": "Boros Ponza",
-        "Supertype": "Boros Ponza",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Cleansing Wildfire"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Cori Mountain Monastery"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Demolition Field"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Sacred Foundry",
-              "Solitude"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "IzzetMurktide",
-        "MizeName": "Izzet Murktide",
-        "Supertype": "Izzet Murktide",
+        "Name": "IzzetControl",
+        "MizeName": "Izzet Control",
+        "Supertype": "Izzet Control",
         "Conditions": [
           {
             "Type": "InMainboard",
@@ -510,56 +436,47 @@
           {
             "Type": "InMainboard",
             "Cards": [
-              "Dragon's Rage Channeler"
+              "Flame of Anor"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Expressive Iteration"
+              "Lightning Bolt"
             ]
           },
           {
             "Type": "OneOrMoreInMainboard",
             "Cards": [
               "Island",
-              "Lightning Bolt",
               "Misty Rainforest",
-              "Murktide Regent"
+              "Scalding Tarn",
+              "Three Steps Ahead"
             ]
           }
         ]
       },
       {
-        "Name": "JeskaiBlink",
-        "MizeName": "Jeskai Blink",
-        "Supertype": "Blink",
+        "Name": "EldraziRigging",
+        "MizeName": "Eldrazi Rigging",
+        "Supertype": "Eldrazi Rigging",
         "Conditions": [
           {
             "Type": "InMainboard",
             "Cards": [
-              "Arid Mesa"
+              "Devourer of Destiny"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Consign to Memory"
+              "Disciple of Freyalise"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Flooded Strand"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Arena of Glory",
-              "Fable of the Mirror-Breaker",
-              "Galvanic Discharge",
-              "Ragavan, Nimble Pilferer"
+              "Eldrazi Temple"
             ]
           }
         ]
@@ -599,26 +516,478 @@
         ]
       },
       {
-        "Name": "EldraziRigging",
-        "MizeName": "Eldrazi Rigging",
-        "Supertype": "Eldrazi Rigging",
+        "Name": "BorosPonza",
+        "MizeName": "Boros Ponza",
+        "Supertype": "Boros Ponza",
         "Conditions": [
           {
             "Type": "InMainboard",
             "Cards": [
-              "Devourer of Destiny"
+              "Cleansing Wildfire"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Disciple of Freyalise"
+              "Demolition Field"
             ]
           },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Erode"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Cori Mountain Monastery",
+              "Sacred Foundry",
+              "Solitude"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "DimirFrog",
+        "MizeName": "Dimir Frog",
+        "Supertype": "Dimir Frog",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Counterspell"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fatal Push"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Murktide Regent"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Consider",
+              "Darkslick Shores",
+              "Island",
+              "Spell Pierce"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "BlackEldrazi",
+        "MizeName": "Black Eldrazi",
+        "Supertype": "Black Eldrazi",
+        "Conditions": [
           {
             "Type": "InMainboard",
             "Cards": [
               "Eldrazi Temple"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Emperor of Bones"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fatal Push"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "GrixisTwin",
+        "MizeName": "Grixis Twin",
+        "Supertype": "Grixis Twin",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Deceiver Exarch"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fatal Push"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flare of Denial"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "DimirControl",
+        "MizeName": "Dimir Control",
+        "Supertype": "Dimir Control",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Consult the Star Charts"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Counterspell"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fatal Push"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Sheoldred's Edict",
+              "Spell Snare",
+              "Subtlety",
+              "Wan Shi Tong, Librarian"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "SelesnyaRitual",
+        "MizeName": "Selesnya Ritual",
+        "Supertype": "Selesnya Ritual",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Birthing Ritual"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flagstones of Trokair"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Guide of Souls"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Ephemerate",
+              "Eternal Witness",
+              "Plains",
+              "White Orchid Phantom"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "GreenTron",
+        "MizeName": "Green Tron",
+        "Supertype": "Green Tron",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ancient Stirrings"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Chromatic Sphere"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Expedition Map"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Chromatic Star",
+              "Dismember",
+              "Forest",
+              "Oblivion Stone"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "4CReclamation",
+        "MizeName": "4C Reclamation",
+        "Supertype": "4C Reclamation",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Brainsurge"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Counterspell"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flooded Strand"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Arid Mesa",
+              "Galvanic Discharge",
+              "Memory Deluge",
+              "Phlage, Titan of Fire's Fury"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Soultrader",
+        "MizeName": "Soultrader",
+        "Supertype": "Soultrader",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Boggart Trawler"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fatal Push"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Gravecrawler"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Chthonian Nightmare",
+              "Unearth"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "EsperOculus",
+        "MizeName": "Esper Oculus",
+        "Supertype": "Esper Frog",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Abhorrent Oculus"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Consider"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Counterspell"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Ketramose, the New Dawn",
+              "Relic of Progenitus"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "AzoriusBlink",
+        "MizeName": "Azorius Blink",
+        "Supertype": "Azorius Blink",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Guide of Souls"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Hallowed Fountain"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ocelot Pride"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Ephemerate",
+              "Flagstones of Trokair",
+              "Plains"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "IzzetMurktide",
+        "MizeName": "Izzet Murktide",
+        "Supertype": "Izzet Murktide",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Counterspell"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Expressive Iteration"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Mishra's Bauble"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Dragon's Rage Channeler",
+              "Flooded Strand",
+              "Island",
+              "Ledger Shredder"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "GruulPonza",
+        "MizeName": "Gruul Ponza",
+        "Supertype": "Gruul Ponza",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Blood Moon"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Endurance"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fable of the Mirror-Breaker"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Arbor Elf",
+              "Bonecrusher Giant",
+              "Fanatic of Rhonas",
+              "Forest"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "DimirOculus",
+        "MizeName": "Dimir Oculus",
+        "Supertype": "Dimir Frog",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Abhorrent Oculus"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Counterspell"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fatal Push"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "JeskaiBlink",
+        "MizeName": "Jeskai Blink",
+        "Supertype": "Jeskai Blink",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arid Mesa"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Consign to Memory"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flooded Strand"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Arena of Glory",
+              "Casey Jones, Vigilante",
+              "Galvanic Discharge",
+              "Scalding Tarn"
             ]
           }
         ]
@@ -626,7 +995,7 @@
       {
         "Name": "OmnathControl",
         "MizeName": "Omnath Control",
-        "Supertype": "Midrange",
+        "Supertype": "Omnath Control",
         "Conditions": [
           {
             "Type": "InMainboard",
@@ -643,16 +1012,98 @@
           {
             "Type": "InMainboard",
             "Cards": [
-              "Misty Rainforest"
+              "Leyline Binding"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "NayaLandfall",
+        "MizeName": "Naya Landfall",
+        "Supertype": "Naya Landfall",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ajani, Nacatl Pariah"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Akoum Hellhound"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Amped Raptor"
             ]
           },
           {
             "Type": "OneOrMoreInMainboard",
             "Cards": [
-              "Ephemerate",
-              "Eternal Witness",
-              "Omnath, Locus of Creation",
+              "Atarka's Command",
               "Wrenn and Six"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "SimicWoodland",
+        "MizeName": "Simic Woodland",
+        "Supertype": "Simic Woodland",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fallaji Archaeologist"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flare of Denial"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Malevolent Rumble"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "JeskaiControl",
+        "MizeName": "Jeskai Control",
+        "Supertype": "Jeskai Control",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Counterspell"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flooded Strand"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Galvanic Discharge"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Phlage, Titan of Fire's Fury",
+              "Scalding Tarn",
+              "Solitude",
+              "Wrath of the Skies"
             ]
           }
         ]
@@ -660,7 +1111,7 @@
       {
         "Name": "GruulThroughtheBreach",
         "MizeName": "Gruul Through the Breach",
-        "Supertype": "Through the Breach",
+        "Supertype": "Gruul Through the Breach",
         "Conditions": [
           {
             "Type": "InMainboard",
@@ -717,20 +1168,360 @@
         ]
       },
       {
-        "Name": "DimirControl",
-        "MizeName": "Dimir Control",
-        "Supertype": "Dimir Control",
+        "Name": "SamCombo",
+        "MizeName": "Sam Combo",
+        "Supertype": "Sam Combo",
         "Conditions": [
           {
             "Type": "InMainboard",
             "Cards": [
-              "Consult the Star Charts"
+              "Birthing Ritual"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Counterspell"
+              "Boggart Trawler"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Cauldron Familiar"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "BroodscaleCombo",
+        "MizeName": "Broodscale Combo",
+        "Supertype": "Broodscale Combo",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ancient Stirrings"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Basking Broodscale"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Blade of the Bloodchief"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Grove of the Burnwillows",
+              "Walking Ballista"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "BlueBelcher",
+        "MizeName": "Blue Belcher",
+        "Supertype": "Blue Belcher",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Beyeen Veil"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Disrupting Shoal"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fallaji Archaeologist"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "BorosEnergy",
+        "MizeName": "Boros Energy",
+        "Supertype": "Boros Energy",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ajani, Nacatl Pariah"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Amped Raptor"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arid Mesa"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Flooded Strand",
+              "Plains",
+              "Static Prison"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "BantBlink",
+        "MizeName": "Bant Blink",
+        "Supertype": "Bant Blink",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flooded Strand"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Orim's Chant"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Prismatic Ending"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Ephemerate",
+              "Eternal Witness",
+              "Lórien Revealed",
+              "Stock Up"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "LivingEnd",
+        "MizeName": "Living End",
+        "Supertype": "Living End",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Endurance"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Force of Negation"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Generous Ent"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Formidable Speaker",
+              "Living End"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "HammerTime",
+        "MizeName": "Hammer Time",
+        "Supertype": "Hammer Time",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arid Mesa"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Battlefield Improvisation"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Colossus Hammer"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Inkmoth Nexus",
+              "Plains"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "IzzetProwess",
+        "MizeName": "Izzet Prowess",
+        "Supertype": "Izzet Prowess",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Cori-Steel Cutter"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Dragon's Rage Channeler"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Expressive Iteration"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Mountain",
+              "Scalding Tarn",
+              "Steam Vents",
+              "Wooded Foothills"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "GrindingBreach",
+        "MizeName": "Grinding Breach",
+        "Supertype": "Grinding Breach",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Emry, Lurker of the Loch"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Flooded Strand"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Mishra's Bauble"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Grinding Station",
+              "Rona, Herald of Invasion"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "RakdosScam",
+        "MizeName": "Rakdos Scam",
+        "Supertype": "Rakdos Scam",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Blood Crypt"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Dauthi Voidwalker"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fable of the Mirror-Breaker"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Blackcleave Cliffs",
+              "Fatal Push",
+              "Swamp",
+              "Verdant Catacombs"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "EldraziRamp",
+        "MizeName": "Eldrazi Ramp",
+        "Supertype": "Eldrazi Ramp",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Eldrazi Temple"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fable of the Mirror-Breaker"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Forest"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Emrakul, the Promised End",
+              "Herigast, Erupting Nullkite",
+              "Misty Rainforest"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "OrzhovBlink",
+        "MizeName": "Orzhov Blink",
+        "Supertype": "Orzhov Blink",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Emperor of Bones"
             ]
           },
           {
@@ -740,20 +1531,26 @@
             ]
           },
           {
+            "Type": "InMainboard",
+            "Cards": [
+              "Marsh Flats"
+            ]
+          },
+          {
             "Type": "OneOrMoreInMainboard",
             "Cards": [
-              "Sheoldred's Edict",
-              "Spell Snare",
-              "Undercity Sewers",
-              "Watery Grave"
+              "Ephemerate",
+              "Flickerwisp",
+              "Windswept Heath",
+              "Witch Enchanter"
             ]
           }
         ]
       },
       {
-        "Name": "IzzetControl",
-        "MizeName": "Izzet Control",
-        "Supertype": "Izzet Control",
+        "Name": "AzoriusControl",
+        "MizeName": "Azorius Control",
+        "Supertype": "Azorius Control",
         "Conditions": [
           {
             "Type": "InMainboard",
@@ -764,47 +1561,292 @@
           {
             "Type": "InMainboard",
             "Cards": [
-              "Flame of Anor"
+              "Flooded Strand"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Lightning Bolt"
+              "Leyline Binding"
             ]
           },
           {
             "Type": "OneOrMoreInMainboard",
             "Cards": [
+              "Hallowed Fountain",
               "Island",
-              "Misty Rainforest",
-              "Scalding Tarn",
-              "Three Steps Ahead"
+              "Narset, Parter of Veils",
+              "Preordain"
             ]
           }
         ]
       },
       {
-        "Name": "EldraziSaga",
-        "MizeName": "Eldrazi Saga",
-        "Supertype": "Eldrazi Saga",
+        "Name": "DomainZoo",
+        "MizeName": "Domain Zoo",
+        "Supertype": "Domain Zoo",
         "Conditions": [
           {
             "Type": "InMainboard",
             "Cards": [
-              "Chalice of the Void"
+              "Arid Mesa"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Darksteel Citadel"
+              "Flooded Strand"
             ]
           },
           {
             "Type": "InMainboard",
             "Cards": [
-              "Devourer of Destiny"
+              "Leyline Binding"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Phlage, Titan of Fire's Fury",
+              "Quantum Riddler"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "JundFood",
+        "MizeName": "Jund Food",
+        "Supertype": "Jund Food",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Asmoranomardicadaistinaculdacar"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fable of the Mirror-Breaker"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Finale of Devastation"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Merfolk",
+        "MizeName": "Merfolk",
+        "Supertype": "Merfolk",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Aether Vial"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Botanical Sanctum"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Cavern of Souls"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Necrodominance",
+        "MizeName": "Necrodominance",
+        "Supertype": "Necrodominance",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Boggart Trawler"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fell the Profane"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Grief"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Fatal Push",
+              "March of Wretched Sorrow",
+              "Sheoldred, the Apocalypse"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "CrashingFootfalls",
+        "MizeName": "Crashing Footfalls",
+        "Supertype": "Crashing Footfalls",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Crashing Footfalls"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Fire // Ice"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Force of Negation"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Dead // Gone",
+              "Tishana's Tidebinder"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Yawgmoth",
+        "MizeName": "Yawgmoth",
+        "Supertype": "Yawgmoth",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Blooming Marsh"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Chord of Calling"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Delighted Halfling"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "OrzhovScam",
+        "MizeName": "Orzhov Scam",
+        "Supertype": "Orzhov Scam",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Concealed Courtyard"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ephemerate"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Godless Shrine"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Ajani, Nacatl Pariah",
+              "Chthonian Nightmare"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Affinity",
+        "MizeName": "Affinity",
+        "Supertype": "Affinity",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arcbound Ravager"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Kappa Cannoneer"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Mishra's Bauble"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Rust Harvester",
+              "Sink into Stupor"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "LivingEndAlt2",
+        "MizeName": "Living End",
+        "Supertype": "Living End",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ardent Plea"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Generous Ent"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Grief"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Architects of Will",
+              "Force of Negation",
+              "Living End",
+              "Striped Riverwinder"
             ]
           }
         ]
@@ -1389,27 +2431,6 @@
         ]
       },
       {
-        "Name": "GrindingBreach",
-        "MizeName": "Grinding Station",
-        "Supertype": "Steel Cutter",
-        "_name": "GrindingBreach",
-        "_mize_name": "Grinding Station",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Grinding Station"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Underworld Breach"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "GoryoReanimator",
         "MizeName": "Goryo's Vengeance",
         "Supertype": "Goryo's Vengeance",
@@ -1835,50 +2856,6 @@
         ]
       },
       {
-        "Name": "EldraziRamp",
-        "MizeName": "Eldrazi Ramp",
-        "Supertype": "Eldrazi Ramp",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Utopia Sprawl"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ugin's Labyrinth"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Sowing Mycospawn",
-              "Malevolent Rumble"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Urza's Tower"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Basking Broodscale"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Eldrazi Linebreaker"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "EldraziAggro",
         "MizeName": "Eldrazi Aggro",
         "Supertype": "Eldrazi Aggro",
@@ -1906,37 +2883,6 @@
             "Type": "DoesNotContain",
             "Cards": [
               "Basking Broodscale"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Urza's Tower"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "BroodscaleCombo",
-        "MizeName": "Broodscale Combo",
-        "Supertype": "Broodscale Combo",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Basking Broodscale"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Blade of the Bloodchief"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Utopia Sprawl"
             ]
           },
           {
@@ -2047,57 +2993,6 @@
         ]
       },
       {
-        "Name": "Affinity",
-        "MizeName": "Affinity",
-        "Supertype": "Affinity",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Mox Opal"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Urza's Saga"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Weapons Manufacturing",
-              "Pinnacle Emissary",
-              "Kappa Cannoneer"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Lantern of Insight"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "The Underworld Cookbook"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Colossus Hammer"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Cori-Steel Cutter"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "DimirFood",
         "MizeName": "Dimir Food",
         "Supertype": "Food",
@@ -2173,44 +3068,6 @@
         ]
       },
       {
-        "Name": "HammerTime",
-        "MizeName": "Hammer Time",
-        "Supertype": "Hammer Time",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Colossus Hammer"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Puresteel Paladin",
-              "Stoneforge Mystic"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Mox Opal"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Basking Broodscale"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Lantern of Insight"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "Izzet Cutter",
         "MizeName": "Izzet Cutter",
         "Supertype": "Steel Cutter",
@@ -2244,44 +3101,6 @@
             "Type": "DoesNotContain",
             "Cards": [
               "Lantern of Insight"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "CrashingFootfalls",
-        "MizeName": "Crashing Footfalls",
-        "Supertype": "Crashing Footfalls",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Crashing Footfalls"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Violent Outburst"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Shardless Agent",
-              "Fire/Ice"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Living End"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Birthing Ritual"
             ]
           }
         ]
@@ -2325,97 +3144,6 @@
             "Type": "DoesNotContain",
             "Cards": [
               "Samwise Gamgee"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "LivingEnd",
-        "MizeName": "Living End",
-        "Supertype": "Living End",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Living End"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Violent Outburst"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Shardless Agent",
-              "Street Wraith"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Curator of Mysteries",
-              "Striped Riverwinder",
-              "Generous Ent"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Crashing Footfalls"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "AzoriusControl",
-        "MizeName": "Azorius Control",
-        "Supertype": "Azorius Control",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Solitude"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Counterspell"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Orim's Chant",
-              "Supreme Verdict",
-              "Wrath of the Skies"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Lightning Bolt"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Snapcaster Mage"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Kolaghan's Command"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Goryo's Vengeance"
             ]
           }
         ]
@@ -2653,143 +3381,6 @@
         ]
       },
       {
-        "Name": "OrzhovBlink",
-        "MizeName": "Orzhov Blink",
-        "Supertype": "Blink",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ephemerate"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Solitude"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Overlord of the Balemurk"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Ocelot Pride",
-              "Guide of Souls"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Thoughtseize"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Goryo's Vengeance"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Counterspell"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Quantum Riddler"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "DomainZoo",
-        "MizeName": "Domain Zoo",
-        "Supertype": "Domain Zoo",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Leyline of the Guildpact"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Scion of Draco"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Territorial Kavu"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Leyline Binding",
-              "Lightning Bolt"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "BorosEnergy",
-        "MizeName": "Boros Energy",
-        "Supertype": "Energy",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ocelot Pride"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Guide of Souls"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Ajani, Nacatl Pariah"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Orcish Bowmasters"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Thoughtseize"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Ob Nixilis, the Adversary"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Ephemerate"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "MarduEnergy",
         "MizeName": "Mardu Energy",
         "Supertype": "Energy",
@@ -2851,38 +3442,6 @@
               "Simic Growth Chamber",
               "Golgari Rot Farm",
               "Gruul Turf"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "BlueBelcher",
-        "MizeName": "Blue Belcher",
-        "Supertype": "Blue Belcher",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Goblin Charbelcher"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Lotus Bloom"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Tameshi, Reality Architect",
-              "Waterlogged Teachings"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Through the Breach"
             ]
           }
         ]
@@ -3499,39 +4058,6 @@
         ]
       },
       {
-        "Name": "Merfolk",
-        "MizeName": "Merfolk",
-        "Supertype": "Merfolk",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Lord of Atlantis"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Master of the Pearl Trident"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Harbinger of the Seas",
-              "Svyelun of Sea and Sky"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Aether Vial",
-              "Vodalian Hexcatcher"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "Mill",
         "MizeName": "Mill",
         "Supertype": "Mill",
@@ -3676,32 +4202,6 @@
         ]
       },
       {
-        "Name": "Necrodominance",
-        "MizeName": "Necrodominance",
-        "Supertype": "Necrodominance",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Necrodominance"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Soul Spike"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "March of Wretched Sorrow",
-              "Fell the Profane"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "Rack",
         "MizeName": "Rack",
         "Supertype": "Rack",
@@ -3809,44 +4309,6 @@
         ]
       },
       {
-        "Name": "Yawgmoth",
-        "MizeName": "Yawgmoth",
-        "Supertype": "Yawgmoth",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Yawgmoth, Thran Physician"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Young Wolf"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Agatha's Soul Cauldron",
-              "Walking Ballista"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Devoted Druid"
-            ]
-          },
-          {
-            "Type": "DoesNotContain",
-            "Cards": [
-              "Samwise Gamgee"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "Neobrand",
         "MizeName": "Neobrand",
         "Supertype": "Neobrand",
@@ -3875,70 +4337,6 @@
             "Cards": [
               "Summoner's Pact",
               "Eldritch Evolution"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "SamCombo",
-        "MizeName": "Sam Combo",
-        "Supertype": "Sam Combo",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Samwise Gamgee"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Cauldron Familiar"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Gilded Goose"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Carrion Feeder",
-              "Viscera Seer"
-            ]
-          }
-        ]
-      },
-      {
-        "Name": "Soultrader",
-        "MizeName": "Soultrader",
-        "Supertype": "Soultrader",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Warren Soultrader"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Marionette Apprentice"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Gravecrawler"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Shambling Ghast",
-              "Phyrexian Tower"
             ]
           }
         ]
@@ -4330,7 +4728,7 @@
         ]
       },
       "Landfall": {
-        "description": "Landfall-based strategy (placeholder \u2014 no decklist yet)",
+        "description": "Landfall-based strategy (placeholder — no decklist yet)",
         "shared_cards": []
       }
     },
