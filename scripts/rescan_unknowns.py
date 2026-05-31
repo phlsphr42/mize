@@ -116,25 +116,32 @@ def load_identifiers(fmt):
 
 
 def load_key_cards_from_github():
-    """Fetch key_cards section from custom_archetypes.json in the mize GitHub repo."""
-    MIZE_REPO             = 'phlsphr42/mize'
-    CUSTOM_ARCHETYPES_PATH = 'scripts/custom_archetypes.json'
-    GITHUB_TOKEN          = os.environ.get('GITHUB_TOKEN', '')
-    url = f'https://raw.githubusercontent.com/{MIZE_REPO}/main/{CUSTOM_ARCHETYPES_PATH}'
-    headers = {'User-Agent': 'Mize-Rescan'}
-    if GITHUB_TOKEN:
-        headers['Authorization'] = f'token {GITHUB_TOKEN}'
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read().decode())
-            key_cards = data.get('key_cards', {})
-            total = sum(len(v) for v in key_cards.values())
-            print(f'  Loaded key_cards: {total} archetypes from custom_archetypes.json')
-            return key_cards
-    except Exception as e:
-        print(f'  WARNING: Could not load custom_archetypes.json: {e}')
-        return {}
+    """Load key_cards from custom_archetypes.json.
+
+    Reads the file directly from disk — the script runs inside the repo checkout
+    so the file is always available at scripts/custom_archetypes.json.
+    Falls back to a GitHub raw fetch only if the local file isn't found.
+    """
+    # Try local file first (always available in GitHub Actions after checkout)
+    local_paths = [
+        os.path.join(os.path.dirname(__file__), 'custom_archetypes.json'),
+        'scripts/custom_archetypes.json',
+        'custom_archetypes.json',
+    ]
+    for path in local_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r') as f:
+                    data = json.load(f)
+                key_cards = data.get('key_cards', {})
+                total = sum(len(v) for v in key_cards.values())
+                print(f'  Loaded key_cards: {total} archetypes from {path}')
+                return key_cards
+            except Exception as e:
+                print(f'  WARNING: Failed to parse {path}: {e}')
+
+    print(f'  WARNING: custom_archetypes.json not found locally — key-card identification disabled')
+    return {}
 
 
 def detect_by_key_cards(mb_dict, key_cards_for_format):

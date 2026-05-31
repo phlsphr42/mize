@@ -191,25 +191,30 @@ def detect_archetype_by_identifier(deck_data, identifiers):
 
 
 def load_key_cards():
-    """Fetch key_cards from custom_archetypes.json in the mize repo.
+    """Load key_cards from custom_archetypes.json.
 
-    Returns dict: { 'Modern': { archetype: [card1,card2,card3], ... }, 'Legacy': {...}, ... }
-    Falls back to empty dict on any error so the import never hard-fails.
+    Reads the file directly from disk — the script runs inside the repo checkout
+    so the file is always available at scripts/custom_archetypes.json.
     """
-    GITHUB_API_URL = f'https://raw.githubusercontent.com/{MIZE_REPO}/main/{CUSTOM_ARCHETYPES_PATH}'
-    raw = gh_get_raw(GITHUB_API_URL)
-    if not raw:
-        print(f'  WARNING: Could not load {CUSTOM_ARCHETYPES_PATH} — key-card identification disabled')
-        return {}
-    try:
-        data = json.loads(raw)
-        key_cards = data.get('key_cards', {})
-        total = sum(len(v) for v in key_cards.values())
-        print(f'  Loaded key_cards: {total} archetypes across {list(key_cards.keys())}')
-        return key_cards
-    except Exception as e:
-        print(f'  WARNING: Failed to parse {CUSTOM_ARCHETYPES_PATH}: {e}')
-        return {}
+    local_paths = [
+        os.path.join(os.path.dirname(__file__), 'custom_archetypes.json'),
+        'scripts/custom_archetypes.json',
+        'custom_archetypes.json',
+    ]
+    for path in local_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r') as f:
+                    data = json.load(f)
+                key_cards = data.get('key_cards', {})
+                total = sum(len(v) for v in key_cards.values())
+                print(f'  Loaded key_cards: {total} archetypes from {path}')
+                return key_cards
+            except Exception as e:
+                print(f'  WARNING: Failed to parse {path}: {e}')
+
+    print(f'  WARNING: custom_archetypes.json not found — key-card identification disabled')
+    return {}
 
 
 def detect_by_key_cards(deck_data, key_cards_for_format):
