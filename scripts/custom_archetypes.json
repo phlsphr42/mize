@@ -1582,38 +1582,6 @@
         ]
       },
       {
-        "Name": "DomainZoo",
-        "MizeName": "Domain Zoo",
-        "Supertype": "Domain Zoo",
-        "Conditions": [
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Arid Mesa"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Flooded Strand"
-            ]
-          },
-          {
-            "Type": "InMainboard",
-            "Cards": [
-              "Leyline Binding"
-            ]
-          },
-          {
-            "Type": "OneOrMoreInMainboard",
-            "Cards": [
-              "Phlage, Titan of Fire's Fury",
-              "Quantum Riddler"
-            ]
-          }
-        ]
-      },
-      {
         "Name": "JundFood",
         "MizeName": "Jund Food",
         "Supertype": "Jund Food",
@@ -1813,6 +1781,90 @@
             "Cards": [
               "Rust Harvester",
               "Sink into Stupor"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Emeria",
+        "MizeName": "Emeria",
+        "Supertype": "Emeria",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Eagles of the North"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Plains"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Ranger-Captain of Eos"
+            ]
+          },
+          {
+            "Type": "OneOrMoreInMainboard",
+            "Cards": [
+              "Abiding Grace",
+              "Demolition Field",
+              "Field of Ruin",
+              "Martyr of Sands"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "NaduShuko",
+        "MizeName": "Nadu Shuko",
+        "Supertype": "Nadu Shuko",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Chord of Calling"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Delighted Halfling"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Misty Rainforest"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "DomainZoo",
+        "MizeName": "Domain Zoo",
+        "Supertype": "Domain Zoo",
+        "Conditions": [
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Arid Mesa"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Consign to Memory"
+            ]
+          },
+          {
+            "Type": "InMainboard",
+            "Cards": [
+              "Doorkeeper Thrull"
             ]
           }
         ]
