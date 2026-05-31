@@ -119,7 +119,7 @@
       "Goryo's Vengeance": [
         "Goryo's Vengeance",
         "Atraxa, Grand Unifier",
-        "Obzedat, Ghost Council"
+        "Reanimate"
       ],
       "Grixis Control": [
         "Snapcaster Mage",
@@ -289,9 +289,9 @@
         "Cavern Harpy"
       ],
       "ANT Storm": [
-        "Ad Nauseam",
         "Tendrils of Agony",
-        "Dark Ritual"
+        "Ad Nauseam",
+        "Cabal Ritual"
       ],
       "Bant Control": [
         "Swords to Plowshares",
@@ -321,7 +321,7 @@
       "Cloudpost": [
         "Cloudpost",
         "Glimmerpost",
-        "Crop Rotation"
+        "Ulamog, the Ceaseless Hunger"
       ],
       "Colorless Eldrazi": [
         "Eldrazi Temple",
@@ -341,7 +341,7 @@
       "Death and Taxes": [
         "Thalia, Guardian of Thraben",
         "Aether Vial",
-        "Stoneforge Mystic"
+        "Recruiter of the Guard"
       ],
       "Death's Shadow": [
         "Death's Shadow",
@@ -354,9 +354,9 @@
         "Murktide Regent"
       ],
       "Dimir Reanimator": [
-        "Reanimate",
         "Atraxa, Grand Unifier",
-        "Careful Study"
+        "Archon of Cruelty",
+        "Brainstorm"
       ],
       "Doomsday": [
         "Doomsday",
@@ -415,22 +415,22 @@
       ],
       "Izzet Tempo": [
         "Murktide Regent",
-        "Expressive Iteration",
+        "Dragon's Rage Channeler",
         "Daze"
       ],
       "Jeskai Delver": [
-        "Swords to Plowshares",
-        "Stifle",
-        "Delver of Secrets"
+        "Delver of Secrets",
+        "Force of Will",
+        "Swords to Plowshares"
       ],
       "Jeskai Miracles": [
         "Counterbalance",
-        "Pyroblast",
-        "Sensei's Divining Top"
+        "Sensei's Divining Top",
+        "Pyroblast"
       ],
       "Lands": [
         "Life from the Loam",
-        "Mox Diamond",
+        "Crop Rotation",
         "Dark Depths"
       ],
       "Loam Pox": [
@@ -454,9 +454,9 @@
         "Swords to Plowshares"
       ],
       "Mono-Black Reanimator": [
-        "Reanimate",
         "Entomb",
-        "Unmask"
+        "Reanimate",
+        "Archon of Cruelty"
       ],
       "Mono-White Initiative": [
         "Seasoned Dungeoneer",
@@ -514,9 +514,9 @@
         "Liliana of the Veil"
       ],
       "Rakdos Reanimator": [
-        "Reanimate",
         "Grief",
-        "Entomb"
+        "Reanimate",
+        "Archon of Cruelty"
       ],
       "Rakdos Stompy": [
         "Grief",
@@ -559,14 +559,14 @@
         "Assassin's Trophy"
       ],
       "Sultai Tempo": [
-        "Assassin's Trophy",
+        "Psychic Frog",
         "Orcish Bowmasters",
-        "Psychic Frog"
+        "Assassin's Trophy"
       ],
       "TES Storm": [
         "Lion's Eye Diamond",
         "Wishclaw Talisman",
-        "Veil of Summer"
+        "Burning Wish"
       ],
       "Temur Delver": [
         "Dragon's Rage Channeler",
@@ -586,7 +586,12 @@
       "4c Lands": [
         "Life from the Loam",
         "Orcish Bowmasters",
-        "Swords to Plowshares"
+        "Crop Rotation"
+      ],
+      "Humans": [
+        "Champion of the Parish",
+        "Aether Vial",
+        "Thalia's Lieutenant"
       ]
     }
   },

@@ -242,6 +242,7 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
         print(f'  Dismissed {dismissed} no-decklist entries. {len(decks)} decks remaining.')
 
     matched   = 0
+    matched_decks = []
     skipped_no_mainboard = 0
     now       = datetime.now(timezone.utc).isoformat()
 
@@ -256,14 +257,6 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
             skipped_no_mainboard += 1
             continue
 
-        # Diagnostic: print first deck with actual cards
-        if matched == 0 and skipped_no_mainboard <= i:
-            print(f'  DIAG first deck with cards: id={deck["id"]}')
-            keys = list(mb.keys())[:5]
-            print(f'  DIAG mb sample keys: {keys}')
-            kc_sample = list(key_cards_fmt.items())[:2]
-            print(f'  DIAG key_cards_fmt sample: {kc_sample}')
-
         arch = None
 
         # 1. Key-card exact match (custom_archetypes.json)
@@ -274,41 +267,47 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
             arch = detect_by_identifier(mb, identifiers)
 
         if arch:
-            # Mark as reviewed
-            sb_patch('mtgo_unknown_decks',
-                f'?id=eq.{deck["id"]}',
-                {
-                    'assigned_name':      arch,
-                    'assigned_supertype': None,
-                    'reviewed':           True,
-                    'reviewed_at':        now,
-                    'reviewed_by':        'rescan_script'
-                }
-            )
-
-            # Update mtgo_results
-            sb_patch('mtgo_results',
-                f'?event_id=eq.{urllib.parse.quote(deck["event_id"])}'
-                f'&player_name=eq.{urllib.parse.quote(deck["player_name"])}',
-                {'archetype_canonical': arch, 'archetype_raw': arch}
-            )
-
-            # Update mtgo_matches (player1 and player2)
-            sb_patch('mtgo_matches',
-                f'?event_id=eq.{urllib.parse.quote(deck["event_id"])}'
-                f'&player1=eq.{urllib.parse.quote(deck["player_name"])}',
-                {'player1_arch': arch}
-            )
-            sb_patch('mtgo_matches',
-                f'?event_id=eq.{urllib.parse.quote(deck["event_id"])}'
-                f'&player2=eq.{urllib.parse.quote(deck["player_name"])}',
-                {'player2_arch': arch}
-            )
-
+            matched_decks.append({'id': deck['id'], 'arch': arch,
+                                   'event_id': deck['event_id'],
+                                   'player_name': deck['player_name']})
             matched += 1
 
-        if (i + 1) % 50 == 0:
+        if (i + 1) % 200 == 0:
             print(f'  Progress: {i+1}/{len(decks)} scanned, {matched} matched, {skipped_no_mainboard} no decklist')
+
+    # ── Batch write all matched decks ─────────────────────────────────────────
+    print(f'  Writing {matched} matches to database...')
+
+    # Group by archetype for bulk PATCH on mtgo_unknown_decks
+    by_arch = {}
+    for m in matched_decks:
+        by_arch.setdefault(m['arch'], []).append(m)
+
+    CHUNK = 100  # stay well under URL length limits
+    for arch, items in by_arch.items():
+        ids = [m['id'] for m in items]
+        for chunk_start in range(0, len(ids), CHUNK):
+            chunk = ids[chunk_start:chunk_start + CHUNK]
+            id_list = ','.join(str(x) for x in chunk)
+            sb_patch('mtgo_unknown_decks', f'?id=in.({id_list})',
+                     {'assigned_name': arch, 'assigned_supertype': None,
+                      'reviewed': True, 'reviewed_at': now,
+                      'reviewed_by': 'rescan_script'})
+
+        # Update mtgo_results and mtgo_matches per deck (can't bulk these easily)
+        for m in items:
+            sb_patch('mtgo_results',
+                f'?event_id=eq.{urllib.parse.quote(m["event_id"])}'
+                f'&player_name=eq.{urllib.parse.quote(m["player_name"])}',
+                {'archetype_canonical': arch, 'archetype_raw': arch})
+            sb_patch('mtgo_matches',
+                f'?event_id=eq.{urllib.parse.quote(m["event_id"])}'
+                f'&player1=eq.{urllib.parse.quote(m["player_name"])}',
+                {'player1_arch': arch})
+            sb_patch('mtgo_matches',
+                f'?event_id=eq.{urllib.parse.quote(m["event_id"])}'
+                f'&player2=eq.{urllib.parse.quote(m["player_name"])}',
+                {'player2_arch': arch})
 
     print(f'  Done: {matched} matched, {len(decks)-matched-skipped_no_mainboard} unidentified, {skipped_no_mainboard} had no decklist')
     return matched, len(decks) - matched - skipped_no_mainboard
