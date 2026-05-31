@@ -1,5 +1,5 @@
 name: rescan-unknown-decks
- 
+
 on:
   workflow_dispatch:
     inputs:
@@ -15,25 +15,30 @@ on:
           - Pioneer
           - Pauper
           - Vintage
- 
+
 jobs:
   rescan:
     runs-on: ubuntu-latest
     timeout-minutes: 60
- 
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
- 
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
- 
+
+      - name: Install dependencies
+        run: pip install requests
+
       - name: Run rescan
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.MTGO_GITHUB_TOKEN }}
+          PYTHONUNBUFFERED: "1"
         run: |
           if [ -n "${{ github.event.inputs.format }}" ]; then
             python scripts/rescan_unknowns.py --format "${{ github.event.inputs.format }}"
