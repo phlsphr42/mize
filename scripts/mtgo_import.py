@@ -174,33 +174,6 @@ SIMILARITY_THRESHOLD_HAND = 0.35  # lower threshold for 7-card opening hand
 MIN_REFERENCE_DECKS      = 5     # auto-add matched decks until this many refs exist
 MAX_DECK_CARDS           = 80    # ignore lands-only noise above this count
 
-def load_archetype_identifiers(fmt):
-    """Load exact 3-card identifiers from Supabase for the given format.
-
-    Returns a list of dicts: [{archetype_name, card1, card2, card3}, ...]
-    Each entry means: if ALL three cards appear in the mainboard, it's that archetype.
-    """
-    rows = sb_get('archetype_identifiers',
-        f'?format=eq.{fmt}&select=archetype_name,card1,card2,card3'
-    )
-    print(f'    Loaded {len(rows)} archetype identifiers for {fmt}', flush=True)
-    return rows
-
-
-def detect_archetype_by_identifier(deck_data, identifiers):
-    """Check a deck's mainboard against exact 3-card identifiers.
-
-    Returns archetype_name (str) if matched, else None.
-    Identifier match is checked first — before fuzzy similarity — for precision.
-    """
-    mainboard = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Mainboard', [])}
-    mb_set    = set(mainboard.keys())
-    for ident in identifiers:
-        if ident['card1'] in mb_set and ident['card2'] in mb_set and ident['card3'] in mb_set:
-            return ident['archetype_name']
-    return None
-
-
 def load_reference_fingerprints(fmt):
     """Load reference decklists from Supabase and build per-archetype fingerprints.
 
@@ -523,13 +496,11 @@ def main():
     ts('Loading reference decklist fingerprints...')
     fingerprints_by_format = {}
     deck_counts_by_format  = {}
-    identifiers_by_format  = {}
     for fmt in VALIDATABLE_FORMATS:
         fp, dc = load_reference_fingerprints(fmt)
         fingerprints_by_format[fmt] = fp
         deck_counts_by_format[fmt]  = dc
-        identifiers_by_format[fmt]  = load_archetype_identifiers(fmt)
-        print(f'  {fmt}: {len(fp)} archetype fingerprints, {len(identifiers_by_format[fmt])} identifiers loaded')
+        print(f'  {fmt}: {len(fp)} archetype fingerprints loaded')
 
     FORMAT_PATTERNS = {
         'Modern':    ['modern-challenge', 'modern-showcase-challenge'],
@@ -652,15 +623,8 @@ def main():
             fmt         = event['format']
             fingerprints = fingerprints_by_format.get(fmt, {})
             deck_counts  = deck_counts_by_format.get(fmt, {})
-            identifiers  = identifiers_by_format.get(fmt, [])
             if deck_data:
-                # 1. Try exact identifier match first (fast, precise)
-                detected = detect_archetype_by_identifier(deck_data, identifiers)
-                if detected:
-                    score = 1.0  # identifier match = certain
-                else:
-                    # 2. Fall back to fuzzy similarity matching
-                    detected, score = detect_archetype_from_deck(deck_data, fingerprints)
+                detected, score = detect_archetype_from_deck(deck_data, fingerprints)
                 # Auto-add to reference if match found and archetype needs more examples
                 if detected:
                     add_to_reference_decklists(deck_data, detected, fmt, deck_counts)
@@ -705,6 +669,7 @@ def main():
                 'match_win_pct':       norm_pct(player.get('OMWP')),
                 'game_win_pct':        norm_pct(player.get('GWP')),
                 'opp_match_win_pct':   norm_pct(player.get('OGWP')),
+                'format':              event['format'],   # ← always stamped at insert
                 'created_at':          datetime.now(timezone.utc).isoformat()
             })
 
@@ -820,15 +785,70 @@ def main():
             time.sleep(0.05)
         print(f'Applied {len(corrections)} corrections.')
 
+    # ── Back-fill format column on historical mtgo_results rows ──────────────
+    # Rows imported before this fix have format=NULL in mtgo_results.
+    # Fix them once by joining to mtgo_events. This is idempotent — rows that
+    # already have the correct format are skipped by the NULL filter.
+    ts('Back-filling format column on legacy result rows...')
+    try:
+        null_fmt_results = sb_get('mtgo_results',
+            '?select=event_id,player_name&format=is.null'
+        )
+        if null_fmt_results:
+            # Build event_id → format map from already-fetched events (or fetch fresh)
+            bf_events = sb_get('mtgo_events', '?select=event_id,format')
+            bf_fmt_map = {e['event_id']: e.get('format') for e in bf_events if e.get('format')}
+            # Group by format to do one PATCH per (event_id, format) combo
+            by_event = defaultdict(list)
+            for r in null_fmt_results:
+                eid = r['event_id']
+                if eid in bf_fmt_map:
+                    by_event[eid].append(r)
+            patched = 0
+            for eid, rows in by_event.items():
+                fmt = bf_fmt_map[eid]
+                ok  = sb_patch('mtgo_results', f'?event_id=eq.{eid}',
+                               {'format': fmt})
+                if ok:
+                    patched += len(rows)
+            print(f'  Back-filled format on {patched} legacy result rows.')
+        else:
+            print('  No legacy rows need back-filling.')
+    except Exception as e:
+        print(f'  Back-fill warning (non-fatal): {e}')
+
     # ── Compute summaries ─────────────────────────────────────────────────────
     ts('Computing summaries...')
     all_results      = sb_get('mtgo_results',
-        '?select=event_id,player_name,archetype_canonical,finish_position,points,match_win_pct,game_win_pct,opp_match_win_pct'
+        '?select=event_id,player_name,archetype_canonical,finish_position,points,match_win_pct,game_win_pct,opp_match_win_pct,format'
     )
     all_events_db    = sb_get('mtgo_events', '?select=event_id,event_date,format')
     event_date_map   = {e['event_id']: e['event_date'] for e in all_events_db}
-    event_format_map = {e['event_id']: e.get('format') for e in all_events_db}  # None if missing
+    event_format_map = {e['event_id']: e.get('format') for e in all_events_db}
     print(f'Total results: {len(all_results)} | Total events: {len(all_events_db)}')
+
+    # Patch any results that are missing their format column (rows imported before this fix)
+    # by back-filling from the event table.  Log conflicts loudly.
+    mismatch_count = 0
+    backfill_count = 0
+    for r in all_results:
+        row_fmt   = r.get('format')
+        event_fmt = event_format_map.get(r['event_id'])
+        if not row_fmt and event_fmt:
+            r['format'] = event_fmt
+            backfill_count += 1
+        elif row_fmt and event_fmt and row_fmt != event_fmt:
+            # The row says one format but the event says another — trust the event.
+            print(f'  FORMAT MISMATCH: result row format={row_fmt!r} '
+                  f'but event {r["event_id"]} format={event_fmt!r} — using event format')
+            r['format'] = event_fmt
+            mismatch_count += 1
+        elif not row_fmt and not event_fmt:
+            r['format'] = None  # will be dropped below
+    if backfill_count:
+        print(f'  Back-filled format on {backfill_count} result rows (pre-fix rows).')
+    if mismatch_count:
+        print(f'  ⚠ Corrected {mismatch_count} format mismatches — investigate source data.')
 
     now     = datetime.now(timezone.utc).date()
     windows = [
@@ -844,9 +864,10 @@ def main():
         date_to   = now.isoformat()
         filtered  = [r for r in all_results if not cutoff or
                      event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
+        # Use the format already on the row (stamped at insert, cross-checked above).
+        # Drop any rows that still have no format — they can't be safely categorised.
         for r in filtered:
-            r['_format'] = event_format_map.get(r['event_id'])  # None if event unknown
-        # Drop results whose event format is unknown — prevents cross-format contamination
+            r['_format'] = r.get('format')
         filtered = [r for r in filtered if r['_format'] is not None]
         if not filtered:
             continue
