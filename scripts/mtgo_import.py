@@ -168,50 +168,329 @@ def gh_get_raw(url, retries=3):
             return None
     return None
 
-# ── Key card detection ───────────────────────────────────────────────────────
-# Each archetype is identified by 3 cards that must ALL be present in mainboard
+# ── Reference decklist similarity matching ────────────────────────────────────
+SIMILARITY_THRESHOLD     = 0.60  # minimum Jaccard similarity for full deck match
+SIMILARITY_THRESHOLD_HAND = 0.35  # lower threshold for 7-card opening hand
+MIN_REFERENCE_DECKS      = 5     # auto-add matched decks until this many refs exist
+MAX_DECK_CARDS           = 80    # ignore lands-only noise above this count
 
-def load_key_cards():
-    """Load key_cards from custom_archetypes.json in the repo."""
-    url = f'{GITHUB_API}/repos/{MIZE_REPO}/contents/{CUSTOM_ARCHETYPES_PATH}'
-    file_info = gh_get_json(url)
-    if not file_info:
-        print('  Could not fetch custom_archetypes.json')
-        return {}
-    raw = gh_get_raw(file_info['download_url'])
-    if not raw:
-        print('  Could not download custom_archetypes.json')
-        return {}
-    try:
-        data = json.loads(raw)
-        key_cards = data.get('key_cards', {})
-        total = sum(len(v) for v in key_cards.values())
-        print(f'  Loaded key_cards: {total} archetypes across {list(key_cards.keys())}')
-        return key_cards
-    except Exception as e:
-        print(f'  Error parsing key_cards: {e}')
-        return {}
+def load_archetype_identifiers(fmt):
+    """Load exact 3-card identifiers from Supabase for the given format.
+
+    Returns a list of dicts: [{archetype_name, card1, card2, card3}, ...]
+    Each entry means: if ALL three cards appear in the mainboard, it's that archetype.
+    """
+    rows = sb_get('archetype_identifiers',
+        f'?format=eq.{fmt}&select=archetype_name,card1,card2,card3'
+    )
+    print(f'    Loaded {len(rows)} archetype identifiers for {fmt}', flush=True)
+    return rows
 
 
-def detect_archetype_from_deck(deck_data, key_cards_for_format):
-    """Identify archetype by requiring all 3 key cards present in mainboard."""
-    mainboard = {c['CardName'] for c in deck_data.get('Mainboard', [])}
+def detect_archetype_by_identifier(deck_data, identifiers):
+    """Check a deck's mainboard against exact 3-card identifiers.
+
+    Returns archetype_name (str) if matched, else None.
+    Identifier match is checked first — before fuzzy similarity — for precision.
+    """
+    mainboard = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Mainboard', [])}
+    mb_set    = set(mainboard.keys())
+    for ident in identifiers:
+        if ident['card1'] in mb_set and ident['card2'] in mb_set and ident['card3'] in mb_set:
+            return ident['archetype_name']
+    return None
+
+
+def load_reference_fingerprints(fmt):
+    """Load reference decklists from Supabase and build per-archetype fingerprints.
+
+    Returns:
+        fingerprints: dict of archetype_name -> {
+            'cards': {card_name: avg_quantity},
+            'card_set': set of card names in mainboard,
+            'deck_count': int
+        }
+        deck_counts: dict of archetype_name -> number of reference decks stored
+    """
+    # Fetch all rows — sb_get handles pagination internally
+    print(f'    Fetching reference_decklists for {fmt}...', flush=True)
+    rows = sb_get('reference_decklists',
+        f'?format=eq.{fmt}&main_side=eq.Main&select=archetype_name,card_name,quantity'
+    )
+    print(f'    Got {len(rows)} total rows for {fmt}', flush=True)
+    if not rows:
+        return {}, {}
+
+    # Group by archetype — each archetype may have multiple reference decks.
+    # deck_index distinguishes them; for fingerprinting we average across all decks.
+    from collections import defaultdict
+    arch_cards = defaultdict(lambda: defaultdict(list))  # arch -> card -> [qty per deck]
+    arch_deck_sets = defaultdict(set)  # arch -> set of deck_index values (proxy for deck count)
+
+    for row in rows:
+        arch  = row['archetype_name']
+        card  = row['card_name']
+        qty   = row.get('quantity', 1)
+        arch_cards[arch][card].append(qty)
+
+    fingerprints = {}
+    for arch, cards in arch_cards.items():
+        # Average quantity per card across all reference decks
+        avg = {card: sum(qtys) / len(qtys) for card, qtys in cards.items()}
+        fingerprints[arch] = {
+            'cards':      avg,
+            'card_set':   set(avg.keys()),
+            'deck_count': max(len(v) for v in cards.values()),  # max occurrences ≈ deck count
+        }
+
+    deck_counts = {arch: fp['deck_count'] for arch, fp in fingerprints.items()}
+    return fingerprints, deck_counts
+
+
+def jaccard_similarity(deck_cards: set, ref_cards: set) -> float:
+    """Jaccard similarity between two sets of card names."""
+    if not deck_cards or not ref_cards:
+        return 0.0
+    intersection = len(deck_cards & ref_cards)
+    union        = len(deck_cards | ref_cards)
+    return intersection / union if union > 0 else 0.0
+
+
+def weighted_similarity(deck: dict, fingerprint: dict) -> float:
+    """Weighted similarity: cards with higher average quantity in reference count more.
+
+    Score = sum of min(deck_qty, ref_avg_qty) for shared cards
+            / max(sum of deck quantities, sum of ref avg quantities)
+    This rewards matching high-copy cards (4-ofs) more than 1-ofs.
+    """
+    ref   = fingerprint['cards']
+    score = sum(min(deck.get(c, 0), ref[c]) for c in ref if c in deck)
+    total = max(sum(deck.values()), sum(ref.values()))
+    return score / total if total > 0 else 0.0
+
+
+def detect_archetype_from_deck(deck_data, fingerprints, threshold=SIMILARITY_THRESHOLD):
+    """Compare a full decklist against reference fingerprints.
+
+    Returns (archetype_name, score) or (None, 0.0) if no match above threshold.
+    """
+    mainboard = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Mainboard', [])}
     if not mainboard:
+        return None, 0.0
+
+    deck_set = set(mainboard.keys())
+    best_arch, best_score = None, 0.0
+
+    for arch, fp in fingerprints.items():
+        # Use weighted similarity as primary score
+        score = weighted_similarity(mainboard, fp)
+        if score > best_score:
+            best_score = score
+            best_arch  = arch
+
+    if best_score >= threshold:
+        return best_arch, best_score
+    return None, best_score
+
+
+def detect_archetype_from_cards(cards_list, fingerprints, threshold=SIMILARITY_THRESHOLD_HAND):
+    """Compare a 7-card opening hand against reference fingerprints.
+
+    Uses Jaccard similarity (no quantities) since hand is a small sample.
+    Returns archetype_name or None.
+    """
+    hand_set = {c for c in cards_list if c}
+    if not hand_set:
         return None
-    for archetype, keys in key_cards_for_format.items():
-        if all(k in mainboard for k in keys):
-            return archetype
-    return None
+
+    best_arch, best_score = None, 0.0
+    for arch, fp in fingerprints.items():
+        score = jaccard_similarity(hand_set, fp['card_set'])
+        if score > best_score:
+            best_score = score
+            best_arch  = arch
+
+    return best_arch if best_score >= threshold else None
 
 
-def detect_archetype_from_cards(cards_list, key_cards_for_format):
-    """Identify archetype from opening hand cards (subset of deck)."""
-    hand = set(c for c in cards_list if c)
-    for archetype, keys in key_cards_for_format.items():
-        if all(k in hand for k in keys):
-            return archetype
-    return None
+def add_to_reference_decklists(deck_data, archetype, fmt, deck_counts):
+    """Add a matched deck to reference_decklists if archetype has < MIN_REFERENCE_DECKS."""
+    current = deck_counts.get(archetype, 0)
+    if current >= MIN_REFERENCE_DECKS:
+        return False
 
+    next_index = current + 1
+    rows = []
+    for c in deck_data.get('Mainboard', []):
+        rows.append({
+            'archetype_name': archetype,
+            'format':         fmt,
+            'card_name':      c['CardName'],
+            'quantity':       c.get('Count', 1),
+            'main_side':      'Main',
+            'source':         'mtgo_import',
+            'deck_index':     next_index,
+        })
+    for c in deck_data.get('Sideboard', []):
+        rows.append({
+            'archetype_name': archetype,
+            'format':         fmt,
+            'card_name':      c['CardName'],
+            'quantity':       c.get('Count', 1),
+            'main_side':      'Side',
+            'source':         'mtgo_import',
+            'deck_index':     next_index,
+        })
+    if rows:
+        sb_insert('reference_decklists', rows, batch_size=100)
+        deck_counts[archetype] = next_index  # update in-memory count
+        return True
+    return False
+
+# ── Utility functions ─────────────────────────────────────────────────────────
+def determine_event_type(event_name):
+    name_lower = event_name.lower()
+    if 'showcase' in name_lower: return 'Showcase Challenge'
+    elif '64' in name_lower:     return 'Challenge 64'
+    elif '32' in name_lower:     return 'Challenge 32'
+    else:                        return 'Challenge'
+
+def norm_pct(val):
+    if val is None: return None
+    try:
+        f = float(val)
+        return round(f / 100 if f > 1 else f, 6)
+    except:
+        return None
+
+def avg(arr):
+    arr = [x for x in arr if x is not None]
+    return sum(arr) / len(arr) if arr else None
+
+# ── Summary computation ───────────────────────────────────────────────────────
+def compute_archetype_summary(results, date_from, date_to, fmt='Modern'):
+    by_arch = defaultdict(lambda: {
+        'appearances': [], 'top8': 0, 'events': set(),
+        'points': [], 'mwp': [], 'gwp': [], 'omwp': [],
+        'format': fmt
+    })
+    total = len(results)
+    for r in results:
+        arch = r.get('archetype_canonical') or 'Unknown'
+        pos  = r.get('finish_position')
+        by_arch[arch]['appearances'].append(pos)
+        by_arch[arch]['events'].add(r['event_id'])
+        by_arch[arch]['format'] = fmt  # always use the explicit format, never infer
+        if pos and pos <= 8:
+            by_arch[arch]['top8'] += 1
+        for key, field in [('points','points'),('mwp','match_win_pct'),
+                            ('gwp','game_win_pct'),('omwp','opp_match_win_pct')]:
+            if r.get(field) is not None:
+                by_arch[arch][key].append(r[field])
+    rows = []
+    for arch, d in by_arch.items():
+        top32       = len(d['appearances'])
+        top32_share = top32 / total if total > 0 else 0
+        top8_rate   = d['top8'] / top32 if top32 > 0 else 0
+        avg_finish  = avg(d['appearances'])
+        avg_pts     = avg(d['points'])
+        avg_mwp     = avg(d['mwp'])
+        avg_gwp     = avg(d['gwp'])
+        avg_omwp    = avg(d['omwp'])
+        perf = (
+            ((avg_pts / 18) * 0.40 if avg_pts is not None else 0) +
+            ((avg_mwp or 0) * 0.25) +
+            ((avg_gwp or 0) * 0.15) +
+            ((avg_omwp or 0) * 0.20)
+        )
+        meta_adj = perf / top32_share if top32_share > 0 else 0
+        raw_perf = (
+            (((avg_mwp * top32) + (0.5 * 20)) / (top32 + 20))
+            * math.log(max(top32, 1) + 1)
+            * (1 + top8_rate)
+        ) if avg_mwp is not None else 0
+        rows.append({
+            'archetype_name':        arch,
+            'format':                d['format'],
+            'date_from':             date_from,
+            'date_to':               date_to,
+            'event_count':           len(d['events']),
+            'top32_appearances':     top32,
+            'top8_appearances':      d['top8'],
+            'top32_share':           round(top32_share, 6),
+            'top8_rate':             round(top8_rate, 6),
+            'avg_finish':            round(avg_finish, 2) if avg_finish else None,
+            'avg_points':            round(avg_pts, 2) if avg_pts else None,
+            'avg_mwp':               round(avg_mwp, 6) if avg_mwp else None,
+            'avg_gwp':               round(avg_gwp, 6) if avg_gwp else None,
+            'avg_omwp':              round(avg_omwp, 6) if avg_omwp else None,
+            'performance_score':     round(perf, 6),
+            'meta_adjusted_score':   round(meta_adj, 6),
+            'raw_performance_score': round(raw_perf, 6),
+            'last_updated':          datetime.now(timezone.utc).isoformat()
+        })
+    return sorted(rows, key=lambda x: x['meta_adjusted_score'], reverse=True)
+
+def compute_pilot_summary(results, date_from, date_to, fmt='Modern'):
+    by_pilot = defaultdict(lambda: {
+        'appearances': [], 'top8': 0, 'events': set(),
+        'points': [], 'mwp': [], 'gwp': [], 'omwp': [],
+        'archetypes': defaultdict(int),
+        'format': 'Modern'
+    })
+    for r in results:
+        p = r.get('player_name')
+        if not p: continue
+        fmt = r.get('_format', 'Modern')
+        key = (p, fmt)
+        pos = r.get('finish_position')
+        by_pilot[key]['appearances'].append(pos)
+        by_pilot[key]['events'].add(r['event_id'])
+        by_pilot[key]['format'] = fmt
+        if pos and pos <= 8:
+            by_pilot[key]['top8'] += 1
+        arch = r.get('archetype_canonical') or 'Unknown'
+        by_pilot[key]['archetypes'][arch] += 1
+        for k, field in [('points','points'),('mwp','match_win_pct'),
+                          ('gwp','game_win_pct'),('omwp','opp_match_win_pct')]:
+            if r.get(field) is not None:
+                by_pilot[key][k].append(r[field])
+    rows = []
+    for (pilot, fmt), d in by_pilot.items():
+        avg_pts  = avg(d['points'])
+        avg_mwp  = avg(d['mwp'])
+        avg_gwp  = avg(d['gwp'])
+        avg_omwp = avg(d['omwp'])
+        primary  = sorted(d['archetypes'].items(), key=lambda x: x[1], reverse=True)
+        primary_arch = primary[0][0] if primary else 'Unknown'
+        total_pts    = sum(d['points']) if d['points'] else 0
+        appearances  = [x for x in d['appearances'] if x is not None]
+        perf = (
+            ((avg_pts / 18) * 0.40 if avg_pts is not None else 0) +
+            ((avg_mwp or 0) * 0.25) +
+            ((avg_gwp or 0) * 0.15) +
+            ((avg_omwp or 0) * 0.20)
+        )
+        rows.append({
+            'player_name':        pilot,
+            'format':             fmt,
+            'date_from':          date_from,
+            'date_to':            date_to,
+            'top32_appearances':  len(d['appearances']),
+            'top8_appearances':   d['top8'],
+            'best_finish':        min(appearances) if appearances else None,
+            'avg_finish':         round(avg(d['appearances']), 2) if avg(d['appearances']) else None,
+            'avg_points':         round(avg_pts, 2) if avg_pts else None,
+            'avg_mwp':            round(avg_mwp, 6) if avg_mwp else None,
+            'avg_gwp':            round(avg_gwp, 6) if avg_gwp else None,
+            'avg_omwp':           round(avg_omwp, 6) if avg_omwp else None,
+            'total_points':       total_pts,
+            'events_played':      len(d['events']),
+            'primary_archetype':  primary_arch,
+            'performance_score':  round(perf, 6),
+            'last_updated':       datetime.now(timezone.utc).isoformat()
+        })
+    return sorted(rows, key=lambda x: x['performance_score'], reverse=True)
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
@@ -240,12 +519,17 @@ def main():
         m, s = divmod(elapsed, 60)
         print(f'[{m:02d}:{s:02d}] {label}', flush=True)
 
-    # Load key cards for archetype detection
-    ts('Loading key card definitions...')
-    all_key_cards = load_key_cards()
-    key_cards_by_format = {fmt: all_key_cards.get(fmt, {}) for fmt in VALIDATABLE_FORMATS}
+    # Load reference fingerprints for all formats
+    ts('Loading reference decklist fingerprints...')
+    fingerprints_by_format = {}
+    deck_counts_by_format  = {}
+    identifiers_by_format  = {}
     for fmt in VALIDATABLE_FORMATS:
-        print(f'  {fmt}: {len(key_cards_by_format[fmt])} archetypes')
+        fp, dc = load_reference_fingerprints(fmt)
+        fingerprints_by_format[fmt] = fp
+        deck_counts_by_format[fmt]  = dc
+        identifiers_by_format[fmt]  = load_archetype_identifiers(fmt)
+        print(f'  {fmt}: {len(fp)} archetype fingerprints, {len(identifiers_by_format[fmt])} identifiers loaded')
 
     FORMAT_PATTERNS = {
         'Modern':    ['modern-challenge', 'modern-showcase-challenge'],
@@ -365,9 +649,23 @@ def main():
         for player in standings:
             player_name = player.get('Player')
             deck_data   = decks_by_player.get(player_name, {})
-            fmt              = event['format']
-            key_cards_fmt    = key_cards_by_format.get(fmt, {})
-            detected         = detect_archetype_from_deck(deck_data, key_cards_fmt) if deck_data else None
+            fmt         = event['format']
+            fingerprints = fingerprints_by_format.get(fmt, {})
+            deck_counts  = deck_counts_by_format.get(fmt, {})
+            identifiers  = identifiers_by_format.get(fmt, [])
+            if deck_data:
+                # 1. Try exact identifier match first (fast, precise)
+                detected = detect_archetype_by_identifier(deck_data, identifiers)
+                if detected:
+                    score = 1.0  # identifier match = certain
+                else:
+                    # 2. Fall back to fuzzy similarity matching
+                    detected, score = detect_archetype_from_deck(deck_data, fingerprints)
+                # Auto-add to reference if match found and archetype needs more examples
+                if detected:
+                    add_to_reference_decklists(deck_data, detected, fmt, deck_counts)
+            else:
+                detected, score = None, 0.0
             player_arch_map[player_name] = detected  # None = unknown
 
             # Store unknown decks for admin review
@@ -474,23 +772,32 @@ def main():
         declared_arch = game.get('deck_archetype', '')
         if fmt not in VALIDATABLE_FORMATS:
             continue
-        key_cards_fmt = key_cards_by_format.get(fmt, {})
-        if not key_cards_fmt:
+        fingerprints = fingerprints_by_format.get(fmt, {})
+        if not fingerprints:
+            continue
+        # For mymtgo validation, check if declared archetype exists in fingerprints
+        if declared_arch not in fingerprints:
             continue
         hand_cards = [game.get(f'card{i}') for i in range(1, 8) if game.get(f'card{i}')]
         if not hand_cards:
             continue
-        # Check if hand matches a different archetype than declared
-        corrected = detect_archetype_from_cards(hand_cards, key_cards_fmt)
-        if corrected and corrected != declared_arch:
+        mainboard = {card: hand_cards.count(card) for card in set(hand_cards)}
+        # Use similarity matching against fingerprint to validate the declared archetype
+        best_arch, score = detect_archetype_from_deck(
+            {'Mainboard': [{'CardName': c, 'Count': v} for c, v in mainboard.items()]},
+            fingerprints
+        )
+        # If the hand doesn't match the declared archetype but does match another, flag it
+        if best_arch and best_arch != declared_arch:
             corrections.append({
                 'id':          game['id'],
                 'external_id': game['external_id'],
                 'pilot_name':  game['pilot_name'],
                 'format':      fmt,
                 'declared':    declared_arch,
-                'corrected':   corrected,
-                'hand':        hand_cards
+                'corrected':   best_arch,
+                'hand':        hand_cards,
+                'score':       round(score, 3)
             })
 
     print(f'Corrections needed: {len(corrections)}')
