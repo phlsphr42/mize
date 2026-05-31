@@ -220,7 +220,6 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
         return 0, 0
 
     matched   = 0
-    new_refs  = []
     now       = datetime.now(timezone.utc).isoformat()
 
     for i, deck in enumerate(decks):
@@ -230,16 +229,12 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
 
         arch = None
 
-        # 1. Key-card exact match (custom_archetypes.json) — fastest
+        # 1. Key-card exact match (custom_archetypes.json)
         arch = detect_by_key_cards(mb, key_cards_fmt)
 
         # 2. Supabase archetype_identifiers (manually added via admin UI)
         if not arch:
             arch = detect_by_identifier(mb, identifiers)
-
-        # 3. Weighted similarity — last resort
-        if not arch:
-            arch, _score = best_match(mb, fingerprints)
 
         if arch:
             # Mark as reviewed
@@ -273,43 +268,10 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
                 {'player2_arch': arch}
             )
 
-            # Add to reference decklists if needed
-            current = deck_counts.get(arch, 0)
-            if current < MIN_REFERENCE_DECKS:
-                idx = current + 1
-                sb = deck.get('sideboard') or {}
-                if isinstance(sb, str):
-                    sb = json.loads(sb)
-                for card, qty in mb.items():
-                    if card:
-                        new_refs.append({
-                            'archetype_name': arch, 'format': fmt,
-                            'card_name': card, 'quantity': qty,
-                            'main_side': 'Main', 'source': 'rescan_script',
-                            'deck_index': idx
-                        })
-                for card, qty in sb.items():
-                    if card:
-                        new_refs.append({
-                            'archetype_name': arch, 'format': fmt,
-                            'card_name': card, 'quantity': qty,
-                            'main_side': 'Side', 'source': 'rescan_script',
-                            'deck_index': idx
-                        })
-                deck_counts[arch] = idx
-
             matched += 1
 
-        if (i + 1) % 500 == 0:
+        if (i + 1) % 50 == 0:
             print(f'  Progress: {i+1}/{len(decks)} scanned, {matched} matched')
-            # Insert reference rows in batches to avoid memory buildup
-            if new_refs:
-                sb_insert('reference_decklists', new_refs)
-                new_refs = []
-
-    # Insert remaining reference rows
-    if new_refs:
-        sb_insert('reference_decklists', new_refs)
 
     print(f'  Done: {matched}/{len(decks)} matched, {len(decks)-matched} remain unknown')
     return matched, len(decks) - matched
@@ -343,7 +305,6 @@ def main():
 
     print(f'Mize Unknown Decks Rescan — {datetime.now(timezone.utc).isoformat()}')
     print(f'Formats: {formats}')
-    print(f'Threshold: {SIMILARITY_THRESHOLD}')
 
     # Load key cards once — used for all formats
     print('Loading key-card identifiers from custom_archetypes.json...')
@@ -353,10 +314,12 @@ def main():
     total_unmatched = 0
 
     for fmt in formats:
-        fingerprints, deck_counts = load_fingerprints(fmt)
+        # Fingerprint/similarity matching is skipped — key cards handle identification.
+        # Pass empty dicts so rescan_format signature is unchanged.
+        fingerprints, deck_counts = {}, {}
         identifiers   = load_identifiers(fmt)
         key_cards_fmt = all_key_cards.get(fmt, {})
-        if not fingerprints and not identifiers and not key_cards_fmt:
+        if not identifiers and not key_cards_fmt:
             print(f'  Skipping {fmt} — no identification data available')
             continue
         matched, unmatched = rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt)
