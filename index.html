@@ -825,6 +825,9 @@
     <input type="text" id="opp-arch-search" placeholder="Search archetype…"
       oninput="oppFilterArchetypes()"
       style="margin-bottom:8px;font-size:13px;">
+    <button id="opp-use-as-is" onclick="" style="display:none;width:100%;margin-bottom:8px;
+      padding:8px;background:var(--surface2);border:1px dashed var(--accent);border-radius:var(--radius-sm);
+      font-size:12px;color:var(--accent);text-align:left;cursor:pointer;"></button>
     <div id="opp-arch-list" style="max-height:280px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px;"></div>
     <button class="btn btn-secondary" onclick="oppSelectUnknown()"
       style="margin-top:8px;margin-bottom:0;font-size:12px;width:100%;color:var(--warning);">
@@ -4452,8 +4455,6 @@ function buildCardMaps(cards) {
 }
 
 function resolveBadaroName(name, refNames) {
-  // Only return the name if it exactly matches a defined archetype.
-  // Everything else becomes Unknown, to be identified later.
   if (!name) return 'Unknown';
   if (name === 'Unknown') return 'Unknown';
 
@@ -6641,10 +6642,24 @@ function oppRenderArchetypeButtons(names) {
 }
 
 function oppFilterArchetypes() {
-  const q     = document.getElementById('opp-arch-search')?.value.toLowerCase().trim() || '';
+  const rawQ  = document.getElementById('opp-arch-search')?.value.trim() || '';
+  const q     = rawQ.toLowerCase();
   const names = state._oppAllArchetypes || [];
   const filtered = q ? names.filter(n => n.toLowerCase().includes(q)) : names;
   oppRenderArchetypeButtons(filtered);
+
+  // Show "Use as-is" button when typed text doesn't exactly match any defined name
+  const useAsIs = document.getElementById('opp-use-as-is');
+  if (useAsIs) {
+    const exactMatch = names.some(n => n.toLowerCase() === q);
+    if (rawQ && !exactMatch) {
+      useAsIs.style.display = '';
+      useAsIs.textContent = `Use "${rawQ}"`;
+      useAsIs.onclick = () => oppFinalSelect(rawQ);
+    } else {
+      useAsIs.style.display = 'none';
+    }
+  }
 }
 
 // Keep oppBuildSupertypeGrid as an alias so existing call-sites don't break
