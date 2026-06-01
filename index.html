@@ -819,22 +819,22 @@
   </div>
   <div class="match-info" style="margin-bottom:12px;">Deck: <span id="opponent-entry-deck-name"></span></div>
 
-  <!-- Step 1: Supertype grid -->
+  <!-- Archetype search -->
   <div class="card" id="opp-step1-card">
-    <label class="label">Step 1 — Strategy family</label>
-    <div id="opp-supertype-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:10px;"></div>
+    <label class="label">Opponent's deck</label>
+    <input type="text" id="opp-arch-search" placeholder="Search archetype…"
+      oninput="oppFilterArchetypes()"
+      style="margin-bottom:8px;font-size:13px;">
+    <div id="opp-arch-list" style="max-height:280px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px;"></div>
     <button class="btn btn-secondary" onclick="oppSelectUnknown()"
-      style="margin-bottom:0;font-size:12px;width:100%;color:var(--warning);">
+      style="margin-top:8px;margin-bottom:0;font-size:12px;width:100%;color:var(--warning);">
       ⚠ Unknown / Can't identify
     </button>
   </div>
 
-  <!-- Step 2: Subtype grid -->
+  <!-- Step 2: kept for compatibility but hidden — no longer used -->
   <div class="card" id="opp-step2-card" style="display:none;">
-    <div style="margin-bottom:10px;">
-      <span style="font-size:13px;font-weight:600;" id="opp-step2-title">Specific build</span>
-    </div>
-    <div id="opp-subtype-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;"></div>
+    <div id="opp-subtype-grid"></div>
   </div>
 
   <!-- Unknown: cards seen -->
@@ -2831,11 +2831,6 @@ async function renderUnknownDeck() {
   const format  = document.getElementById('ud-format')?.value || 'Modern';
   const total   = udDecks.length;
 
-  // Load taxonomy for dropdowns
-  const taxonomy = await loadCustomTaxonomy();
-  const supertypes = taxonomy?.[format]?.supertypes || {};
-  const archetypes = taxonomy?.[format]?.archetypes || [];
-
   // Build mainboard display sorted by count desc
   const mb = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
   const sb = typeof deck.sideboard === 'string' ? JSON.parse(deck.sideboard || '{}') : (deck.sideboard || {});
@@ -2908,32 +2903,13 @@ async function renderUnknownDeck() {
 
       <div style="border-top:1px solid var(--border);padding-top:12px;">
         <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Assign archetype:</div>
-        <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-          <div style="flex:1;min-width:160px;">
-            <label class="label">Supertype</label>
-            <select id="ud-supertype" onchange="udSupertypeChanged()" style="margin-bottom:0;">
-              ${supertypeOpts}
-            </select>
-          </div>
-          <div style="flex:1;min-width:160px;">
-            <label class="label">Subtype (Mize name)</label>
-            <select id="ud-subtype" style="margin-bottom:0;">
-              ${subtypeOpts}
-            </select>
-          </div>
-        </div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:6px;">— or create new —</div>
-        <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-          <div style="flex:1;min-width:160px;">
-            <label class="label">New supertype name</label>
-            <input type="text" id="ud-custom-supertype" placeholder="e.g. Temur Control"
-              style="margin-bottom:0;font-size:12px;" oninput="udCustomSupertypeChanged()">
-          </div>
-          <div style="flex:1;min-width:160px;">
-            <label class="label">New subtype name</label>
-            <input type="text" id="ud-custom-name" placeholder="e.g. Grixis Shadow"
-              style="margin-bottom:0;font-size:12px;" oninput="udCustomNameChanged()">
-          </div>
+        <div style="position:relative;margin-bottom:8px;">
+          <input type="text" id="ud-arch-input" placeholder="Type to search or enter new name…"
+            style="margin-bottom:0;font-size:13px;width:100%;box-sizing:border-box;"
+            oninput="udFilterArchetypes()" autocomplete="off">
+          <div id="ud-arch-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;
+            background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius-sm);
+            max-height:200px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="udAssign()" style="margin-bottom:0;">
@@ -2956,51 +2932,61 @@ async function renderUnknownDeck() {
     </div>
   `;
 
-  // Restore previous selection if deck was already assigned
+  // Restore previous assignment and build archetype dropdown data
   if (deck.assigned_name) {
-    document.getElementById('ud-custom-name').value = deck.assigned_name;
+    const inp = document.getElementById('ud-arch-input');
+    if (inp) inp.value = deck.assigned_name;
   }
-
-  // Auto-suggest identifier from 4-ofs
+  udLoadArchetypeOptions(format);
   udAutoCheckIdentifierCards(mb);
 }
 
-async function udSupertypeChanged() {
-  const format    = document.getElementById('ud-format')?.value || 'Modern';
-  const supertype = document.getElementById('ud-supertype')?.value;
-  const subtypeSel = document.getElementById('ud-subtype');
-  if (!subtypeSel) return;
-
-  const taxonomy  = await loadCustomTaxonomy();
-  const archetypes = (taxonomy?.[format]?.archetypes || [])
-    .filter(a => a.Supertype === supertype);
-
-  if (!archetypes.length) {
-    subtypeSel.innerHTML = '<option value="">No subtypes defined yet</option>';
-    return;
-  }
-  subtypeSel.innerHTML = ['<option value="">-- Select subtype --</option>',
-    ...archetypes.map(a => `<option value="${a.MizeName}">${a.MizeName}</option>`)
-  ].join('');
-}
-
-function udCustomNameChanged() {
-  const custom = document.getElementById('ud-custom-name')?.value.trim();
-  if (custom) {
-    const subtypeSel = document.getElementById('ud-subtype');
-    if (subtypeSel) subtypeSel.value = '';
+// Build the list of known archetype names for the dropdown
+let _udArchetypeNames = [];
+async function udLoadArchetypeOptions(format) {
+  try {
+    const taxonomy = await loadCustomTaxonomy();
+    const archs = taxonomy?.[format]?.archetypes || [];
+    const seen  = new Set();
+    archs.forEach(a => { if (a.MizeName) seen.add(a.MizeName); });
+    // Also pull any names already used in this format's results
+    const { data } = await db.from('mtgo_results')
+      .select('archetype_canonical')
+      .eq('format', format)
+      .not('archetype_canonical', 'is', null)
+      .limit(500);
+    (data || []).forEach(r => { if (r.archetype_canonical) seen.add(r.archetype_canonical); });
+    _udArchetypeNames = [...seen].sort();
+  } catch(e) {
+    _udArchetypeNames = [];
   }
 }
 
-function udCustomSupertypeChanged() {
-  const customST = document.getElementById('ud-custom-supertype')?.value.trim();
-  if (customST) {
-    const supertypeSel = document.getElementById('ud-supertype');
-    if (supertypeSel) supertypeSel.value = '-- Select supertype --';
-    const subtypeSel = document.getElementById('ud-subtype');
-    if (subtypeSel) subtypeSel.innerHTML = '<option value="">-- Enter subtype name below --</option>';
-  }
+function udFilterArchetypes() {
+  const inp = document.getElementById('ud-arch-input');
+  const dd  = document.getElementById('ud-arch-dropdown');
+  if (!inp || !dd) return;
+  const q = inp.value.trim().toLowerCase();
+  if (!q) { dd.style.display = 'none'; return; }
+  const matches = _udArchetypeNames.filter(n => n.toLowerCase().includes(q)).slice(0, 12);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.style.display = '';
+  dd.innerHTML = matches.map(name =>
+    `<div onclick="udSetArch('${name.replace(/'/g, "\\'")}')"
+      style="padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);"
+      onmouseover="this.style.background='var(--surface2)'"
+      onmouseout="this.style.background=''">${name}</div>`
+  ).join('');
 }
+
+function udSetArch(name) {
+  const inp = document.getElementById('ud-arch-input');
+  const dd  = document.getElementById('ud-arch-dropdown');
+  if (inp) inp.value = name;
+  if (dd)  dd.style.display = 'none';
+}
+
+
 // ── ARCHETYPE NAMES TOOL ─────────────────────────────────────────────────────
 
 let anAllNames = []; // full list for filtering
@@ -3283,20 +3269,11 @@ async function deleteSighting(id) {
 }
 
 async function udAssign() {
-  const deck      = udDecks[udDeckIndex];
-  const supertypeSelect  = document.getElementById('ud-supertype')?.value;
-  const subtypeSelect    = document.getElementById('ud-subtype')?.value;
-  const customName       = document.getElementById('ud-custom-name')?.value.trim();
-  const customSupertype  = document.getElementById('ud-custom-supertype')?.value.trim();
-  const mizeName         = customName || subtypeSelect;
-  const supertype        = customSupertype || supertypeSelect;
+  const deck     = udDecks[udDeckIndex];
+  const mizeName = document.getElementById('ud-arch-input')?.value.trim();
 
-  if (!mizeName || mizeName === '-- Select supertype first --') {
-    showToast('Please select or enter a subtype name', 'error');
-    return;
-  }
-  if (!supertype || supertype === '-- Select supertype --') {
-    showToast('Please select or enter a supertype', 'error');
+  if (!mizeName) {
+    showToast('Please enter an archetype name', 'error');
     return;
   }
 
@@ -3304,7 +3281,7 @@ async function udAssign() {
   const { error: deckErr } = await db.from('mtgo_unknown_decks')
     .update({
       assigned_name:      mizeName,
-      assigned_supertype: supertype,
+      assigned_supertype: null,
       reviewed:           true,
       reviewed_at:        new Date().toISOString(),
       reviewed_by:        state.pilot?.pilot_name
@@ -3624,9 +3601,7 @@ async function udFindSimilarByIdentifier() {
     return;
   }
 
-  const mizeName  = document.getElementById('ud-custom-name')?.value.trim()
-    || document.getElementById('ud-subtype')?.value
-    || '';
+  const mizeName  = document.getElementById('ud-arch-input')?.value.trim();
 
   el.innerHTML = `
     <div class="card" style="margin-top:8px;">
@@ -3661,12 +3636,8 @@ async function udFindSimilarByIdentifier() {
 async function udBulkAssignSimilar(deckIds) {
   const deck       = udDecks[udDeckIndex];
   const format     = document.getElementById('ud-format')?.value || 'Modern';
-  const customName = document.getElementById('ud-custom-name')?.value.trim();
-  const subtypeSel = document.getElementById('ud-subtype')?.value;
-  const customST   = document.getElementById('ud-custom-supertype')?.value.trim();
-  const supertypeSel = document.getElementById('ud-supertype')?.value;
-  const mizeName   = customName || subtypeSel;
-  const supertype  = customST  || supertypeSel;
+  const mizeName   = document.getElementById('ud-arch-input')?.value.trim();
+  const supertype  = null;
 
   if (!mizeName) { showToast('Enter a deck name first', 'error'); return; }
 
@@ -3819,10 +3790,8 @@ async function udSuggestDefinition() {
   // Find 4-ofs and 3-ofs
   const fours  = Object.entries(mb).filter(([,n]) => n >= 4).map(([c]) => c).sort();
   const threes = Object.entries(mb).filter(([,n]) => n === 3).map(([c]) => c).sort();
-  const custom = document.getElementById('ud-custom-name')?.value.trim();
-  const customST = document.getElementById('ud-custom-supertype')?.value.trim();
-  const supertype = customST || document.getElementById('ud-supertype')?.value;
-  const mizeName  = custom || document.getElementById('ud-subtype')?.value || 'Unknown';
+  const mizeName  = document.getElementById('ud-arch-input')?.value.trim() || 'Unknown';
+  const supertype = null;
 
   // Build a suggested JSON definition
   const badaroName = mizeName.replace(/[^a-zA-Z0-9]/g, '');
@@ -6693,60 +6662,60 @@ async function selectMatchDeck(deckId) {
 }
 // ── OPPONENT SELECTION — two-step supertype/subtype ─────────────────────────
 
-function oppBuildSupertypeGrid() {
-  const grid = document.getElementById('opp-supertype-grid');
-  if (!grid) return;
-  const format = state.matchFormat || 'Modern';
+function oppBuildArchetypeList() {
+  const format   = state.matchFormat || 'Modern';
   const taxonomy = state.oppTaxonomy?.[format];
-  let supertypes = [];
-  if (taxonomy?.supertypes) {
-    supertypes = Object.keys(taxonomy.supertypes).sort();
-  } else {
-    // Fallback to deriving from flat archetypes list
+  const listEl   = document.getElementById('opp-arch-list');
+  if (!listEl) return;
+
+  // Build sorted unique archetype names
+  let names = [];
+  if (taxonomy?.archetypes?.length) {
     const seen = new Set();
-    (state.archetypes || []).forEach(a => seen.add(a));
-    supertypes = [...seen].sort();
+    taxonomy.archetypes.forEach(a => {
+      if (a.MizeName && !seen.has(a.MizeName)) { seen.add(a.MizeName); names.push(a.MizeName); }
+    });
+    names.sort();
+  } else {
+    names = (state.archetypes || []).slice().sort();
   }
-  grid.innerHTML = supertypes.map(s =>
-    `<button class="btn btn-secondary" onclick="oppSelectSupertype('${s.replace(/'/g, "\'")}')"
-      style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;">${s}</button>`
+
+  state._oppAllArchetypes = names;
+  oppRenderArchetypeButtons(names);
+}
+
+function oppRenderArchetypeButtons(names) {
+  const listEl = document.getElementById('opp-arch-list');
+  if (!listEl) return;
+  if (!names.length) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:4px;">No archetypes found.</div>';
+    return;
+  }
+  listEl.innerHTML = names.map(name =>
+    `<button class="btn btn-secondary"
+      onclick="oppFinalSelect('${name.replace(/'/g, "\\'")}')"
+      style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+      title="${name}">${name}</button>`
   ).join('');
 }
 
-function oppSelectSupertype(supertype) {
-  const format = state.matchFormat || 'Modern';
-  const taxonomy = state.oppTaxonomy?.[format];
-  let subtypes = [];
-  if (taxonomy?.archetypes) {
-    // Deduplicate by MizeName — multiple definitions may share the same display name
-    const seen = new Set();
-    subtypes = taxonomy.archetypes
-      .filter(a => a.Supertype === supertype)
-      .map(a => a.MizeName)
-      .filter(name => { if (seen.has(name)) return false; seen.add(name); return true; })
-      .sort();
-  }
-  if (!subtypes.length) { oppFinalSelect(supertype); return; }
-  document.getElementById('opp-step1-card').style.display = 'none';
-  document.getElementById('opp-step2-card').style.display = '';
-  document.getElementById('opp-step2-title').textContent = supertype;
-  document.getElementById('opp-subtype-grid').innerHTML = subtypes.map(sub =>
-    `<button class="btn btn-secondary" onclick="oppFinalSelect('${sub.replace(/'/g, "\'")}')"
-      style="margin-bottom:0;font-size:12px;text-align:left;padding:8px 10px;">${sub}</button>`
-  ).join('');
+function oppFilterArchetypes() {
+  const q     = document.getElementById('opp-arch-search')?.value.toLowerCase().trim() || '';
+  const names = state._oppAllArchetypes || [];
+  const filtered = q ? names.filter(n => n.toLowerCase().includes(q)) : names;
+  oppRenderArchetypeButtons(filtered);
 }
+
+// Keep oppBuildSupertypeGrid as an alias so existing call-sites don't break
+function oppBuildSupertypeGrid() { oppBuildArchetypeList(); }
 
 function oppHeaderBack() {
-  // If on step 2 or unknown — go back to step 1
-  const step2    = document.getElementById('opp-step2-card');
   const unknown  = document.getElementById('opp-unknown-card');
   const selected = document.getElementById('opponent-selected');
-  if ((step2    && step2.style.display    !== 'none') ||
-      (unknown  && unknown.style.display  !== 'none') ||
+  if ((unknown  && unknown.style.display  !== 'none') ||
       (selected && selected.style.display !== 'none')) {
     oppBackToStep1();
   } else {
-    // On step 1 — go back to match setup
     showScreen('screen-match-setup');
   }
 }
