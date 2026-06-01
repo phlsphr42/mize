@@ -357,7 +357,7 @@
   </div>
   <button class="btn btn-primary" onclick="startNewMatch()">+ New match</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-my-decks')">My Decks</button>
-  <button class="btn btn-secondary" onclick="showScreen('screen-match-history')">Match History</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-match-history')">Game History</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-my-data')">My Data</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-analysis')">Opening Hand Analysis</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Meta Matchup Matrix</button>
@@ -402,14 +402,13 @@
   <div id="mydata-results"></div>
 </div>
 
-  <!-- MATCH HISTORY -->
+  <!-- GAME HISTORY -->
 <div id="screen-match-history" class="screen">
   <div class="header">
     <button class="back-btn" onclick="showScreen('screen-home')">←</button>
-    <h2>Match History</h2>
+    <h2>Game History</h2>
   </div>
 
-  <!-- Filters -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
     <div>
       <label class="label">Deck</label>
@@ -1624,14 +1623,14 @@ async function onInsightsFormatChange() {
 
 // ── MY DATA ───────────────────────────────────────────────────────────────────
 
-// ── MATCH HISTORY ─────────────────────────────────────────────────────────────
+// ── GAME HISTORY ──────────────────────────────────────────────────────────────
 
-const MH_PAGE = 30; // matches per page
+const MH_PAGE = 50;
 let mhOffset  = 0;
-let mhMatches = []; // accumulated match groups
+let mhTotal   = 0;
 
 async function mhInit() {
-  // Populate deck filter from pilot's decks
+  // Populate deck filter once
   const sel = document.getElementById('mh-deck');
   if (sel && sel.options.length <= 1 && state.allDecks?.length) {
     state.allDecks.forEach(d => {
@@ -1645,126 +1644,82 @@ async function mhInit() {
 }
 
 async function mhLoad(reset) {
-  if (reset) { mhOffset = 0; mhMatches = []; }
+  if (reset) { mhOffset = 0; mhTotal = 0; }
 
-  const deck      = document.getElementById('mh-deck')?.value     || '';
-  const format    = document.getElementById('mh-format')?.value   || '';
-  const result    = document.getElementById('mh-result')?.value   || '';
-  const opponent  = document.getElementById('mh-opponent')?.value.trim() || '';
-  const listEl    = document.getElementById('mh-list');
-  const moreEl    = document.getElementById('mh-load-more');
-  const summaryEl = document.getElementById('mh-summary');
+  const deck     = document.getElementById('mh-deck')?.value    || '';
+  const format   = document.getElementById('mh-format')?.value  || '';
+  const result   = document.getElementById('mh-result')?.value  || '';
+  const opponent = document.getElementById('mh-opponent')?.value.trim() || '';
+  const listEl   = document.getElementById('mh-list');
+  const moreEl   = document.getElementById('mh-load-more');
+  const summEl   = document.getElementById('mh-summary');
 
   if (reset) listEl.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0;">Loading…</div>';
 
-  // Fetch raw game rows — we'll group into matches client-side
-  // Fetch in larger batches to fill MH_PAGE matches
-  const rows = [];
-  let offset = 0;
-  const batchSize = 500;
+  let q = db.from('raw_game_log')
+    .select('id,timestamp,deck_archetype,opponent_archetype,game_result,match_result,pre_post,play_draw,format,mulligan_count', { count: 'exact' })
+    .eq('pilot_name', state.pilot.pilot_name)
+    .not('game_result', 'is', null)
+    .order('timestamp', { ascending: false })
+    .range(mhOffset, mhOffset + MH_PAGE - 1);
 
-  while (rows.length < (mhOffset + MH_PAGE) * 4) { // ~4 games per match
-    let q = db.from('raw_game_log')
-      .select('id,match_id,timestamp,deck_archetype,opponent_archetype,game_result,match_result,pre_post,format,play_draw')
-      .eq('pilot_name', state.pilot.pilot_name)
-      .not('game_result', 'is', null)
-      .order('timestamp', { ascending: false })
-      .range(offset, offset + batchSize - 1);
+  if (deck)     q = q.eq('deck_archetype', deck);
+  if (format)   q = q.eq('format', format);
+  if (result)   q = q.eq('game_result', result);
+  if (opponent) q = q.ilike('opponent_archetype', `%${opponent}%`);
 
-    if (deck)   q = q.eq('deck_archetype', deck);
-    if (format) q = q.eq('format', format);
-    if (result) q = q.eq('match_result', result);
-    if (opponent) q = q.ilike('opponent_archetype', `%${opponent}%`);
-
-    const { data, error } = await q;
-    if (error || !data?.length) break;
-    rows.push(...data);
-    if (data.length < batchSize) break;
-    offset += batchSize;
-    if (rows.length > 5000) break; // safety cap
+  const { data, error, count } = await q;
+  if (error) {
+    listEl.innerHTML = `<div style="color:var(--danger);font-size:13px;">Error: ${error.message}</div>`;
+    return;
   }
 
-  // Group rows into matches by match_id
-  const matchMap = new Map();
-  for (const row of rows) {
-    const key = row.match_id || row.id; // fallback for old rows without match_id
-    if (!matchMap.has(key)) {
-      matchMap.set(key, {
-        match_id:   key,
-        timestamp:  row.timestamp,
-        deck:       row.deck_archetype || 'Unknown',
-        opponent:   row.opponent_archetype || 'Unknown',
-        format:     row.format || '',
-        result:     row.match_result || null,
-        games:      []
-      });
-    }
-    matchMap.get(key).games.push(row);
-  }
+  if (reset) mhTotal = count || 0;
+  mhOffset += (data?.length || 0);
 
-  // Sort matches newest first, deduplicate by taking the first (most-recent) timestamp per key
-  const allMatches = [...matchMap.values()]
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  // Summary line
+  summEl.textContent = `${mhTotal.toLocaleString()} game${mhTotal !== 1 ? 's' : ''}`;
 
-  // Filter: if result filter active, only show matches with that result
-  const filtered = result
-    ? allMatches.filter(m => m.result === result)
-    : allMatches;
-
-  const page    = filtered.slice(mhOffset, mhOffset + MH_PAGE);
-  const hasMore = filtered.length > mhOffset + MH_PAGE;
-
-  if (reset) mhMatches = page;
-  else       mhMatches = [...mhMatches, ...page];
-
-  mhOffset += page.length;
-
-  // Stats
-  const wins   = filtered.filter(m => m.result === 'Win').length;
-  const losses = filtered.filter(m => m.result === 'Loss').length;
-  const total  = wins + losses;
-  const wpct   = total ? (wins / total * 100).toFixed(1) : '—';
-  summaryEl.textContent = `${filtered.length} matches · ${wins}W ${losses}L · ${wpct}% MWR`;
-
-  // Render
-  if (!mhMatches.length) {
-    listEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">No matches found.</div>';
+  if (!data?.length && reset) {
+    listEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">No games found.</div>';
     moreEl.style.display = 'none';
     return;
   }
 
-  listEl.innerHTML = mhMatches.map(m => {
-    const date      = m.timestamp ? new Date(m.timestamp).toLocaleDateString() : '';
-    const winColor  = m.result === 'Win' ? 'var(--success)' : m.result === 'Loss' ? 'var(--danger)' : 'var(--text2)';
-    const resultTxt = m.result || '—';
-
-    // Build per-game indicators: W/L circles for each game
-    const gamesSorted = [...m.games].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    const gamesDots = gamesSorted.map(g => {
-      const col = g.game_result === 'Win' ? 'var(--success)' : 'var(--danger)';
-      const label = g.pre_post === 'Post' ? (g.game_result === 'Win' ? 'W' : 'L') : (g.game_result === 'Win' ? 'W' : 'L');
-      return `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${col};color:#fff;font-size:10px;font-weight:700;text-align:center;line-height:18px;margin-right:2px;">${label}</span>`;
-    }).join('');
-
-    const fmtBadge = m.format
-      ? `<span style="font-size:10px;color:var(--text2);margin-left:6px;">${m.format}</span>`
+  const rows = (data || []).map(g => {
+    const date     = g.timestamp ? new Date(g.timestamp).toLocaleDateString() : '';
+    const time     = g.timestamp ? new Date(g.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    const winColor = g.game_result === 'Win' ? 'var(--success)' : 'var(--danger)';
+    const gameLabel = g.pre_post === 'Post' ? 'G2/3' : 'G1';
+    const pdLabel  = g.play_draw === 'Play' ? '⚡' : g.play_draw === 'Draw' ? '✋' : '';
+    const mulls    = g.mulligan_count > 0 ? `${g.mulligan_count}× mull` : '';
+    const matchBadge = g.match_result
+      ? `<span style="font-size:10px;padding:1px 5px;border-radius:8px;margin-left:5px;background:${g.match_result==='Win'?'#1a3a1a':'#3a1a1a'};color:${g.match_result==='Win'?'var(--success)':'var(--danger)'};">Match ${g.match_result}</span>`
       : '';
+    const meta = [gameLabel, pdLabel, mulls, g.format].filter(Boolean).join(' · ');
 
-    return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;">
-        <div style="font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          ${resolveBadaroName(m.deck, [])} <span style="color:var(--text2);font-weight:400;">vs</span> ${resolveBadaroName(m.opponent, [])}
-        </div>
-        <div style="font-size:14px;font-weight:700;color:${winColor};margin-left:10px;flex-shrink:0;">${resultTxt}</div>
+    return `<div style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);gap:10px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:${winColor};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">
+        ${g.game_result === 'Win' ? 'W' : 'L'}
       </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
-        <div>${gamesDots}</div>
-        <div style="font-size:11px;color:var(--text2);">${date}${fmtBadge}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${resolveBadaroName(g.deck_archetype||'Unknown',[])} <span style="color:var(--text2);font-weight:400;">vs</span> ${resolveBadaroName(g.opponent_archetype||'Unknown',[])}
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;">
+          ${meta}${matchBadge}
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);text-align:right;flex-shrink:0;">
+        ${date}<br>${time}
       </div>
     </div>`;
   }).join('');
 
-  moreEl.style.display = hasMore ? '' : 'none';
+  if (reset) listEl.innerHTML = rows;
+  else       listEl.innerHTML += rows;
+
+  moreEl.style.display = mhOffset < mhTotal ? '' : 'none';
 }
 
 async function loadMyData() {
