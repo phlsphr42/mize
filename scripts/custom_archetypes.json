@@ -809,6 +809,33 @@
           "Mutagenic Growth",
           "Manamorphose"
         ]
+      ],
+      "Eldrazi Aggro": [
+        [
+          "Eldrazi Mimic",
+          "Endless One"
+        ],
+        [
+          "Eldrazi Temple"
+        ],
+        [
+          "Matter Reshaper",
+          "Thought-Knot Seer",
+          "Reality Smasher"
+        ]
+      ],
+      "Jund Midrange": [
+        [
+          "Tarmogoyf"
+        ],
+        [
+          "Liliana of the Veil",
+          "Bloodbraid Elf"
+        ],
+        [
+          "Thoughtseize",
+          "Inquisition of Kozilek"
+        ]
       ]
     },
     "Legacy": {
@@ -2492,6 +2519,7 @@
       "Dimir Shadow",
       "Domain Zoo",
       "Dredge",
+      "Eldrazi Aggro",
       "Eldrazi Post",
       "Eldrazi Ramp",
       "Eldrazi Tron",
@@ -2513,6 +2541,7 @@
       "Jeskai Blink",
       "Jeskai Control",
       "Jeskai Tempo",
+      "Jund Midrange",
       "Lantern Control",
       "Living End",
       "Martyr Proc",
