@@ -488,7 +488,7 @@ def compute_pilot_summary(results, date_from, date_to, fmt='Modern'):
     for r in results:
         p = r.get('player_name')
         if not p: continue
-        fmt = r.get('_format', 'Modern')
+        fmt = r.get('format') or r.get('_format', 'Modern')
         key = (p, fmt)
         pos = r.get('finish_position')
         by_pilot[key]['appearances'].append(pos)
@@ -762,6 +762,7 @@ def main():
                 'match_win_pct':       norm_pct(player.get('OMWP')),
                 'game_win_pct':        norm_pct(player.get('GWP')),
                 'opp_match_win_pct':   norm_pct(player.get('OGWP')),
+                'format':              event['format'],
                 'created_at':          datetime.now(timezone.utc).isoformat()
             })
 
@@ -879,13 +880,20 @@ def main():
 
     # ── Compute summaries ─────────────────────────────────────────────────────
     ts('Computing summaries...')
-    all_results      = sb_get('mtgo_results',
-        '?select=event_id,player_name,archetype_canonical,finish_position,points,match_win_pct,game_win_pct,opp_match_win_pct'
+    # format is now a real column on mtgo_results — no join needed
+    all_results   = sb_get('mtgo_results',
+        '?select=event_id,player_name,archetype_canonical,finish_position,points,'
+        'match_win_pct,game_win_pct,opp_match_win_pct,format'
     )
-    all_events_db    = sb_get('mtgo_events', '?select=event_id,event_date,format')
-    event_date_map   = {e['event_id']: e['event_date'] for e in all_events_db}
-    event_format_map = {e['event_id']: e.get('format') for e in all_events_db}  # None if missing
+    # Still need event dates for the time-window filtering
+    all_events_db = sb_get('mtgo_events', '?select=event_id,event_date')
+    event_date_map = {e['event_id']: e['event_date'] for e in all_events_db}
     print(f'Total results: {len(all_results)} | Total events: {len(all_events_db)}')
+
+    # Drop any rows missing format (should be zero after the schema fix, but be safe)
+    all_results = [r for r in all_results if r.get('format')]
+    if len(all_results) < len(sb_get('mtgo_results', '?select=id&limit=1')):
+        print(f'  WARNING: some results rows have no format — check mtgo_results.format column')
 
     now     = datetime.now(timezone.utc).date()
     windows = [
@@ -899,19 +907,15 @@ def main():
         cutoff    = (now - timedelta(days=w['days'])) if w['days'] else None
         date_from = cutoff.isoformat() if cutoff else '2000-01-01'
         date_to   = now.isoformat()
-        filtered  = [r for r in all_results if not cutoff or
-                     event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
-        for r in filtered:
-            r['_format'] = event_format_map.get(r['event_id'])  # None if event unknown
-        # Drop results whose event format is unknown — prevents cross-format contamination
-        filtered = [r for r in filtered if r['_format'] is not None]
-        if not filtered:
-            continue
 
-        # Group by format to avoid cross-format contamination
-        formats_in_window = set(r['_format'] for r in filtered)
+        # Filter by date using event_date_map
+        filtered = [r for r in all_results if not cutoff or
+                    event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
+
+        # Format comes directly from the row — no join, no inference
+        formats_in_window = set(r['format'] for r in filtered)
         for fmt in sorted(formats_in_window):
-            fmt_results = [r for r in filtered if r['_format'] == fmt]
+            fmt_results = [r for r in filtered if r['format'] == fmt]
             label = ('all time' if not w['days'] else f'{w["days"]}d') + f' / {fmt}'
             print(f'Window {label}: {len(fmt_results)} results')
             arch_rows  = compute_archetype_summary(fmt_results, date_from, date_to, fmt)
