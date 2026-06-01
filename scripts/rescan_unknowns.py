@@ -272,15 +272,6 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
             skipped_no_mainboard += 1
             continue
 
-        # Diagnostic: show first 3 decks in full to expose any matching issues
-        if i < 3:
-            print(f'  DIAG deck {i} id={deck["id"]} mainboard type={type(mb).__name__}')
-            print(f'  DIAG mb keys (first 8): {list(mb.keys())[:8]}')
-            # Test each key_card entry against this deck
-            for arch, keys in list(key_cards_fmt.items())[:5]:
-                hits = [k for k in keys if k in mb]
-                print(f'  DIAG  {arch}: need {keys}, found {hits}')
-
         arch = None
 
         # 1. Key-card exact match (custom_archetypes.json)
