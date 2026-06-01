@@ -2948,7 +2948,11 @@ async function udLoadArchetypeOptions(format) {
     const taxonomy = await loadCustomTaxonomy();
     const archs = taxonomy?.[format]?.archetypes || [];
     const seen  = new Set();
-    archs.forEach(a => { if (a.MizeName) seen.add(a.MizeName); });
+    // Support both plain string array (new) and {MizeName} object array (legacy)
+    archs.forEach(a => {
+      const name = typeof a === 'string' ? a : a.MizeName;
+      if (name) seen.add(name);
+    });
     // Also pull any names already used in this format's results
     const { data } = await db.from('mtgo_results')
       .select('archetype_canonical')
@@ -6673,7 +6677,9 @@ function oppBuildArchetypeList() {
   if (taxonomy?.archetypes?.length) {
     const seen = new Set();
     taxonomy.archetypes.forEach(a => {
-      if (a.MizeName && !seen.has(a.MizeName)) { seen.add(a.MizeName); names.push(a.MizeName); }
+      // Support both plain string array (new) and {MizeName} object array (legacy)
+      const name = typeof a === 'string' ? a : a.MizeName;
+      if (name && !seen.has(name)) { seen.add(name); names.push(name); }
     });
     names.sort();
   } else {
