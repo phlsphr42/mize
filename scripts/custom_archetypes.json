@@ -1693,22 +1693,6 @@
       ]
     },
     "Pioneer": {
-      "Izzet Phoenix": [
-        [
-          "Arclight Phoenix"
-        ],
-        [
-          "Treasure Cruise",
-          "Pieces of the Puzzle",
-          "Consider",
-          "Sleight of Hand"
-        ],
-        [
-          "Fiery Impulse",
-          "Lightning Axe",
-          "Flame of Anor"
-        ]
-      ],
       "Lotus Field Combo": [
         [
           "Lotus Field"
@@ -1723,6 +1707,18 @@
           "Vizier of Tumbling Sands"
         ]
       ],
+      "Azorius Lotus Field": [
+        [
+          "Lotus Field"
+        ],
+        [
+          "Strict Proctor",
+          "Teferi, Time Raveler"
+        ],
+        [
+          "Pore Over the Pages"
+        ]
+      ],
       "Amalia Combo": [
         [
           "Amalia Benavides Aguirre"
@@ -1735,18 +1731,131 @@
           "Chord of Calling"
         ]
       ],
-      "Mono-Green Devotion": [
+      "Abzan Amalia": [
         [
-          "Nykthos, Shrine to Nyx"
+          "Amalia Benavides Aguirre"
         ],
         [
-          "Leyline of Abundance",
-          "Cavalier of Thorns",
-          "Voracious Hydra"
+          "Wildgrowth Walker"
         ],
         [
-          "Karn, the Great Creator",
-          "Storm the Festival"
+          "Thoughtseize",
+          "Sorin, Imperious Bloodlord"
+        ]
+      ],
+      "Greasefang": [
+        [
+          "Greasefang, Okiba Boss"
+        ],
+        [
+          "Parhelion II"
+        ],
+        [
+          "Smuggler's Copter",
+          "Raffine's Informant"
+        ]
+      ],
+      "Esper Greasefang": [
+        [
+          "Greasefang, Okiba Boss"
+        ],
+        [
+          "Parhelion II"
+        ],
+        [
+          "Thoughtseize",
+          "Fatal Push"
+        ]
+      ],
+      "Mardu Greasefang": [
+        [
+          "Greasefang, Okiba Boss"
+        ],
+        [
+          "Parhelion II"
+        ],
+        [
+          "Lightning Bolt",
+          "Fable of the Mirror-Breaker"
+        ]
+      ],
+      "Enigmatic Fires": [
+        [
+          "Enigmatic Incarnation"
+        ],
+        [
+          "Fires of Invention"
+        ],
+        [
+          "Omens of the Sea",
+          "Leyline Binding"
+        ]
+      ],
+      "Jeskai Ascendancy": [
+        [
+          "Jeskai Ascendancy"
+        ],
+        [
+          "Retraction Helix",
+          "Tormented Voice"
+        ],
+        [
+          "Treasure Cruise",
+          "Dragon Mantle"
+        ]
+      ],
+      "Izzet Creativity": [
+        [
+          "Indomitable Creativity"
+        ],
+        [
+          "Archon of Cruelty",
+          "Atraxa, Grand Unifier"
+        ],
+        [
+          "Dwarven Mine"
+        ]
+      ],
+      "Azorius Control": [
+        [
+          "Teferi, Hero of Dominaria"
+        ],
+        [
+          "Supreme Verdict",
+          "Farewell",
+          "Time Wipe"
+        ],
+        [
+          "Dovin's Veto",
+          "Absorb",
+          "Render Silent"
+        ]
+      ],
+      "Dimir Control": [
+        [
+          "Fatal Push"
+        ],
+        [
+          "Thoughtseize",
+          "Inquisition of Kozilek"
+        ],
+        [
+          "Torrential Gearhulk",
+          "Memory Deluge",
+          "Consider"
+        ]
+      ],
+      "Esper Control": [
+        [
+          "Teferi, Hero of Dominaria"
+        ],
+        [
+          "Supreme Verdict",
+          "Farewell"
+        ],
+        [
+          "Thoughtseize",
+          "Fatal Push"
         ]
       ],
       "Rakdos Midrange": [
@@ -1762,155 +1871,16 @@
           "Sheoldred, the Apocalypse"
         ]
       ],
-      "Rakdos Vampires": [
+      "Niv-Mizzet Reborn": [
         [
-          "Vein Ripper"
+          "Niv-Mizzet Reborn"
         ],
         [
-          "Sorin, Imperious Bloodlord"
+          "Bring to Light"
         ],
         [
-          "Bloodtithe Harvester",
-          "Vampire Socialite"
-        ]
-      ],
-      "Azorius Spirits": [
-        [
-          "Rattlechains"
-        ],
-        [
-          "Wandering Emperor",
-          "Selfless Spirit"
-        ],
-        [
-          "Supreme Phantom",
-          "Spectral Adversary"
-        ]
-      ],
-      "Boros Convoke": [
-        [
-          "Knight-Errant of Eos"
-        ],
-        [
-          "Gleeful Demolition",
-          "Venerated Loxodon"
-        ],
-        [
-          "Reckless Bushwhacker",
-          "Samwise Gamgee"
-        ]
-      ],
-      "Mono-Red Aggro": [
-        [
-          "Monastery Swiftspear"
-        ],
-        [
-          "Kumano Faces Kakkazan",
-          "Slickshot Show-Off"
-        ],
-        [
-          "Play with Fire",
-          "Monstrous Rage"
-        ]
-      ],
-      "Green Devotion": [
-        [
-          "Nykthos, Shrine to Nyx"
-        ],
-        [
-          "Cavalier of Thorns",
-          "Old-Growth Troll"
-        ],
-        [
-          "Kiora, Behemoth Beckoner",
-          "The Chain Veil"
-        ]
-      ],
-      "Azorius Control": [
-        [
-          "Teferi, Hero of Dominaria",
-          "Teferi, Time Raveler"
-        ],
-        [
-          "Supreme Verdict",
-          "Time Wipe"
-        ],
-        [
-          "Shark Typhoon",
-          "Memory Deluge"
-        ]
-      ],
-      "Azorius Lotus Field": [
-        [
-          "Lotus Field"
-        ],
-        [
-          "Pore Over the Pages"
-        ],
-        [
-          "Strict Proctor",
-          "Teferi, Time Raveler"
-        ]
-      ],
-      "Greasefang": [
-        [
-          "Greasefang, Okiba Boss"
-        ],
-        [
-          "Parhelion II"
-        ],
-        [
-          "Smuggler's Copter",
-          "Raffine's Informant"
-        ]
-      ],
-      "Enigmatic Fires": [
-        [
-          "Enigmatic Incarnation"
-        ],
-        [
-          "Fires of Invention"
-        ],
-        [
-          "Omens of the Sea",
+          "Thoughtseize",
           "Leyline Binding"
-        ]
-      ],
-      "Selesnya Angels": [
-        [
-          "Bishop of Wings"
-        ],
-        [
-          "Giada, Font of Hope"
-        ],
-        [
-          "Righteous Valkyrie",
-          "Resplendent Angel"
-        ]
-      ],
-      "Boros Energy": [
-        [
-          "Amped Raptor",
-          "Guide of Souls"
-        ],
-        [
-          "Ocelot Pride",
-          "Slickshot Show-Off"
-        ],
-        [
-          "Ajani, Nacatl Pariah"
-        ]
-      ],
-      "Dimir Rogues": [
-        [
-          "Soaring Thought-Thief"
-        ],
-        [
-          "Thieves' Guild Enforcer"
-        ],
-        [
-          "Into the Story",
-          "Blackbloom Rogue"
         ]
       ],
       "Golgari Midrange": [
@@ -1927,6 +1897,18 @@
           "Graveyard Trespasser"
         ]
       ],
+      "Jund Sacrifice": [
+        [
+          "Cauldron Familiar"
+        ],
+        [
+          "Witch's Oven"
+        ],
+        [
+          "Korvold, Fae-Cursed King",
+          "Mayhem Devil"
+        ]
+      ],
       "Golgari Food": [
         [
           "Cauldron Familiar"
@@ -1939,29 +1921,94 @@
           "Gilded Goose"
         ]
       ],
-      "Izzet Creativity": [
+      "Mono-Red Aggro": [
         [
-          "Indomitable Creativity"
+          "Monastery Swiftspear"
         ],
         [
-          "Archon of Cruelty",
-          "Atraxa, Grand Unifier"
+          "Kumano Faces Kakkazan",
+          "Slickshot Show-Off"
         ],
         [
-          "Dwarven Mine",
-          "Treasure token"
+          "Play with Fire",
+          "Monstrous Rage"
         ]
       ],
-      "Niv-Mizzet Reborn": [
+      "Boros Energy": [
         [
-          "Niv-Mizzet Reborn"
+          "Amped Raptor",
+          "Guide of Souls"
         ],
         [
-          "Bring to Light"
+          "Ocelot Pride",
+          "Slickshot Show-Off"
         ],
         [
-          "Thoughtseize",
-          "Leyline Binding"
+          "Ajani, Nacatl Pariah"
+        ]
+      ],
+      "Boros Convoke": [
+        [
+          "Knight-Errant of Eos"
+        ],
+        [
+          "Gleeful Demolition",
+          "Venerated Loxodon"
+        ],
+        [
+          "Reckless Bushwhacker",
+          "Samwise Gamgee"
+        ]
+      ],
+      "Rakdos Vampires": [
+        [
+          "Vein Ripper"
+        ],
+        [
+          "Sorin, Imperious Bloodlord"
+        ],
+        [
+          "Bloodtithe Harvester",
+          "Vampire Socialite"
+        ]
+      ],
+      "Mono-White Humans": [
+        [
+          "Thalia's Lieutenant"
+        ],
+        [
+          "Champion of the Parish"
+        ],
+        [
+          "Adanto Vanguard",
+          "Dauntless Bodyguard"
+        ]
+      ],
+      "Gruul Aggro": [
+        [
+          "Llanowar Elves",
+          "Elvish Mystic"
+        ],
+        [
+          "Collected Company"
+        ],
+        [
+          "Rhonas the Indomitable",
+          "Burning-Tree Emissary",
+          "Atarka's Command"
+        ]
+      ],
+      "Mono-Black Aggro": [
+        [
+          "Thoughtseize"
+        ],
+        [
+          "Graveyard Trespasser"
+        ],
+        [
+          "Bloodsoaked Champion",
+          "Knight of the Ebon Legion",
+          "Mutavault"
         ]
       ],
       "Domain Zoo": [
@@ -1974,6 +2021,126 @@
         [
           "Territorial Kavu",
           "Lorien Revealed"
+        ]
+      ],
+      "Azorius Spirits": [
+        [
+          "Rattlechains"
+        ],
+        [
+          "Wandering Emperor",
+          "Selfless Spirit"
+        ],
+        [
+          "Supreme Phantom",
+          "Spectral Adversary"
+        ]
+      ],
+      "Dimir Rogues": [
+        [
+          "Soaring Thought-Thief"
+        ],
+        [
+          "Thieves' Guild Enforcer"
+        ],
+        [
+          "Into the Story",
+          "Blackbloom Rogue"
+        ]
+      ],
+      "Izzet Phoenix": [
+        [
+          "Arclight Phoenix"
+        ],
+        [
+          "Treasure Cruise",
+          "Pieces of the Puzzle",
+          "Consider",
+          "Sleight of Hand"
+        ],
+        [
+          "Fiery Impulse",
+          "Lightning Axe",
+          "Flame of Anor"
+        ]
+      ],
+      "Izzet Wizards": [
+        [
+          "Adeliz, the Cinder Wind",
+          "Wee Dragonauts"
+        ],
+        [
+          "Wizard's Lightning",
+          "Wizard's Retort"
+        ],
+        [
+          "Ghitu Lavarunner",
+          "Soul-Scar Mage"
+        ]
+      ],
+      "Izzet Prowess": [
+        [
+          "Soul-Scar Mage"
+        ],
+        [
+          "Monastery Swiftspear"
+        ],
+        [
+          "Crash Through",
+          "Manamorphose",
+          "Expressive Iteration"
+        ]
+      ],
+      "Azorius Heroic": [
+        [
+          "Favored Hoplite",
+          "Illuminator Virtuoso"
+        ],
+        [
+          "Defiant Strike",
+          "Surge of Salvation"
+        ],
+        [
+          "Gods Willing",
+          "Slip Out the Back"
+        ]
+      ],
+      "Mono-Green Devotion": [
+        [
+          "Nykthos, Shrine to Nyx"
+        ],
+        [
+          "Leyline of Abundance",
+          "Cavalier of Thorns"
+        ],
+        [
+          "Karn, the Great Creator",
+          "Storm the Festival"
+        ]
+      ],
+      "Green Devotion": [
+        [
+          "Nykthos, Shrine to Nyx"
+        ],
+        [
+          "Cavalier of Thorns",
+          "Old-Growth Troll"
+        ],
+        [
+          "Kiora, Behemoth Beckoner",
+          "The Chain Veil"
+        ]
+      ],
+      "Selesnya Angels": [
+        [
+          "Bishop of Wings"
+        ],
+        [
+          "Giada, Font of Hope"
+        ],
+        [
+          "Righteous Valkyrie",
+          "Resplendent Angel"
         ]
       ]
     },
@@ -2014,14 +2181,13 @@
           "Tolarian Terror"
         ],
         [
-          "Thoughtcast",
-          "Consider",
-          "Preordain"
+          "Delver of Secrets",
+          "Pteramander",
+          "Faerie Seer"
         ],
         [
           "Counterspell",
-          "Snapback",
-          "Spellstutter Sprite"
+          "Brainstorm"
         ]
       ],
       "Mono-Blue Faeries": [
@@ -2044,12 +2210,12 @@
         ],
         [
           "Gurmag Angler",
-          "Thoughtcast"
+          "Snuff Out",
+          "Cast Down"
         ],
         [
-          "Cast Down",
-          "Snuff Out",
-          "Counterspell"
+          "Counterspell",
+          "Brainstorm"
         ]
       ],
       "Jund Broodscale": [
@@ -2289,22 +2455,191 @@
           "Drown in the Loch",
           "Snuff Out"
         ]
+      ],
+      "Kuldotha Red": [
+        [
+          "Kuldotha Rebirth"
+        ],
+        [
+          "Goblin Bushwhacker",
+          "Reckless Bushwhacker"
+        ],
+        [
+          "Experimental Synthesizer",
+          "Galvanic Blast"
+        ]
+      ],
+      "Dimir Faeries Tempo": [
+        [
+          "Spellstutter Sprite"
+        ],
+        [
+          "Daze",
+          "Ninja of the Deep Hours"
+        ],
+        [
+          "Faerie Seer",
+          "Moon-Circuit Hacker"
+        ]
+      ],
+      "Familiars": [
+        [
+          "Sunscape Familiar",
+          "Nightscape Familiar"
+        ],
+        [
+          "Ghostly Flicker"
+        ],
+        [
+          "Mnemonic Wall",
+          "Sage's Row Denizen"
+        ]
+      ],
+      "Izzet Faeries": [
+        [
+          "Spellstutter Sprite"
+        ],
+        [
+          "Lightning Bolt",
+          "Skullcrack"
+        ],
+        [
+          "Counterspell",
+          "Daze"
+        ]
+      ],
+      "Monowhite Heroic": [
+        [
+          "Kor Skyfisher"
+        ],
+        [
+          "Glint Hawk"
+        ],
+        [
+          "Galvanic Blast",
+          "Ichor Wellspring"
+        ]
+      ],
+      "Turbo Fog": [
+        [
+          "Moment's Peace"
+        ],
+        [
+          "Tangle"
+        ],
+        [
+          "Explore",
+          "Oboro Breezecaller"
+        ]
       ]
     },
     "Vintage": {
-      "Paradoxical Outcome": [
+      "Mono-White Initiative": [
         [
-          "Paradoxical Outcome"
+          "White Plume Adventurer",
+          "Seasoned Dungeoneer"
         ],
         [
-          "Mox Sapphire",
-          "Mox Pearl",
-          "Mox Jet"
+          "Plains",
+          "Karakas",
+          "Eiganjo, Seat of the Empire"
         ],
         [
-          "Time Vault",
-          "Voltaic Key",
-          "Tinker"
+          "Mother of Runes",
+          "Thalia, Guardian of Thraben",
+          "Palace Jailer"
+        ]
+      ],
+      "Initiative": [
+        [
+          "White Plume Adventurer",
+          "Seasoned Dungeoneer",
+          "Caves of Chaos Adventurer"
+        ],
+        [
+          "Mishra's Workshop",
+          "Ancient Tomb"
+        ]
+      ],
+      "Shops Aggro": [
+        [
+          "Mishra's Workshop"
+        ],
+        [
+          "Arcbound Ravager",
+          "Arcbound Worker"
+        ],
+        [
+          "Steel Overseer",
+          "Lodestone Golem",
+          "Walking Ballista"
+        ]
+      ],
+      "Jewel Shops": [
+        [
+          "Mishra's Workshop"
+        ],
+        [
+          "Coveted Jewel"
+        ],
+        [
+          "Paradoxical Outcome",
+          "Sensei's Divining Top",
+          "Bolas's Citadel"
+        ]
+      ],
+      "Raker Shops": [
+        [
+          "Mishra's Workshop"
+        ],
+        [
+          "Skullclamp"
+        ],
+        [
+          "Moat",
+          "Lodestone Golem",
+          "Sphere of Resistance"
+        ]
+      ],
+      "Shops Prison": [
+        [
+          "Mishra's Workshop"
+        ],
+        [
+          "Lodestone Golem"
+        ],
+        [
+          "Trinisphere",
+          "Sphere of Resistance",
+          "Smokestack"
+        ]
+      ],
+      "Sphere Shops": [
+        [
+          "Mishra's Workshop"
+        ],
+        [
+          "Sphere of Resistance",
+          "Thorn of Amethyst",
+          "Chalice of the Void"
+        ],
+        [
+          "Trinisphere",
+          "Phyrexian Revoker",
+          "Wurmcoil Engine"
+        ]
+      ],
+      "Hollow Vine": [
+        [
+          "Hollow One"
+        ],
+        [
+          "Basking Rootwalla",
+          "Vengevine"
+        ],
+        [
+          "Bazaar of Baghdad",
+          "Burning Inquiry"
         ]
       ],
       "Bazaar Dredge": [
@@ -2321,97 +2656,21 @@
           "Prized Amalgam"
         ]
       ],
-      "Shops Aggro": [
+      "Paradoxical Outcome": [
         [
-          "Mishra's Workshop"
+          "Paradoxical Outcome"
         ],
         [
-          "Arcbound Ravager",
-          "Arcbound Worker"
+          "Mox Sapphire",
+          "Mox Pearl",
+          "Mox Jet",
+          "Mox Ruby",
+          "Mox Emerald"
         ],
         [
-          "Steel Overseer",
-          "Lodestone Golem"
-        ]
-      ],
-      "Shops Prison": [
-        [
-          "Mishra's Workshop"
-        ],
-        [
-          "Trinisphere",
-          "Sphere of Resistance"
-        ],
-        [
-          "Lodestone Golem",
-          "Thorn of Amethyst"
-        ]
-      ],
-      "Initiative": [
-        [
-          "White Plume Adventurer",
-          "Seasoned Dungeoneer"
-        ],
-        [
-          "Mishra's Workshop",
-          "Ancient Tomb"
-        ],
-        [
-          "Smokestack",
-          "Wasteland"
-        ]
-      ],
-      "BUG Midrange": [
-        [
-          "Deathrite Shaman"
-        ],
-        [
-          "Force of Will",
-          "Ancestral Recall"
-        ],
-        [
-          "Leovold, Emissary of Trest",
-          "Oko, Thief of Crowns"
-        ]
-      ],
-      "Esper Lurrus": [
-        [
-          "Lurrus of the Dream-Den"
-        ],
-        [
-          "Force of Will",
-          "Ancestral Recall"
-        ],
-        [
-          "Thoughtseize",
-          "Orcish Bowmasters",
-          "Baleful Strix"
-        ]
-      ],
-      "Dimir Lurrus": [
-        [
-          "Lurrus of the Dream-Den"
-        ],
-        [
-          "Force of Will",
-          "Ancestral Recall"
-        ],
-        [
-          "Thoughtseize",
-          "Orcish Bowmasters"
-        ]
-      ],
-      "Jeskai Lurrus": [
-        [
-          "Lurrus of the Dream-Den"
-        ],
-        [
-          "Force of Will",
-          "Ancestral Recall"
-        ],
-        [
-          "Pyroblast",
-          "Swords to Plowshares"
+          "Time Vault",
+          "Voltaic Key",
+          "Tinker"
         ]
       ],
       "Blue Tinker": [
@@ -2433,7 +2692,8 @@
         ],
         [
           "Griselbrand",
-          "Emrakul, the Aeons Torn"
+          "Emrakul, the Aeons Torn",
+          "Archon of Cruelty"
         ],
         [
           "Force of Will",
@@ -2450,45 +2710,336 @@
         ],
         [
           "Necropotence",
+          "Yawgmoth's Will",
+          "Underworld Breach"
+        ]
+      ],
+      "Lurrus Breach": [
+        [
+          "Lurrus of the Dream-Den"
+        ],
+        [
+          "Underworld Breach"
+        ],
+        [
+          "Brain Freeze",
+          "Grinding Station",
+          "Force of Will"
+        ]
+      ],
+      "Doomsday": [
+        [
+          "Doomsday"
+        ],
+        [
+          "Thassa's Oracle"
+        ],
+        [
+          "Force of Will",
+          "Ancestral Recall"
+        ]
+      ],
+      "Beseech Storm": [
+        [
+          "Beseech the Mirror"
+        ],
+        [
+          "Dark Ritual",
+          "Cabal Ritual"
+        ],
+        [
+          "Tendrils of Agony",
           "Yawgmoth's Will"
         ]
       ],
-      "Hollow Vine": [
+      "Esper Lurrus": [
         [
-          "Hollow One"
+          "Lurrus of the Dream-Den"
         ],
         [
-          "Basking Rootwalla",
-          "Vengevine"
+          "Force of Will",
+          "Ancestral Recall"
         ],
         [
-          "Bazaar of Baghdad",
-          "Burning Inquiry"
+          "Baleful Strix",
+          "Vindicate",
+          "Teferi, Time Raveler"
         ]
       ],
-      "Jewel Shops": [
+      "Jeskai Lurrus": [
         [
-          "Mishra's Workshop"
+          "Lurrus of the Dream-Den"
         ],
         [
-          "Coveted Jewel"
+          "Force of Will",
+          "Ancestral Recall"
         ],
         [
-          "Paradoxical Outcome",
-          "Sensei's Divining Top"
+          "Pyroblast",
+          "Swords to Plowshares",
+          "Monastery Mentor"
         ]
       ],
-      "Raker Shops": [
+      "Dimir Lurrus": [
         [
-          "Mishra's Workshop"
+          "Lurrus of the Dream-Den"
         ],
         [
-          "Skullclamp",
-          "Moat"
+          "Force of Will",
+          "Ancestral Recall"
         ],
         [
-          "Lodestone Golem",
-          "Sphere of Resistance"
+          "Thoughtseize",
+          "Orcish Bowmasters",
+          "Dauthi Voidwalker"
+        ]
+      ],
+      "BUG Midrange": [
+        [
+          "Deathrite Shaman"
+        ],
+        [
+          "Force of Will",
+          "Ancestral Recall"
+        ],
+        [
+          "Leovold, Emissary of Trest",
+          "Oko, Thief of Crowns",
+          "Orcish Bowmasters"
+        ]
+      ],
+      "Sultai Midrange": [
+        [
+          "Orcish Bowmasters"
+        ],
+        [
+          "Force of Will",
+          "Ancestral Recall"
+        ],
+        [
+          "Endurance",
+          "Bowmaster",
+          "Leovold, Emissary of Trest",
+          "Ponder"
+        ]
+      ]
+    },
+    "Standard": {
+      "Dimir Midrange": [
+        [
+          "Enduring Curiosity",
+          "Deep-Cavern Bat"
+        ],
+        [
+          "Preacher of the Schism"
+        ],
+        [
+          "Go for the Throat",
+          "Nowhere to Run"
+        ]
+      ],
+      "Orzhov Midrange": [
+        [
+          "Deep-Cavern Bat"
+        ],
+        [
+          "Raffine, Scheming Seer",
+          "Preacher of the Schism"
+        ],
+        [
+          "Go for the Throat",
+          "Nowhere to Run"
+        ]
+      ],
+      "Esper Midrange": [
+        [
+          "Deep-Cavern Bat"
+        ],
+        [
+          "Raffine, Scheming Seer"
+        ],
+        [
+          "Sunfall",
+          "Azorius Guildmage"
+        ]
+      ],
+      "Azorius Soldiers": [
+        [
+          "Valiant Veteran"
+        ],
+        [
+          "Harbin, Vanguard Aviator",
+          "Yotian Frontliner"
+        ],
+        [
+          "Recruitment Officer",
+          "Resolute Reinforcements"
+        ]
+      ],
+      "Boros Convoke": [
+        [
+          "Gleeful Demolition"
+        ],
+        [
+          "Knight-Errant of Eos"
+        ],
+        [
+          "Venerated Loxodon",
+          "Reckless Bushwhacker"
+        ]
+      ],
+      "Mono-Red Aggro": [
+        [
+          "Monastery Swiftspear",
+          "Heartfire Hero"
+        ],
+        [
+          "Monstrous Rage",
+          "Slickshot Show-Off"
+        ],
+        [
+          "Play with Fire",
+          "Shock"
+        ]
+      ],
+      "Boros Energy": [
+        [
+          "Amped Raptor"
+        ],
+        [
+          "Ocelot Pride",
+          "Guide of Souls"
+        ],
+        [
+          "Ajani, Nacatl Pariah",
+          "Leyline of Resonance"
+        ]
+      ],
+      "Gruul Aggro": [
+        [
+          "Questing Druid"
+        ],
+        [
+          "Monstrous Rage",
+          "Boltwave"
+        ],
+        [
+          "Monastery Swiftspear",
+          "Emberheart Challenger"
+        ]
+      ],
+      "Golgari Midrange": [
+        [
+          "The Gitrog, Ravenous Ride"
+        ],
+        [
+          "Aftermath Analyst"
+        ],
+        [
+          "Go for the Throat",
+          "Nowhere to Run"
+        ]
+      ],
+      "Domain Ramp": [
+        [
+          "Atraxa, Grand Unifier"
+        ],
+        [
+          "Sunfall",
+          "Farewell"
+        ],
+        [
+          "Leyline Binding",
+          "Temporary Lockdown"
+        ]
+      ],
+      "Azorius Control": [
+        [
+          "Sunfall",
+          "Farewell"
+        ],
+        [
+          "Memory Deluge",
+          "Commit // Memory"
+        ],
+        [
+          "Make Disappear",
+          "No More Lies"
+        ]
+      ],
+      "Dimir Control": [
+        [
+          "Preacher of the Schism"
+        ],
+        [
+          "Memory Deluge"
+        ],
+        [
+          "Shoot the Sheriff",
+          "Go for the Throat"
+        ]
+      ],
+      "Temur Analyst": [
+        [
+          "Aftermath Analyst"
+        ],
+        [
+          "Cultivator Colossus",
+          "Glissa Sunslayer"
+        ],
+        [
+          "Bitter Reunion",
+          "Fable of the Mirror-Breaker"
+        ]
+      ],
+      "Esper Control": [
+        [
+          "Sunfall",
+          "Farewell"
+        ],
+        [
+          "Deep-Cavern Bat",
+          "Preacher of the Schism"
+        ],
+        [
+          "Make Disappear",
+          "No More Lies"
+        ]
+      ],
+      "Rakdos Midrange": [
+        [
+          "Sheoldred, the Apocalypse"
+        ],
+        [
+          "Fable of the Mirror-Breaker"
+        ],
+        [
+          "Go for the Throat",
+          "Invoke Despair"
+        ]
+      ],
+      "Naya Tokens": [
+        [
+          "Jetmir, Nexus of Revels"
+        ],
+        [
+          "Adeline, Resplendent Cathar"
+        ],
+        [
+          "Wedding Announcement",
+          "Intrepid Adversary"
+        ]
+      ],
+      "Azorius Leyline": [
+        [
+          "Leyline of the Guildpact"
+        ],
+        [
+          "Sunfall"
+        ],
+        [
+          "No More Lies",
+          "Temporary Lockdown"
         ]
       ]
     }
@@ -2638,24 +3189,37 @@
   },
   "Pioneer": {
     "archetypes": [
+      "Abzan Amalia",
       "Amalia Combo",
       "Azorius Control",
+      "Azorius Heroic",
       "Azorius Lotus Field",
       "Azorius Spirits",
       "Boros Convoke",
       "Boros Energy",
+      "Dimir Control",
       "Dimir Rogues",
       "Domain Zoo",
       "Enigmatic Fires",
+      "Esper Control",
+      "Esper Greasefang",
       "Golgari Food",
       "Golgari Midrange",
       "Greasefang",
       "Green Devotion",
+      "Gruul Aggro",
       "Izzet Creativity",
       "Izzet Phoenix",
+      "Izzet Prowess",
+      "Izzet Wizards",
+      "Jeskai Ascendancy",
+      "Jund Sacrifice",
       "Lotus Field Combo",
+      "Mardu Greasefang",
+      "Mono-Black Aggro",
       "Mono-Green Devotion",
       "Mono-Red Aggro",
+      "Mono-White Humans",
       "Niv-Mizzet Reborn",
       "Rakdos Midrange",
       "Rakdos Vampires",
@@ -2671,21 +3235,27 @@
       "Caw-Gates",
       "Dimir Faeries",
       "Dimir Faeries Control",
+      "Dimir Faeries Tempo",
       "Dimir Terror",
       "Elves",
       "Ephemerate Tron",
+      "Familiars",
       "Goblins",
       "Golgari Broodscale",
       "Golgari Gardens",
+      "Izzet Faeries",
       "Jund Broodscale",
       "Jund Wildfire",
+      "Kuldotha Red",
       "Madness Burn",
       "Mono-Blue Faeries",
       "Mono-Blue Terror",
       "Mono-Red Burn",
       "Mono-Red Madness",
       "Mono-Red Pingers",
+      "Monowhite Heroic",
       "Selesnya Enchantress",
+      "Turbo Fog",
       "Walls Combo"
     ]
   },
@@ -2693,19 +3263,46 @@
     "archetypes": [
       "BUG Midrange",
       "Bazaar Dredge",
+      "Beseech Storm",
       "Blue Tinker",
       "Dimir Lurrus",
+      "Doomsday",
       "Esper Lurrus",
       "Hollow Vine",
       "Initiative",
       "Jeskai Lurrus",
       "Jewel Shops",
+      "Lurrus Breach",
+      "Mono-White Initiative",
       "Oath of Druids",
       "Paradoxical Outcome",
       "Raker Shops",
       "Shops Aggro",
       "Shops Prison",
-      "Storm"
+      "Sphere Shops",
+      "Storm",
+      "Sultai Midrange"
+    ]
+  },
+  "Standard": {
+    "archetypes": [
+      "Azorius Control",
+      "Azorius Leyline",
+      "Azorius Soldiers",
+      "Boros Convoke",
+      "Boros Energy",
+      "Dimir Control",
+      "Dimir Midrange",
+      "Domain Ramp",
+      "Esper Control",
+      "Esper Midrange",
+      "Golgari Midrange",
+      "Gruul Aggro",
+      "Mono-Red Aggro",
+      "Naya Tokens",
+      "Orzhov Midrange",
+      "Rakdos Midrange",
+      "Temur Analyst"
     ]
   }
 }
