@@ -85,6 +85,20 @@
           "Prized Amalgam"
         ]
       ],
+      "Hollow One": [
+        [
+          "Hollow One"
+        ],
+        [
+          "Burning Inquiry",
+          "Goblin Lore"
+        ],
+        [
+          "Vengevine",
+          "Blazing Rootwalla",
+          "Detective's Phoenix"
+        ]
+      ],
       "Tron": [
         [
           "Urza's Tower"
@@ -761,19 +775,19 @@
       ],
       "Boros Ponza": [
         [
-          "Blood Moon"
+          "Cleansing Wildfire"
         ],
         [
-          "Seasoned Pyromancer",
-          "Bonecrusher Giant"
+          "Demolition Field",
+          "Price of Freedom"
         ],
         [
-          "Sunbaked Canyon",
-          "Sacred Foundry",
-          "Inspiring Vantage"
+          "Field of Ruin",
+          "Solitude",
+          "Sacred Foundry"
         ]
       ],
-      "Golgari Lantern": [
+      "Lantern Control": [
         [
           "Lantern of Insight"
         ],
@@ -783,7 +797,7 @@
         [
           "Inquisition of Kozilek",
           "Thoughtseize",
-          ""
+          "Codex Shredder"
         ]
       ],
       "Eldrazi Post": [
