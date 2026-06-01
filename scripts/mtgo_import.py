@@ -168,7 +168,33 @@ def gh_get_raw(url, retries=3):
             return None
     return None
 
-# ── Key-card identification from custom_archetypes.json ───────────────────────
+# ── Key-card identification ───────────────────────────────────────────────────
+
+def load_key_cards():
+    """Load key_cards from custom_archetypes.json on disk.
+
+    Reads the local file first (always available in GitHub Actions after checkout).
+    Returns dict: { 'Modern': { archetype: [[group1], [group2], ...], ... }, ... }
+    """
+    local_paths = [
+        os.path.join(os.path.dirname(__file__), 'custom_archetypes.json'),
+        'scripts/custom_archetypes.json',
+        'custom_archetypes.json',
+    ]
+    for path in local_paths:
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    data = json.load(f)
+                key_cards = data.get('key_cards', {})
+                total = sum(len(v) for v in key_cards.values())
+                print(f'  Loaded key_cards: {total} archetypes from {path}')
+                return key_cards
+            except Exception as e:
+                print(f'  WARNING: Failed to parse {path}: {e}')
+    print('  WARNING: custom_archetypes.json not found — key-card identification disabled')
+    return {}
+
 
 def load_archetype_identifiers(fmt):
     """Load 3-card identifiers from the archetype_identifiers Supabase table."""
@@ -179,51 +205,13 @@ def load_archetype_identifiers(fmt):
     return rows
 
 
-def detect_archetype_by_identifier(deck_data, identifiers):
-    """Return archetype_name if all 3 identifier cards are in the mainboard."""
-    if not identifiers or not deck_data:
-        return None
-    mainboard = {c['CardName'] for c in deck_data.get('Mainboard', [])}
-    for ident in identifiers:
-        if ident['card1'] in mainboard and ident['card2'] in mainboard and ident['card3'] in mainboard:
-            return ident['archetype_name']
-    return None
-
-
-def load_key_cards():
-    """Load key_cards from custom_archetypes.json.
-
-    Reads the file directly from disk — the script runs inside the repo checkout
-    so the file is always available at scripts/custom_archetypes.json.
-    """
-    local_paths = [
-        os.path.join(os.path.dirname(__file__), 'custom_archetypes.json'),
-        'scripts/custom_archetypes.json',
-        'custom_archetypes.json',
-    ]
-    for path in local_paths:
-        if os.path.exists(path):
-            try:
-                with open(path, 'r') as f:
-                    data = json.load(f)
-                key_cards = data.get('key_cards', {})
-                total = sum(len(v) for v in key_cards.values())
-                print(f'  Loaded key_cards: {total} archetypes from {path}')
-                return key_cards
-            except Exception as e:
-                print(f'  WARNING: Failed to parse {path}: {e}')
-
-    print(f'  WARNING: custom_archetypes.json not found — key-card identification disabled')
-    return {}
-
-
 def detect_by_key_cards(deck_data, key_cards_for_format):
     """Identify archetype using grouped AND/OR key card conditions.
 
     Each archetype has a list of groups. A deck matches if ALL groups are
     satisfied. Each group is satisfied if ANY of its cards is present.
 
-    Supports both old format (flat list) and new grouped format (list of lists).
+    Supports both flat list format and grouped list-of-lists format.
     """
     if not key_cards_for_format or not deck_data:
         return None
@@ -242,7 +230,20 @@ def detect_by_key_cards(deck_data, key_cards_for_format):
     return None
 
 
+def detect_archetype_by_identifier(deck_data, identifiers):
+    """Return archetype_name if all 3 identifier cards are in the mainboard."""
+    if not identifiers or not deck_data:
+        return None
+    mainboard = {c['CardName'] for c in deck_data.get('Mainboard', [])}
+    for ident in identifiers:
+        if (ident['card1'] in mainboard and
+                ident['card2'] in mainboard and
+                ident['card3'] in mainboard):
+            return ident['archetype_name']
+    return None
 
+
+# ── Reference decklist similarity matching ────────────────────────────────────
 SIMILARITY_THRESHOLD     = 0.60  # minimum Jaccard similarity for full deck match
 SIMILARITY_THRESHOLD_HAND = 0.35  # lower threshold for 7-card opening hand
 MIN_REFERENCE_DECKS      = 5     # auto-add matched decks until this many refs exist
@@ -395,7 +396,10 @@ def add_to_reference_decklists(deck_data, archetype, fmt, deck_counts):
     return False
 
 # ── Utility functions ─────────────────────────────────────────────────────────
-def determine_event_type(event_name):
+def determine_event_type(event_name, source='MTGO'):
+    """Determine event type from event name and source."""
+    if source == 'CardsRealm': return 'CardsRealm Tournament'
+    if source == 'MTGMelee':   return 'MTGMelee Tournament'
     name_lower = event_name.lower()
     if 'showcase' in name_lower: return 'Showcase Challenge'
     elif '64' in name_lower:     return 'Challenge 64'
@@ -566,10 +570,6 @@ def main():
         m, s = divmod(elapsed, 60)
         print(f'[{m:02d}:{s:02d}] {label}', flush=True)
 
-    # Load key cards from custom_archetypes.json — checked first, before similarity
-    ts('Loading key-card identifiers from custom_archetypes.json...')
-    all_key_cards = load_key_cards()
-
     # Load reference fingerprints for all formats
     ts('Loading reference decklist fingerprints...')
     fingerprints_by_format = {}
@@ -580,7 +580,11 @@ def main():
         fingerprints_by_format[fmt] = fp
         deck_counts_by_format[fmt]  = dc
         identifiers_by_format[fmt]  = load_archetype_identifiers(fmt)
-        print(f'  {fmt}: {len(fp)} fingerprints, {len(identifiers_by_format[fmt])} DB identifiers loaded')
+        print(f'  {fmt}: {len(fp)} fingerprints, {len(identifiers_by_format[fmt])} DB identifiers')
+
+    # Load key cards from custom_archetypes.json
+    ts('Loading key-card identifiers from custom_archetypes.json...')
+    all_key_cards = load_key_cards()
 
     FORMAT_PATTERNS = {
         'Modern':    ['modern-challenge', 'modern-showcase-challenge'],
@@ -637,6 +641,77 @@ def main():
 
     all_format_events.sort(key=lambda x: x['name'])
 
+    # Load existing event IDs once — used by all source discovery loops
+    existing_events = sb_get('mtgo_events', '?select=event_id')
+    existing_ids    = set(r['event_id'] for r in existing_events)
+    print(f'  Existing events in DB: {len(existing_ids)}')
+
+    # ── Discover CardsRealm and MTGMelee events ───────────────────────────────
+    # These use Tournament.Formats (in the JSON) instead of filename patterns.
+    # Format field is a plain string like "Pauper", "Modern", "Standard", etc.
+    VALID_FORMATS = {'Modern', 'Legacy', 'Pauper', 'Pioneer', 'Vintage',
+                     'Standard', 'Premodern', 'Historic', 'Explorer'}
+
+    for source in ['CardsRealm', 'MTGMelee']:
+        ts(f'Discovering events from {source} (scanning years: {years})...')
+        source_events = []
+        for year in years:
+            months = gh_get_json(f'{GITHUB_API}/repos/{FBETTEGA_REPO}/contents/Tournaments/{source}/{year}')
+            if not months:
+                continue
+            for month in months:
+                days = gh_get_json(f'{GITHUB_API}/repos/{FBETTEGA_REPO}/contents/Tournaments/{source}/{year}/{month["name"]}')
+                if not days:
+                    continue
+                time.sleep(0.1)
+                for day in days:
+                    files = gh_get_json(f'{GITHUB_API}/repos/{FBETTEGA_REPO}/contents/Tournaments/{source}/{year}/{month["name"]}/{day["name"]}')
+                    if not files:
+                        continue
+                    time.sleep(0.1)
+                    for f in files:
+                        if not f['name'].lower().endswith('.json'):
+                            continue
+                        source_events.append({
+                            'name':         f['name'].replace('.json', ''),
+                            'download_url': f['download_url'],
+                            'format':       None,  # determined from JSON content
+                            'year':         year,
+                            'month':        month['name'],
+                            'day':          day['name'],
+                            'source':       source,
+                        })
+
+        print(f'  {source}: {len(source_events)} files found')
+
+        # Fetch each file to get the format from Tournament.Formats
+        # Only fetch files we haven't seen before
+        new_source = [e for e in source_events if e['name'] not in existing_ids]
+        print(f'  {source}: {len(new_source)} new files to fetch')
+        for e in new_source:
+            raw = gh_get_raw(e['download_url'])
+            if not raw:
+                continue
+            try:
+                data = json.loads(raw)
+            except Exception:
+                continue
+            fmt_raw = (data.get('Tournament') or {}).get('Formats', '')
+            # Normalise: "Pauper" / "Modern" / "Standard" etc.
+            fmt = fmt_raw.strip().title() if fmt_raw else None
+            if fmt not in VALID_FORMATS:
+                print(f'  Skipping {e["name"]}: unknown format "{fmt_raw}"')
+                continue
+            e['format'] = fmt
+            e['_data']  = data  # cache the parsed JSON so we don't fetch twice
+            all_format_events.append(e)
+            time.sleep(0.15)
+
+        for fmt, count in sorted(Counter(
+            e['format'] for e in all_format_events if e.get('source') == source
+        ).items()):
+            print(f'  {source} {fmt}: {count}')
+
     # Filter by cutoff date — event name contains the date e.g. "modern-challenge-32-2024-06-15..."
     if cutoff_date:
         before = len(all_format_events)
@@ -655,9 +730,7 @@ def main():
         print(f'  {fmt}: {count}')
 
     # Filter to only new events
-    existing_events = sb_get('mtgo_events', '?select=event_id')
-    existing_ids    = set(r['event_id'] for r in existing_events)
-    new_events      = [e for e in all_format_events if e['name'] not in existing_ids]
+    new_events = [e for e in all_format_events if e['name'] not in existing_ids]
     ts(f'New events to process: {len(new_events)}')
     for fmt, count in sorted(Counter(e['format'] for e in new_events).items()):
         print(f'  {fmt}: {count} new')
@@ -671,15 +744,19 @@ def main():
     skipped           = 0
 
     for idx, event in enumerate(new_events):
-        raw = gh_get_raw(event['download_url'])
-        if not raw:
-            errors.append(event['name'])
-            continue
-        try:
-            data = json.loads(raw)
-        except:
-            errors.append(event['name'])
-            continue
+        # Use cached JSON for CardsRealm/MTGMelee (already fetched during discovery)
+        if '_data' in event:
+            data = event['_data']
+        else:
+            raw = gh_get_raw(event['download_url'])
+            if not raw:
+                errors.append(event['name'])
+                continue
+            try:
+                data = json.loads(raw)
+            except:
+                errors.append(event['name'])
+                continue
 
         tournament = data.get('Tournament', {})
         standings  = data.get('Standings', [])
@@ -708,7 +785,7 @@ def main():
             detected      = None
 
             if deck_data:
-                # 1. Key-card exact match (custom_archetypes.json) — fastest, most reliable
+                # 1. Key-card exact match (custom_archetypes.json) — fastest
                 detected = detect_by_key_cards(deck_data, key_cards_fmt)
 
                 # 2. Supabase archetype_identifiers (manually added via admin UI)
@@ -723,12 +800,10 @@ def main():
 
             player_arch_map[player_name] = detected  # None = unknown
 
-            # Store unknown decks for admin review — only if mainboard has cards
+            # Store unknown decks for admin review
             if detected is None and deck_data:
                 mb = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Mainboard', [])}
                 sb = {c['CardName']: c.get('Count', 1) for c in deck_data.get('Sideboard', [])}
-                if not mb:
-                    continue  # No decklist available — skip, not useful for review
                 unknown_deck_rows.append({
                     'event_id':    event['name'],
                     'player_name': player_name,
@@ -740,12 +815,14 @@ def main():
                     'created_at':  datetime.now(timezone.utc).isoformat()
                 })
 
+        source = event.get('source', 'MTGO')
         event_rows.append({
             'event_id':   event['name'],
             'event_name': tournament.get('Name', event['name']),
             'event_date': event_date,
-            'event_type': determine_event_type(event['name']),
+            'event_type': determine_event_type(event['name'], source),
             'format':     event['format'],
+            'source':     source,
             'scraped_at': datetime.now(timezone.utc).isoformat()
         })
 
@@ -880,20 +957,17 @@ def main():
 
     # ── Compute summaries ─────────────────────────────────────────────────────
     ts('Computing summaries...')
-    # format is now a real column on mtgo_results — no join needed
+    # format is a real column on mtgo_results — no join needed
     all_results   = sb_get('mtgo_results',
         '?select=event_id,player_name,archetype_canonical,finish_position,points,'
         'match_win_pct,game_win_pct,opp_match_win_pct,format'
     )
-    # Still need event dates for the time-window filtering
     all_events_db = sb_get('mtgo_events', '?select=event_id,event_date')
     event_date_map = {e['event_id']: e['event_date'] for e in all_events_db}
     print(f'Total results: {len(all_results)} | Total events: {len(all_events_db)}')
 
-    # Drop any rows missing format (should be zero after the schema fix, but be safe)
+    # Drop rows missing format (should be zero after schema fix)
     all_results = [r for r in all_results if r.get('format')]
-    if len(all_results) < len(sb_get('mtgo_results', '?select=id&limit=1')):
-        print(f'  WARNING: some results rows have no format — check mtgo_results.format column')
 
     now     = datetime.now(timezone.utc).date()
     windows = [
@@ -908,11 +982,12 @@ def main():
         date_from = cutoff.isoformat() if cutoff else '2000-01-01'
         date_to   = now.isoformat()
 
-        # Filter by date using event_date_map
         filtered = [r for r in all_results if not cutoff or
                     event_date_map.get(r['event_id'], '0000-00-00') >= date_from]
+        if not filtered:
+            continue
 
-        # Format comes directly from the row — no join, no inference
+        # format comes directly from the row — no join, no inference
         formats_in_window = set(r['format'] for r in filtered)
         for fmt in sorted(formats_in_window):
             fmt_results = [r for r in filtered if r['format'] == fmt]
