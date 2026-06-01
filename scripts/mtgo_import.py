@@ -218,17 +218,27 @@ def load_key_cards():
 
 
 def detect_by_key_cards(deck_data, key_cards_for_format):
-    """Check a deck's mainboard against 3-card key combinations.
+    """Identify archetype using grouped AND/OR key card conditions.
 
-    Returns archetype name (str) if all 3 key cards are present, else None.
-    This is checked FIRST — before similarity matching — for fast exact identification.
+    Each archetype has a list of groups. A deck matches if ALL groups are
+    satisfied. Each group is satisfied if ANY of its cards is present.
+
+    Supports both old format (flat list) and new grouped format (list of lists).
     """
     if not key_cards_for_format or not deck_data:
         return None
     mainboard = {c['CardName'] for c in deck_data.get('Mainboard', [])}
-    for archetype, keys in key_cards_for_format.items():
-        if all(k in mainboard for k in keys):
-            return archetype
+    for archetype, identifier in key_cards_for_format.items():
+        if not identifier:
+            continue
+        if isinstance(identifier[0], list):
+            # Grouped format: all groups must be satisfied
+            if all(any(card in mainboard for card in group) for group in identifier):
+                return archetype
+        else:
+            # Flat format: all cards must be present
+            if all(card in mainboard for card in identifier):
+                return archetype
     return None
 
 

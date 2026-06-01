@@ -145,13 +145,28 @@ def load_key_cards_from_github():
 
 
 def detect_by_key_cards(mb_dict, key_cards_for_format):
-    """Return archetype name if all 3 key cards are present in mainboard dict."""
+    """Identify archetype using grouped AND/OR key card conditions.
+
+    Each archetype has a list of groups. A deck matches if ALL groups are
+    satisfied. Each group is satisfied if ANY of its cards is present.
+
+    Supports both old format (flat list) and new grouped format (list of lists).
+    """
     if not key_cards_for_format:
         return None
     mb_set = set(mb_dict.keys())
-    for archetype, keys in key_cards_for_format.items():
-        if all(k in mb_set for k in keys):
-            return archetype
+    for archetype, identifier in key_cards_for_format.items():
+        if not identifier:
+            continue
+        # Detect format: grouped if first element is a list, flat otherwise
+        if isinstance(identifier[0], list):
+            # New grouped format: all groups must be satisfied
+            if all(any(card in mb_set for card in group) for group in identifier):
+                return archetype
+        else:
+            # Legacy flat format: all cards must be present
+            if all(card in mb_set for card in identifier):
+                return archetype
     return None
 
 
