@@ -358,12 +358,11 @@
           "Death's Shadow"
         ],
         [
+          "Dragon's Rage Channeler",
+          "Expressive Iteration",
+          "Lightning Bolt",
           "Kolaghan's Command",
           "Ragavan, Nimble Pilferer"
-        ],
-        [
-          "Snapcaster Mage",
-          "Kroxa, Titan of Death's Hunger"
         ]
       ],
       "Dimir Shadow": [
@@ -372,11 +371,13 @@
         ],
         [
           "Cling to Dust",
-          "Drown in the Loch"
-        ],
-        [
+          "Drown in the Loch",
           "Snapcaster Mage",
           "Grief"
+        ],
+        [
+          "Thoughtseize",
+          "Inquisition of Kozilek"
         ]
       ],
       "Rakdos Scam": [
@@ -697,6 +698,104 @@
         [
           "Mox Opal",
           "Urza's Saga"
+        ]
+      ],
+      "Dimir Oculus": [
+        [
+          "Abhorrent Oculus"
+        ],
+        [
+          "Thought Scour",
+          "Brainsurge",
+          "Consider",
+          "Ledger Shredder"
+        ],
+        [
+          "Fatal Push",
+          "Drown in the Loch",
+          "Grief"
+        ]
+      ],
+      "Izzet Cutter": [
+        [
+          "Cori-Steel Cutter"
+        ],
+        [
+          "Dragon's Rage Channeler",
+          "Ledger Shredder",
+          "Murktide Regent"
+        ],
+        [
+          "Lightning Bolt",
+          "Unholy Heat"
+        ]
+      ],
+      "Mill": [
+        [
+          "Hedron Crab",
+          "Ruin Crab"
+        ],
+        [
+          "Archive Trap",
+          "Fractured Sanity"
+        ],
+        [
+          "Glimpse the Unthinkable",
+          "Tasha's Hideous Laughter",
+          "Surgical Extraction"
+        ]
+      ],
+      "Omnath Control": [
+        [
+          "Omnath, Locus of Creation"
+        ],
+        [
+          "Uro, Titan of Nature's Wrath",
+          "Wrenn and Six"
+        ],
+        [
+          "Solitude",
+          "Fury",
+          "Ice-Fang Coatl"
+        ]
+      ],
+      "Boros Ponza": [
+        [
+          "Blood Moon"
+        ],
+        [
+          "Seasoned Pyromancer",
+          "Bonecrusher Giant"
+        ],
+        [
+          "Sunbaked Canyon",
+          "Sacred Foundry",
+          "Inspiring Vantage"
+        ]
+      ],
+      "Golgari Lantern": [
+        [
+          "Lantern of Insight"
+        ],
+        [
+          "Ensnaring Bridge"
+        ],
+        [
+          "Inquisition of Kozilek",
+          "Thoughtseize",
+          "Abrupt Decay"
+        ]
+      ],
+      "Eldrazi Post": [
+        [
+          "Eldrazi Temple"
+        ],
+        [
+          "All Is Dust"
+        ],
+        [
+          "Ulamog, the Ceaseless Hunger",
+          "Emrakul, the Promised End"
         ]
       ]
     },
@@ -1454,15 +1553,245 @@
           "Urza's Saga",
           "Thoughtcast"
         ]
+      ],
+      "Mardu Energy": [
+        [
+          "Guide of Souls",
+          "Amped Raptor",
+          "Ocelot Pride"
+        ],
+        [
+          "Grief",
+          "Thoughtseize",
+          "Unmask"
+        ],
+        [
+          "Swords to Plowshares",
+          "Lightning Bolt"
+        ]
+      ],
+      "Izzet Welder": [
+        [
+          "Goblin Welder",
+          "Daretti, Scrap Savant"
+        ],
+        [
+          "Force of Will"
+        ],
+        [
+          "Ancient Tomb",
+          "City of Traitors",
+          "Volcanic Island"
+        ]
+      ],
+      "Necrodominance Combo": [
+        [
+          "Necrodominance"
+        ],
+        [
+          "Dark Ritual",
+          "Cabal Ritual"
+        ],
+        [
+          "Tendrils of Agony",
+          "Pact of Negation",
+          "Chancellor of the Annex"
+        ]
+      ],
+      "Burn": [
+        [
+          "Goblin Guide",
+          "Chain Lightning"
+        ],
+        [
+          "Eidolon of the Great Revel"
+        ],
+        [
+          "Price of Progress",
+          "Fireblast"
+        ]
+      ],
+      "Dimir Mill": [
+        [
+          "Jace's Erasure",
+          "Sanity Grinding",
+          "Painter's Servant"
+        ],
+        [
+          "Grindstone",
+          "Glimpse the Unthinkable"
+        ],
+        [
+          "Force of Will",
+          "Brainstorm"
+        ]
+      ],
+      "Esper Control": [
+        [
+          "Swords to Plowshares"
+        ],
+        [
+          "Jace, the Mind Sculptor"
+        ],
+        [
+          "Thoughtseize",
+          "Inquisition of Kozilek",
+          "Vindicate"
+        ]
+      ],
+      "Grixis Tempo": [
+        [
+          "Delver of Secrets"
+        ],
+        [
+          "Thoughtseize",
+          "Hymn to Tourach"
+        ],
+        [
+          "Lightning Bolt",
+          "Pyroblast"
+        ]
       ]
     }
   },
   "Modern": {
-    "supertypes": {},
-    "archetypes": []
+    "archetypes": [
+      "Affinity",
+      "Amulet Titan",
+      "Azorius Blink",
+      "Birthing Ritual",
+      "Black Eldrazi",
+      "Blue Belcher",
+      "Bogles",
+      "Boros Energy",
+      "Boros Ponza",
+      "Boros Tokens",
+      "Broodscale Combo",
+      "Calibrated Blast",
+      "Crashing Footfalls",
+      "Death and Taxes",
+      "Death and Taxes Yorion",
+      "Devoted Combo",
+      "Dimir Control",
+      "Dimir Midrange",
+      "Dimir Oculus",
+      "Dimir Shadow",
+      "Domain Zoo",
+      "Dredge",
+      "Eldrazi Post",
+      "Eldrazi Ramp",
+      "Eldrazi Tron",
+      "Esper Blink",
+      "Eyetwitch Persist",
+      "Golgari Lantern",
+      "Goryo's Vengeance",
+      "Grinding Station Combo",
+      "Grixis Control",
+      "Grixis Persist",
+      "Grixis Shadow",
+      "Hammer Time",
+      "Hardened Scales",
+      "Humans",
+      "Indomitable Creativity",
+      "Infect",
+      "Izzet Cutter",
+      "Izzet Murktide",
+      "Izzet Prowess",
+      "Jeskai Blink",
+      "Jeskai Control",
+      "Jeskai Tempo",
+      "Living End",
+      "Martyr Proc",
+      "Merfolk",
+      "Mill",
+      "Mono-Red Belcher",
+      "Mono-Red Burn",
+      "Necrodominance",
+      "Neobrand",
+      "Omnath Control",
+      "Oops All Spells",
+      "Rakdos Midrange",
+      "Rakdos Scam",
+      "Ruby Storm",
+      "Sam Combo",
+      "Sultai Midrange",
+      "Temur Rhinos",
+      "Tron",
+      "UW Control",
+      "Yawgmoth",
+      "Zombies"
+    ]
   },
   "Legacy": {
-    "supertypes": {},
-    "archetypes": []
+    "archetypes": [
+      "4c Lands",
+      "8-Cast",
+      "ANT Storm",
+      "Aluren",
+      "Bant Control",
+      "Beanstalk Control",
+      "Black Saga Storm",
+      "Boros Initiative",
+      "Burn",
+      "Cephalid Breakfast",
+      "Cloudpost",
+      "Colorless Eldrazi",
+      "Cradle Control",
+      "Dark Depths Lands",
+      "Death and Taxes",
+      "Death's Shadow",
+      "Dimir Delver",
+      "Dimir Mill",
+      "Dimir Reanimator",
+      "Doomsday",
+      "Dragon Stompy",
+      "EPIC Storm",
+      "Elves",
+      "Esper Control",
+      "Esper Delver",
+      "Goblins",
+      "Grixis Control",
+      "Grixis Tempo",
+      "Hogaak Dredge",
+      "Humans",
+      "Infect",
+      "Izzet Delver",
+      "Izzet Tempo",
+      "Izzet Welder",
+      "Jeskai Delver",
+      "Jeskai Miracles",
+      "Lands",
+      "Loam Pox",
+      "Manaless Dredge",
+      "Mardu Energy",
+      "Merfolk",
+      "Miracles",
+      "Mono-Black Reanimator",
+      "Mono-White Initiative",
+      "Mystic Forge",
+      "Nadu Combo",
+      "Naya Initiative",
+      "Necrodominance Combo",
+      "Ninjas",
+      "Ocelot Midrange",
+      "Omni-Tell",
+      "Oops All Spells",
+      "Painter",
+      "Patchwork Synthesizer",
+      "Pox",
+      "Rakdos Reanimator",
+      "Rakdos Stompy",
+      "Red Stompy",
+      "Riddlesmith",
+      "Selesnya Depths",
+      "Sneak and Show",
+      "Stiflenought",
+      "Sultai Control",
+      "Sultai Tempo",
+      "TES Storm",
+      "Temur Delver",
+      "Turbo Depths",
+      "Worldgorger Combo"
+    ]
   }
 }
