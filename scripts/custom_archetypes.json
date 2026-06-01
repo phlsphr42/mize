@@ -154,7 +154,7 @@
           "Cursecatcher"
         ]
       ],
-      "Mono-Red Burn": [
+      "Burn": [
         [
           "Goblin Guide",
           "Monastery Swiftspear"
@@ -285,7 +285,7 @@
           "Territorial Kavu"
         ]
       ],
-      "Boros Tokens": [
+      "8-Whack": [
         [
           "Gleeful Demolition",
           "Kuldotha Rebirth"
@@ -457,7 +457,7 @@
           "Teferi, Time Raveler"
         ]
       ],
-      "UW Control": [
+      "Azorius Control": [
         [
           "Teferi, Hero of Dominaria",
           "Teferi, Temporal Pilgrim"
@@ -637,7 +637,7 @@
           "Lotus Petal"
         ]
       ],
-      "Mono-Red Belcher": [
+      "Red Belcher": [
         [
           "Goblin Charbelcher"
         ],
@@ -1665,7 +1665,7 @@
       "Bogles",
       "Boros Energy",
       "Boros Ponza",
-      "Boros Tokens",
+      "8-Whack",
       "Broodscale Combo",
       "Calibrated Blast",
       "Crashing Footfalls",
@@ -1704,12 +1704,11 @@
       "Martyr Proc",
       "Merfolk",
       "Mill",
-      "Mono-Red Belcher",
-      "Mono-Red Burn",
+      "Red Belcher",
+      "Burn",
       "Necrodominance",
       "Neobrand",
       "Omnath Control",
-      "Oops All Spells",
       "Rakdos Midrange",
       "Rakdos Scam",
       "Ruby Storm",
@@ -1717,7 +1716,7 @@
       "Sultai Midrange",
       "Temur Rhinos",
       "Tron",
-      "UW Control",
+      "Azorius Control",
       "Yawgmoth",
       "Zombies"
     ]
