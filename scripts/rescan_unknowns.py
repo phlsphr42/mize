@@ -293,13 +293,16 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
     # ── Batch write all matched decks ─────────────────────────────────────────
     print(f'  Writing {matched} matches to database...')
 
-    # Group by archetype for bulk PATCH on mtgo_unknown_decks
+    # Group by archetype
     by_arch = {}
     for m in matched_decks:
         by_arch.setdefault(m['arch'], []).append(m)
 
     CHUNK = 100  # stay well under URL length limits
+    total_written = 0
     for arch, items in by_arch.items():
+
+        # 1. Bulk update mtgo_unknown_decks by id
         ids = [m['id'] for m in items]
         for chunk_start in range(0, len(ids), CHUNK):
             chunk = ids[chunk_start:chunk_start + CHUNK]
@@ -309,20 +312,33 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
                       'reviewed': True, 'reviewed_at': now,
                       'reviewed_by': 'rescan_script'})
 
-        # Update mtgo_results and mtgo_matches per deck (can't bulk these easily)
+        # 2. Bulk update mtgo_results — group by event_id to avoid huge URLs
+        event_player = {}
         for m in items:
+            event_player.setdefault(m['event_id'], []).append(m['player_name'])
+
+        event_ids = list(event_player.keys())
+        for chunk_start in range(0, len(event_ids), CHUNK):
+            chunk_eids = event_ids[chunk_start:chunk_start + CHUNK]
+            eid_list = ','.join(urllib.parse.quote(e) for e in chunk_eids)
             sb_patch('mtgo_results',
-                f'?event_id=eq.{urllib.parse.quote(m["event_id"])}'
-                f'&player_name=eq.{urllib.parse.quote(m["player_name"])}',
+                f'?event_id=in.({eid_list})&archetype_canonical=eq.Unknown',
                 {'archetype_canonical': arch, 'archetype_raw': arch})
+
+        # 3. Bulk update mtgo_matches player arches for those events
+        for chunk_start in range(0, len(event_ids), CHUNK):
+            chunk_eids = event_ids[chunk_start:chunk_start + CHUNK]
+            eid_list = ','.join(urllib.parse.quote(e) for e in chunk_eids)
             sb_patch('mtgo_matches',
-                f'?event_id=eq.{urllib.parse.quote(m["event_id"])}'
-                f'&player1=eq.{urllib.parse.quote(m["player_name"])}',
+                f'?event_id=in.({eid_list})&player1_arch=eq.Unknown',
                 {'player1_arch': arch})
             sb_patch('mtgo_matches',
-                f'?event_id=eq.{urllib.parse.quote(m["event_id"])}'
-                f'&player2=eq.{urllib.parse.quote(m["player_name"])}',
+                f'?event_id=in.({eid_list})&player2_arch=eq.Unknown',
                 {'player2_arch': arch})
+
+        total_written += len(items)
+        if total_written % 1000 == 0 or total_written == matched:
+            print(f'  Written {total_written}/{matched}...', flush=True)
 
     print(f'  Done: {matched} matched, {len(decks)-matched-skipped_no_mainboard} unidentified, {skipped_no_mainboard} had no decklist')
     return matched, len(decks) - matched - skipped_no_mainboard
