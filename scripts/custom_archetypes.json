@@ -1,10 +1,13 @@
 {
   "key_cards": {
     "Modern": {
+      "Temur Rhinos": [
+        "Crashing Footfalls",
+        "Fury"
+      ],
       "Amulet Titan": [
         "Amulet of Vigor",
-        "Primeval Titan",
-        "Arboreal Grazer"
+        "Primeval Titan"
       ],
       "Bogles": [
         "Gladecover Scout",
@@ -23,58 +26,47 @@
       ],
       "Devoted Combo": [
         "Devoted Druid",
-        "Vizier of Remedies",
-        "Chord of Calling"
+        "Vizier of Remedies"
       ],
       "Goryo's Vengeance": [
         "Goryo's Vengeance",
-        "Griselbrand",
-        "Through the Breach"
+        "Griselbrand"
       ],
       "Hammer Time": [
         "Colossus Hammer",
-        "Puresteel Paladin",
-        "Sigarda's Aid"
+        "Puresteel Paladin"
       ],
       "Indomitable Creativity": [
         "Indomitable Creativity",
-        "Dwarven Mine",
         "Archon of Cruelty"
       ],
       "Living End": [
         "Living End",
-        "Violent Outburst",
-        "Street Wraith"
+        "Violent Outburst"
       ],
       "Martyr Proc": [
         "Martyr of Sands",
-        "Serra Ascendant",
-        "Proclamation of Rebirth"
+        "Serra Ascendant"
       ],
       "Neobrand": [
         "Neoform",
-        "Griselbrand",
-        "Chancellor of the Tangle"
+        "Griselbrand"
       ],
       "Oops All Spells": [
         "Balustrade Spy",
-        "Undercity Informer",
         "Thassa's Oracle"
       ],
       "Ruby Storm": [
         "Ruby Medallion",
-        "Manamorphose",
         "Past in Flames"
       ],
       "Sam Combo": [
         "The One Ring",
-        "Emry, Lurker of the Loch",
         "Urza, Lord High Artificer"
       ],
       "Yawgmoth": [
         "Yawgmoth, Thran Physician",
-        "Young Wolf",
-        "Chord of Calling"
+        "Young Wolf"
       ],
       "Boros Energy": [
         "Guide of Souls",
@@ -83,8 +75,7 @@
       ],
       "Death and Taxes": [
         "Thalia, Guardian of Thraben",
-        "Leonin Arbiter",
-        "Aether Vial"
+        "Leonin Arbiter"
       ],
       "Death and Taxes Yorion": [
         "Thalia, Guardian of Thraben",
@@ -93,18 +84,15 @@
       ],
       "Infect": [
         "Glistener Elf",
-        "Inkmoth Nexus",
-        "Vines of Vastwood"
+        "Inkmoth Nexus"
       ],
       "Merfolk": [
         "Lord of Atlantis",
-        "Master of the Pearl Trident",
-        "Aether Vial"
+        "Master of the Pearl Trident"
       ],
       "Mono-Red Burn": [
         "Goblin Guide",
-        "Eidolon of the Great Revel",
-        "Lava Spike"
+        "Eidolon of the Great Revel"
       ],
       "Zombies": [
         "Undead Augur",
@@ -123,18 +111,15 @@
       ],
       "Dimir Shadow": [
         "Death's Shadow",
-        "Snapcaster Mage",
         "Cling to Dust"
       ],
       "Grixis Shadow": [
         "Death's Shadow",
-        "Kolaghan's Command",
-        "Snapcaster Mage"
+        "Kolaghan's Command"
       ],
       "Hardened Scales": [
         "Hardened Scales",
-        "Arcbound Ravager",
-        "Walking Ballista"
+        "Arcbound Ravager"
       ],
       "Rakdos Midrange": [
         "Fable of the Mirror-Breaker",
@@ -178,23 +163,19 @@
       ],
       "Crashing Footfalls": [
         "Crashing Footfalls",
-        "Violent Outburst",
-        "Shardless Agent"
+        "Violent Outburst"
       ],
       "Dredge": [
         "Golgari Grave-Troll",
-        "Conflagrate",
         "Narcomoeba"
       ],
       "Izzet Murktide": [
         "Murktide Regent",
-        "Dragon's Rage Channeler",
-        "Manamorphose"
+        "Dragon's Rage Channeler"
       ],
       "Izzet Prowess": [
         "Monastery Swiftspear",
-        "Soul-Scar Mage",
-        "Manamorphose"
+        "Soul-Scar Mage"
       ],
       "Jeskai Tempo": [
         "Ragavan, Nimble Pilferer",
@@ -207,9 +188,8 @@
         "Dismember"
       ],
       "Eldrazi Ramp": [
-        "Ulamog, the Ceaseless Hunger",
         "Eldrazi Temple",
-        "Ancient Stirrings"
+        "All Is Dust"
       ],
       "Eldrazi Tron": [
         "Eldrazi Temple",
@@ -222,14 +202,12 @@
         "Urza's Power Plant"
       ],
       "Affinity": [
-        "Mox Opal",
-        "Arcbound Ravager",
-        "Cranial Plating"
+        "Cranial Plating",
+        "Arcbound Ravager"
       ],
       "Blue Belcher": [
         "Goblin Charbelcher",
-        "Disrupting Shoal",
-        "Hydroelectric Specimen"
+        "Disrupting Shoal"
       ],
       "Birthing Ritual": [
         "Birthing Ritual",
@@ -253,23 +231,28 @@
       ],
       "Mono-Red Belcher": [
         "Goblin Charbelcher",
-        "Irencrag Feat",
-        "Desperate Ritual"
+        "Irencrag Feat"
       ],
       "Necrodominance": [
         "Necrodominance",
-        "Dark Ritual",
-        "Pact of Negation"
+        "Dark Ritual"
       ],
       "Sultai Midrange": [
         "Uro, Titan of Nature's Wrath",
         "Wrenn and Six",
         "Thoughtseize"
       ],
-      "Temur Rhinos": [
-        "Crashing Footfalls",
-        "Violent Outburst",
-        "Fury"
+      "Boros Tokens": [
+        "Gleeful Demolition",
+        "Kuldotha Rebirth"
+      ],
+      "Domain Zoo": [
+        "Leyline of the Guildpact",
+        "Scion of Draco"
+      ],
+      "Humans": [
+        "Champion of the Parish",
+        "Thalia's Lieutenant"
       ]
     },
     "Legacy": {
