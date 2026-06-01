@@ -357,6 +357,8 @@
   </div>
   <button class="btn btn-primary" onclick="startNewMatch()">+ New match</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-my-decks')">My Decks</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-match-history')">Match History</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-my-data')">My Data</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-analysis')">Opening Hand Analysis</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-matrix')">Meta Matchup Matrix</button>
   <button class="btn btn-secondary" onclick="showScreen('screen-mtgo')">MTGO Deck Rankings</button>
@@ -366,6 +368,89 @@
   <hr class="divider">
   <div class="card-title">Recent matches</div>
   <div id="recent-matches"><div style="color:var(--text2);font-size:14px;">No matches recorded yet.</div></div>
+</div>
+
+  <!-- MY DATA -->
+<div id="screen-my-data" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>My Data</h2>
+  </div>
+  <div class="row" style="gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:120px;">
+      <label class="label">Format</label>
+      <select id="mydata-format" onchange="loadMyData()">
+        <option value="">All formats</option>
+        <option value="Modern">Modern</option>
+        <option value="Legacy">Legacy</option>
+        <option value="Pioneer">Pioneer</option>
+        <option value="Pauper">Pauper</option>
+        <option value="Vintage">Vintage</option>
+      </select>
+    </div>
+    <div style="flex:1;min-width:120px;">
+      <label class="label">Time window</label>
+      <select id="mydata-window" onchange="loadMyData()">
+        <option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="365">Last year</option>
+        <option value="0">All time</option>
+      </select>
+    </div>
+  </div>
+  <div id="mydata-loading" style="display:none;font-size:13px;color:var(--text2);padding:8px 0;">Loading…</div>
+  <div id="mydata-results"></div>
+</div>
+
+  <!-- MATCH HISTORY -->
+<div id="screen-match-history" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Match History</h2>
+  </div>
+
+  <!-- Filters -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+    <div>
+      <label class="label">Deck</label>
+      <select id="mh-deck" onchange="mhLoad(true)" style="margin-bottom:0;">
+        <option value="">All decks</option>
+      </select>
+    </div>
+    <div>
+      <label class="label">Format</label>
+      <select id="mh-format" onchange="mhLoad(true)" style="margin-bottom:0;">
+        <option value="">All formats</option>
+        <option value="Modern">Modern</option>
+        <option value="Legacy">Legacy</option>
+        <option value="Pioneer">Pioneer</option>
+        <option value="Pauper">Pauper</option>
+        <option value="Vintage">Vintage</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+    <div>
+      <label class="label">Result</label>
+      <select id="mh-result" onchange="mhLoad(true)" style="margin-bottom:0;">
+        <option value="">Win &amp; Loss</option>
+        <option value="Win">Wins only</option>
+        <option value="Loss">Losses only</option>
+      </select>
+    </div>
+    <div>
+      <label class="label">Opponent</label>
+      <input type="text" id="mh-opponent" placeholder="e.g. Burn"
+        style="margin-bottom:0;font-size:12px;"
+        oninput="clearTimeout(window._mhT);window._mhT=setTimeout(()=>mhLoad(true),400)">
+    </div>
+  </div>
+
+  <div id="mh-summary" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
+  <div id="mh-list"></div>
+  <div id="mh-load-more" style="display:none;margin-top:8px;">
+    <button class="btn btn-secondary" style="width:100%;" onclick="mhLoad(false)">Load more</button>
+  </div>
 </div>
 
   <!-- INSIGHTS -->
@@ -1537,6 +1622,364 @@ async function onInsightsFormatChange() {
   loadInsights();
 }
 
+// ── MY DATA ───────────────────────────────────────────────────────────────────
+
+// ── MATCH HISTORY ─────────────────────────────────────────────────────────────
+
+const MH_PAGE = 30; // matches per page
+let mhOffset  = 0;
+let mhMatches = []; // accumulated match groups
+
+async function mhInit() {
+  // Populate deck filter from pilot's decks
+  const sel = document.getElementById('mh-deck');
+  if (sel && sel.options.length <= 1 && state.allDecks?.length) {
+    state.allDecks.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.archetype_name;
+      opt.textContent = d.archetype_name;
+      sel.appendChild(opt);
+    });
+  }
+  mhLoad(true);
+}
+
+async function mhLoad(reset) {
+  if (reset) { mhOffset = 0; mhMatches = []; }
+
+  const deck      = document.getElementById('mh-deck')?.value     || '';
+  const format    = document.getElementById('mh-format')?.value   || '';
+  const result    = document.getElementById('mh-result')?.value   || '';
+  const opponent  = document.getElementById('mh-opponent')?.value.trim() || '';
+  const listEl    = document.getElementById('mh-list');
+  const moreEl    = document.getElementById('mh-load-more');
+  const summaryEl = document.getElementById('mh-summary');
+
+  if (reset) listEl.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0;">Loading…</div>';
+
+  // Fetch raw game rows — we'll group into matches client-side
+  // Fetch in larger batches to fill MH_PAGE matches
+  const rows = [];
+  let offset = 0;
+  const batchSize = 500;
+
+  while (rows.length < (mhOffset + MH_PAGE) * 4) { // ~4 games per match
+    let q = db.from('raw_game_log')
+      .select('id,match_id,timestamp,deck_archetype,opponent_archetype,game_result,match_result,pre_post,format,play_draw')
+      .eq('pilot_name', state.pilot.pilot_name)
+      .not('game_result', 'is', null)
+      .order('timestamp', { ascending: false })
+      .range(offset, offset + batchSize - 1);
+
+    if (deck)   q = q.eq('deck_archetype', deck);
+    if (format) q = q.eq('format', format);
+    if (result) q = q.eq('match_result', result);
+    if (opponent) q = q.ilike('opponent_archetype', `%${opponent}%`);
+
+    const { data, error } = await q;
+    if (error || !data?.length) break;
+    rows.push(...data);
+    if (data.length < batchSize) break;
+    offset += batchSize;
+    if (rows.length > 5000) break; // safety cap
+  }
+
+  // Group rows into matches by match_id
+  const matchMap = new Map();
+  for (const row of rows) {
+    const key = row.match_id || row.id; // fallback for old rows without match_id
+    if (!matchMap.has(key)) {
+      matchMap.set(key, {
+        match_id:   key,
+        timestamp:  row.timestamp,
+        deck:       row.deck_archetype || 'Unknown',
+        opponent:   row.opponent_archetype || 'Unknown',
+        format:     row.format || '',
+        result:     row.match_result || null,
+        games:      []
+      });
+    }
+    matchMap.get(key).games.push(row);
+  }
+
+  // Sort matches newest first, deduplicate by taking the first (most-recent) timestamp per key
+  const allMatches = [...matchMap.values()]
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  // Filter: if result filter active, only show matches with that result
+  const filtered = result
+    ? allMatches.filter(m => m.result === result)
+    : allMatches;
+
+  const page    = filtered.slice(mhOffset, mhOffset + MH_PAGE);
+  const hasMore = filtered.length > mhOffset + MH_PAGE;
+
+  if (reset) mhMatches = page;
+  else       mhMatches = [...mhMatches, ...page];
+
+  mhOffset += page.length;
+
+  // Stats
+  const wins   = filtered.filter(m => m.result === 'Win').length;
+  const losses = filtered.filter(m => m.result === 'Loss').length;
+  const total  = wins + losses;
+  const wpct   = total ? (wins / total * 100).toFixed(1) : '—';
+  summaryEl.textContent = `${filtered.length} matches · ${wins}W ${losses}L · ${wpct}% MWR`;
+
+  // Render
+  if (!mhMatches.length) {
+    listEl.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px 0;">No matches found.</div>';
+    moreEl.style.display = 'none';
+    return;
+  }
+
+  listEl.innerHTML = mhMatches.map(m => {
+    const date      = m.timestamp ? new Date(m.timestamp).toLocaleDateString() : '';
+    const winColor  = m.result === 'Win' ? 'var(--success)' : m.result === 'Loss' ? 'var(--danger)' : 'var(--text2)';
+    const resultTxt = m.result || '—';
+
+    // Build per-game indicators: W/L circles for each game
+    const gamesSorted = [...m.games].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const gamesDots = gamesSorted.map(g => {
+      const col = g.game_result === 'Win' ? 'var(--success)' : 'var(--danger)';
+      const label = g.pre_post === 'Post' ? (g.game_result === 'Win' ? 'W' : 'L') : (g.game_result === 'Win' ? 'W' : 'L');
+      return `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${col};color:#fff;font-size:10px;font-weight:700;text-align:center;line-height:18px;margin-right:2px;">${label}</span>`;
+    }).join('');
+
+    const fmtBadge = m.format
+      ? `<span style="font-size:10px;color:var(--text2);margin-left:6px;">${m.format}</span>`
+      : '';
+
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <div style="font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          ${resolveBadaroName(m.deck, [])} <span style="color:var(--text2);font-weight:400;">vs</span> ${resolveBadaroName(m.opponent, [])}
+        </div>
+        <div style="font-size:14px;font-weight:700;color:${winColor};margin-left:10px;flex-shrink:0;">${resultTxt}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+        <div>${gamesDots}</div>
+        <div style="font-size:11px;color:var(--text2);">${date}${fmtBadge}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  moreEl.style.display = hasMore ? '' : 'none';
+}
+
+async function loadMyData() {
+  if (!state.pilot?.pilot_name) return;
+  const format  = document.getElementById('mydata-format')?.value  || '';
+  const windowD = parseInt(document.getElementById('mydata-window')?.value ?? '30');
+  const el      = document.getElementById('mydata-results');
+  const loading = document.getElementById('mydata-loading');
+  if (!el) return;
+
+  loading.style.display = 'block';
+  el.innerHTML = '';
+
+  try {
+    const pilot = state.pilot.pilot_name;
+    const cutoff = windowD > 0
+      ? new Date(Date.now() - windowD * 86400000).toISOString()
+      : null;
+
+    // Fetch all games for this pilot in one paginated pull
+    const rows = [];
+    let offset = 0;
+    while (true) {
+      let q = db.from('raw_game_log')
+        .select('format,deck_archetype,game_result,match_result,pre_post,timestamp,external_id,migration_flag')
+        .eq('pilot_name', pilot)
+        .not('game_result', 'is', null);
+      if (format)  q = q.eq('format', format);
+      if (cutoff)  q = q.gte('timestamp', cutoff);
+      const { data, error } = await q.range(offset, offset + 999);
+      if (error) throw error;
+      if (!data?.length) break;
+      rows.push(...data);
+      if (data.length < 1000) break;
+      offset += 1000;
+    }
+
+    if (!rows.length) {
+      el.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">No game data found for this filter.</div>';
+      return;
+    }
+
+    // ── Aggregate by format ──
+    const byFormat = {};
+    const byDeck   = {};
+    let mymtgoCount = 0, manualCount = 0, sheetCount = 0;
+
+    for (const r of rows) {
+      const fmt  = r.format  || 'Unknown';
+      const deck = r.deck_archetype || 'Unknown';
+      const won  = r.game_result === 'Win';
+      const mWon = r.match_result === 'Win';
+      const mLost= r.match_result === 'Loss';
+
+      // Source classification
+      if (r.external_id)                          mymtgoCount++;
+      else if (r.migration_flag === 'SHEET_IMPORT') sheetCount++;
+      else                                          manualCount++;
+
+      // Format bucket
+      if (!byFormat[fmt]) byFormat[fmt] = { games: 0, wins: 0 };
+      byFormat[fmt].games++;
+      if (won) byFormat[fmt].wins++;
+
+      // Deck bucket
+      const key = `${fmt}||${deck}`;
+      if (!byDeck[key]) byDeck[key] = { format: fmt, deck, games: 0, wins: 0, mwins: 0, mlosses: 0 };
+      byDeck[key].games++;
+      if (won)   byDeck[key].wins++;
+      if (mWon)  byDeck[key].mwins++;
+      if (mLost) byDeck[key].mlosses++;
+    }
+
+    // ── Summary cards ──
+    const totalGames   = rows.length;
+    const totalWins    = rows.filter(r => r.game_result === 'Win').length;
+    const totalWinPct  = totalGames ? (totalWins / totalGames * 100).toFixed(1) : '—';
+
+    const matchRows    = rows.filter(r => r.match_result && r.pre_post !== 'Post');
+    const matchWins    = matchRows.filter(r => r.match_result === 'Win').length;
+    const matchLosses  = matchRows.filter(r => r.match_result === 'Loss').length;
+    const matchTotal   = matchWins + matchLosses;
+    const matchWinPct  = matchTotal ? (matchWins / matchTotal * 100).toFixed(1) : '—';
+
+    const formatEntries = Object.entries(byFormat)
+      .sort((a, b) => b[1].games - a[1].games);
+    const maxFmtGames = Math.max(...formatEntries.map(([,v]) => v.games), 1);
+
+    // ── By-deck table, sorted by games desc, optionally filtered by format ──
+    const deckEntries = Object.values(byDeck)
+      .filter(d => !format || d.format === format)
+      .sort((a, b) => b.games - a.games);
+    const maxDeckGames = Math.max(...deckEntries.map(d => d.games), 1);
+
+    // ── Build HTML ──
+    const pctBar = (val, max, color = 'var(--accent)') => {
+      const w = max > 0 ? Math.round(val / max * 100) : 0;
+      return `<div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:3px;">
+        <div style="width:${w}%;height:100%;background:${color};border-radius:3px;"></div>
+      </div>`;
+    };
+
+    const winColor = pct => {
+      const n = parseFloat(pct);
+      if (isNaN(n)) return 'var(--text2)';
+      if (n >= 55)  return 'var(--success)';
+      if (n <= 45)  return 'var(--danger)';
+      return 'var(--accent)';
+    };
+
+    const fmtRows = formatEntries.map(([fmt, s]) => {
+      const gWinPct = s.games ? (s.wins / s.games * 100).toFixed(1) : '—';
+      return `
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px;">
+            <span style="font-weight:600;">${fmt}</span>
+            <span style="color:var(--text2);">${s.games.toLocaleString()} games
+              <span style="color:${winColor(gWinPct)};margin-left:6px;">${gWinPct}% GW</span>
+            </span>
+          </div>
+          ${pctBar(s.games, maxFmtGames)}
+        </div>`;
+    }).join('');
+
+    const deckTableRows = deckEntries.map(d => {
+      const gWinPct = d.games ? (d.wins / d.games * 100).toFixed(1) : '—';
+      const mTotal  = d.mwins + d.mlosses;
+      const mWinPct = mTotal ? (d.mwins / mTotal * 100).toFixed(1) : '—';
+      const shareW  = Math.round(d.games / maxDeckGames * 100);
+      return `
+        <tr style="border-bottom:1px solid var(--surface2);">
+          <td style="padding:6px 0;">
+            <div style="font-size:13px;font-weight:600;color:var(--accent);">${d.deck}</div>
+            ${!format ? `<div style="font-size:10px;color:var(--text2);">${d.format}</div>` : ''}
+            <div style="height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-top:3px;width:100%;">
+              <div style="width:${shareW}%;height:100%;background:var(--accent);opacity:0.5;border-radius:2px;"></div>
+            </div>
+          </td>
+          <td style="padding:6px 0 6px 8px;text-align:right;font-size:13px;">${d.games.toLocaleString()}</td>
+          <td style="padding:6px 0 6px 8px;text-align:right;font-size:13px;color:${winColor(gWinPct)};">${gWinPct}%</td>
+          <td style="padding:6px 0 6px 8px;text-align:right;font-size:13px;color:${winColor(mWinPct)};">${mWinPct}%</td>
+          <td style="padding:6px 0 6px 8px;text-align:right;font-size:12px;color:var(--text2);">${mTotal > 0 ? `${d.mwins}–${d.mlosses}` : '—'}</td>
+        </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <!-- Source breakdown -->
+      <div class="card" style="margin-bottom:8px;">
+        <div class="card-title" style="margin-bottom:8px;">Game source</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;">
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 4px;">
+            <div style="font-size:18px;font-weight:700;color:var(--accent);">${mymtgoCount.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--text2);margin-top:2px;">mymtgo</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 4px;">
+            <div style="font-size:18px;font-weight:700;color:var(--success);">${manualCount.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--text2);margin-top:2px;">Manual (Mize)</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 4px;">
+            <div style="font-size:18px;font-weight:700;color:var(--text2);">${sheetCount.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--text2);margin-top:2px;">Sheet import</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary stats -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div class="card" style="text-align:center;padding:12px 8px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:var(--accent);">${totalGames.toLocaleString()}</div>
+          <div style="font-size:11px;color:var(--text2);">Total games</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px 8px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:${winColor(totalWinPct)};">${totalWinPct}%</div>
+          <div style="font-size:11px;color:var(--text2);">Game win %</div>
+        </div>
+        <div class="card" style="text-align:center;padding:12px 8px;margin-bottom:0;">
+          <div style="font-size:22px;font-weight:700;color:${winColor(matchWinPct)};">${matchWinPct}%</div>
+          <div style="font-size:11px;color:var(--text2);">Match win %</div>
+        </div>
+      </div>
+
+      <!-- By format -->
+      ${!format && formatEntries.length > 1 ? `
+        <div class="card">
+          <div class="card-title">Games by format</div>
+          ${fmtRows}
+        </div>` : ''}
+
+      <!-- By deck -->
+      <div class="card">
+        <div class="card-title">Games by deck${deckEntries.length > 1 ? ` (${deckEntries.length} decks)` : ''}</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">GW% = game win rate · MW% = match win rate (pre-board games)</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:300px;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="padding:4px 0;color:var(--text2);font-weight:600;text-align:left;">Deck</th>
+                <th style="padding:4px 0 4px 8px;color:var(--text2);font-weight:600;text-align:right;">Games</th>
+                <th style="padding:4px 0 4px 8px;color:var(--text2);font-weight:600;text-align:right;">GW%</th>
+                <th style="padding:4px 0 4px 8px;color:var(--text2);font-weight:600;text-align:right;">MW%</th>
+                <th style="padding:4px 0 4px 8px;color:var(--text2);font-weight:600;text-align:right;">W–L</th>
+              </tr>
+            </thead>
+            <tbody>${deckTableRows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    el.innerHTML = `<div class="card" style="color:var(--danger);">Error: ${e.message}</div>`;
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
 async function loadInsights() {
   const format = document.getElementById('insights-format').value;
   const deck   = document.getElementById('insights-deck').value;
@@ -1738,7 +2181,9 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
-  if (id === 'screen-my-decks') renderMyDecks();
+  if (id === 'screen-my-decks')      renderMyDecks();
+  if (id === 'screen-my-data')       loadMyData();
+  if (id === 'screen-match-history') mhInit();
   if (id === 'screen-analysis') onShowAnalysis();
   if (id === 'screen-opponent-entry') {
     document.getElementById('opponent-entry-deck-name').textContent = state.matchDeck?.archetype_name || 'Unknown';
@@ -3025,15 +3470,56 @@ function udNext() {
 
 // ── IDENTIFIER SELECTION HELPERS ─────────────────────────────────────────────
 
-function udAutoCheckIdentifierCards(mb) {
-  // Pre-check the top 3 cards by count (4-ofs first, then 3-ofs, etc.)
-  const sorted = Object.entries(mb).sort((a,b) => b[1]-a[1]);
-  const top3 = sorted.slice(0, 3).map(([card]) => card);
-  top3.forEach(card => {
-    const cb = document.getElementById('cb-' + CSS.escape(card));
-    if (cb) cb.checked = true;
-  });
-  udUpdateIdentifierPreview();
+// Cards that appear in many archetypes and should never be identifiers
+const GENERIC_CARDS = new Set([
+  // Basics
+  'Island','Forest','Mountain','Plains','Swamp',
+  // Fetchlands
+  'Flooded Strand','Polluted Delta','Windswept Heath','Wooded Foothills','Bloodstained Mire',
+  'Scalding Tarn','Misty Rainforest','Verdant Catacombs','Marsh Flats','Arid Mesa',
+  // Shocklands / dual lands used across many decks
+  'Steam Vents','Watery Grave','Blood Crypt','Stomping Ground','Temple Garden',
+  'Hallowed Fountain','Godless Shrine','Overgrown Tomb','Sacred Foundry','Breeding Pool',
+  // Generic cantrips / disruption played in many archetypes
+  'Lightning Bolt','Path to Exile','Fatal Push','Thoughtseize','Inquisition of Kozilek',
+  'Counterspell','Brainstorm','Ponder','Preordain','Force of Will','Daze','Spell Pierce',
+  "Mishra's Bauble","Urza's Bauble","Mishras Bauble",
+  // Generic mana / utility lands
+  'Ancient Stirrings',   // appears in Tron, Hardened Scales, Eldrazi, Affinity
+  'Urza\'s Saga',        // appears in Affinity, Hardened Scales, Hammer Time, many others
+  'Mishra\'s Workshop',
+  // Generic artifacts
+  'Springleaf Drum',     // Affinity, Hardened Scales, Hammer Time
+  'Mox Opal',
+  'Welding Jar',
+]);
+
+// Cards that appear in multiple archetypes but aren't completely generic —
+// penalise them but don't exclude
+const PENALISED_CARDS = new Set([
+  'Arcbound Ravager',  // Affinity AND Hardened Scales
+  'Walking Ballista',  // Hardened Scales AND Tron variants AND others
+  'Hangarback Walker', // Affinity AND Hardened Scales
+  'Inkmoth Nexus',     // Affinity AND Hardened Scales AND Infect
+  'Chalice of the Void',
+  'Ensnaring Bridge',
+  'Force of Negation',
+  'Thoughtseize',
+]);
+
+function cardUniquenessScore(card, qty, existingIdentifiers) {
+  // How many existing identifiers already reference this card?
+  // More references = less unique = lower score.
+  if (GENERIC_CARDS.has(card)) return -1000; // excluded
+  const existingRefs = (existingIdentifiers || []).filter(
+    r => r.card1 === card || r.card2 === card || r.card3 === card
+  ).length;
+  const penaltyMultiplier = PENALISED_CARDS.has(card) ? 0.4 : 1.0;
+  // Score = qty bonus − existing-reference penalty
+  // qty bonus: 4-ofs score highest, lower counts proportionally less
+  const qtyBonus = qty * 10;
+  const refPenalty = existingRefs * 15;
+  return (qtyBonus - refPenalty) * penaltyMultiplier;
 }
 
 function udGetCheckedIdentifierCards() {
@@ -3046,18 +3532,14 @@ function udUpdateIdentifierPreview() {
   const cardsEl = document.getElementById('ud-identifier-cards');
   const warnEl  = document.getElementById('ud-identifier-warning');
   const findBtn = document.getElementById('ud-find-btn');
-
   if (!preview) return;
-
   if (checked.length === 0) {
     preview.style.display = 'none';
     if (findBtn) findBtn.style.display = 'none';
     return;
   }
-
   preview.style.display = '';
   cardsEl.textContent = checked.join(' + ');
-
   if (checked.length !== 3) {
     warnEl.textContent = `Select exactly 3 cards (${checked.length} selected)`;
     warnEl.style.display = '';
@@ -3068,37 +3550,43 @@ function udUpdateIdentifierPreview() {
   }
 }
 
-async function udSuggestIdentifier() {
-  // Uncheck all, then check the 3 most uniquely-identifying cards
-  // (4-ofs preferred; among equal count, prefer non-basic, non-generic cards)
-  const deck = udDecks[udDeckIndex];
-  const mb   = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
+function udAutoCheckIdentifierCards(mb) {
+  // On first load, pre-check 3 cards filtering out the known generics.
+  // This is just a starting suggestion — user should hit Auto-suggest for a
+  // smarter pick that also considers cross-archetype uniqueness.
+  const sorted = Object.entries(mb)
+    .filter(([card]) => !GENERIC_CARDS.has(card))
+    .sort((a, b) => b[1] - a[1]);
+  const top3 = sorted.slice(0, 3).map(([card]) => card);
+  // Uncheck all first
+  document.querySelectorAll('.id-card-cb').forEach(cb => { cb.checked = false; });
+  top3.forEach(card => {
+    const cb = document.getElementById('cb-' + CSS.escape(card));
+    if (cb) cb.checked = true;
+  });
+  udUpdateIdentifierPreview();
+}
 
+async function udSuggestIdentifier() {
+  const deck   = udDecks[udDeckIndex];
+  const mb     = typeof deck.mainboard === 'string' ? JSON.parse(deck.mainboard) : deck.mainboard;
   const format = document.getElementById('ud-format')?.value || 'Modern';
 
-  // Load all existing identifiers for this format to check for conflicts
+  // Load existing identifiers to score card uniqueness against them
   const { data: existing } = await db.from('archetype_identifiers')
     .select('card1,card2,card3,archetype_name')
     .eq('format', format);
 
-  const GENERIC_CARDS = new Set([
-    'Island','Forest','Mountain','Plains','Swamp',
-    'Flooded Strand','Polluted Delta','Windswept Heath','Wooded Foothills','Bloodstained Mire',
-    'Scalding Tarn','Misty Rainforest','Verdant Catacombs','Marsh Flats','Arid Mesa',
-    'Lightning Bolt','Path to Exile','Fatal Push','Thoughtseize','Inquisition of Kozilek',
-    'Counterspell','Brainstorm','Ponder','Preordain','Force of Will','Daze',
-    'Mishra\'s Bauble', 'Urza\'s Bauble'
-  ]);
+  // Score every mainboard card and pick the best 3
+  const scored = Object.entries(mb)
+    .map(([card, qty]) => ({ card, qty, score: cardUniquenessScore(card, qty, existing || []) }))
+    .filter(c => c.score > -900)            // drop hard-excluded generics
+    .sort((a, b) => b.score - a.score);     // highest uniqueness score first
 
-  const sorted = Object.entries(mb)
-    .filter(([card]) => !GENERIC_CARDS.has(card))
-    .sort((a,b) => b[1]-a[1]);
-
-  // Uncheck all first
+  // Uncheck all
   document.querySelectorAll('.id-card-cb').forEach(cb => { cb.checked = false; });
 
-  // Check best 3
-  const top3 = sorted.slice(0, 3).map(([card]) => card);
+  const top3 = scored.slice(0, 3).map(c => c.card);
   top3.forEach(card => {
     const cb = document.getElementById('cb-' + CSS.escape(card));
     if (cb) cb.checked = true;
@@ -3106,7 +3594,28 @@ async function udSuggestIdentifier() {
 
   udUpdateIdentifierPreview();
 
-  // Warn if this combo already exists for another archetype
+  // Show reasoning
+  const suggEl = document.getElementById('ud-suggestion');
+  if (suggEl && scored.length >= 3) {
+    const rows = scored.slice(0, Math.min(6, scored.length)).map(c =>
+      `<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;">
+        <span style="color:${top3.includes(c.card) ? 'var(--accent)' : 'var(--text2)'};">
+          ${top3.includes(c.card) ? '✓ ' : ''}${c.card}
+        </span>
+        <span style="color:var(--text2);">score ${c.score.toFixed(0)}</span>
+      </div>`
+    ).join('');
+    suggEl.innerHTML = `
+      <div style="background:var(--surface2);border-radius:6px;padding:8px;margin-top:4px;">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">
+          Uniqueness scores (higher = better identifier):
+        </div>
+        ${rows}
+        ${scored.length > 6 ? `<div style="font-size:10px;color:var(--text2);margin-top:2px;">${scored.length - 6} more cards not shown</div>` : ''}
+      </div>`;
+  }
+
+  // Warn on conflict
   if (top3.length === 3 && existing) {
     const sorted3 = [...top3].sort();
     const conflict = existing.find(r => {
@@ -4499,11 +5008,13 @@ eventsRes,
       db.from('raw_game_log').select('timestamp').gte('timestamp', day30).not('migration_flag', 'eq', 'MIGRATED'),
   db.from('app_events').select('pilot_name,event_type,event_data,created_at')
         .gte('created_at', day90).neq('pilot_name', state.pilot.pilot_name).order('created_at', { ascending: false }),
-      db.from('raw_game_log').select('id', { count: 'exact', head: true }).not('external_id', 'is', null),
-      db.from('raw_game_log').select('id', { count: 'exact', head: true }).is('external_id', null),
-      db.from('raw_game_log').select('pilot_name,deck_archetype,timestamp')
+      db.from('raw_game_log').select('id', { count: 'exact', head: true })
+        .not('external_id', 'is', null).not('game_result', 'is', null),
+      db.from('raw_game_log').select('id', { count: 'exact', head: true })
+        .is('external_id', null).not('game_result', 'is', null),
+      db.from('raw_game_log').select('pilot_name,deck_archetype,timestamp,format')
         .not('external_id', 'is', null).order('timestamp', { ascending: false }),
-      db.from('raw_game_log').select('timestamp')
+      db.from('raw_game_log').select('timestamp,format')
         .not('external_id', 'is', null).gte('timestamp', day30)
     ]);
 
@@ -4570,19 +5081,25 @@ eventsRes,
     const manualTotal = manualGamesRes.count || 0;
     const totalAll    = mymtgoTotal + manualTotal;
 
+    // Per-format breakdown of mymtgo games (from the pilot rows which now include format)
+    const mymtgoByFormat = {};
     const mymtgoPilotCounts = {};
     const mymtgoPilotLastSeen = {};
     const mymtgoPilotArchetypes = {};
     for (const r of mymtgoPilotsRes.data || []) {
-      const p = r.pilot_name || '—';
+      const p   = r.pilot_name || '—';
+      const fmt = r.format     || 'Unknown';
       mymtgoPilotCounts[p] = (mymtgoPilotCounts[p] || 0) + 1;
       if (!mymtgoPilotLastSeen[p] || r.timestamp > mymtgoPilotLastSeen[p]) {
         mymtgoPilotLastSeen[p] = r.timestamp;
       }
       if (!mymtgoPilotArchetypes[p]) mymtgoPilotArchetypes[p] = new Set();
       if (r.deck_archetype) mymtgoPilotArchetypes[p].add(resolveBadaroName(r.deck_archetype, []));
+      mymtgoByFormat[fmt] = (mymtgoByFormat[fmt] || 0) + 1;
     }
     const sortedMymtgoPilots = Object.entries(mymtgoPilotCounts).sort((a,b) => b[1]-a[1]);
+    const sortedMymtgoFormats = Object.entries(mymtgoByFormat).sort((a,b) => b[1]-a[1]);
+    const maxFmtCount = Math.max(...sortedMymtgoFormats.map(([,n]) => n), 1);
 
     const mymtgoDailyCounts = {};
     for (const r of mymtgoDailyRes.data || []) {
@@ -4825,10 +5342,12 @@ container.innerHTML = `
         <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
           <div style="font-size:22px;font-weight:700;color:var(--accent);">${mymtgoTotal.toLocaleString()}</div>
           <div style="font-size:11px;color:var(--text2);">mymtgo imported</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px;">games with a result</div>
         </div>
         <div class="card" style="text-align:center;padding:12px;margin-bottom:0;">
           <div style="font-size:22px;font-weight:700;color:var(--accent);">${manualTotal.toLocaleString()}</div>
           <div style="font-size:11px;color:var(--text2);">Manually entered</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px;">via Mize app</div>
         </div>
       </div>
       <div class="card">
@@ -4847,6 +5366,22 @@ container.innerHTML = `
           </div>
           ${pctBar(manualTotal, totalAll, 'var(--success)')}
         </div>
+      </div>
+      <div class="card">
+        <div class="card-title">mymtgo games by format</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">
+          All-time · games with a recorded result only
+        </div>
+        ${sortedMymtgoFormats.map(([fmt, count]) => `
+          <div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px;">
+              <span style="font-weight:600;">${fmt}</span>
+              <span style="color:var(--accent);">${count.toLocaleString()}
+                <span style="color:var(--text2);font-weight:400;"> · ${mymtgoTotal > 0 ? (count/mymtgoTotal*100).toFixed(1) : 0}%</span>
+              </span>
+            </div>
+            ${pctBar(count, maxFmtCount, 'var(--accent)')}
+          </div>`).join('')}
       </div>
       <div class="card">
         <div class="card-title">mymtgo imports (last 30 days)</div>
