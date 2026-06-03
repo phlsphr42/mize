@@ -2847,6 +2847,13 @@ async function renderUnknownDeck() {
   const mbSorted = Object.entries(mb).sort((a,b) => b[1]-a[1]);
   const sbSorted = Object.entries(sb).sort((a,b) => b[1]-a[1]);
 
+  // Build supertype options
+  const supertypeOpts = ['-- Select supertype --', ...Object.keys(supertypes).sort()]
+    .map(s => `<option value="${s}">${s}</option>`).join('');
+
+  // Build subtype options (populated on supertype change)
+  const subtypeOpts = '<option value="">-- Select supertype first --</option>';
+
   // Build mainboard with checkboxes for identifier selection
   const mbHtml = mbSorted.map(([card, count]) =>
     `<div style="display:flex;align-items:center;padding:2px 0;border-bottom:1px solid var(--border);font-size:12px;gap:6px;">
@@ -5331,6 +5338,7 @@ container.innerHTML = `
               <option value="Pioneer">Pioneer</option>
               <option value="Pauper">Pauper</option>
               <option value="Vintage">Vintage</option>
+              <option value="Premodern">Premodern</option>
             </select>
           </div>
           <div>
