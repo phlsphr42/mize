@@ -32,7 +32,7 @@ headers = {
     'Prefer': 'resolution=ignore-duplicates,return=minimal'
 }
 
-VALIDATABLE_FORMATS = {'Modern', 'Legacy', 'Pauper', 'Pioneer', 'Standard', 'Vintage'}
+VALIDATABLE_FORMATS = {'Modern', 'Legacy', 'Pauper', 'Pioneer', 'Standard', 'Vintage', 'Premodern'}
 
 # ── Supabase helpers ──────────────────────────────────────────────────────────
 SB_TIMEOUT = 30  # seconds — all Supabase requests timeout after this
