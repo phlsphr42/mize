@@ -1,247 +1,769 @@
 {
   "key_cards": {
     "Modern": {
-      "Crashing Footfalls": [
+      "Boros Energy": [
         [
-          "Crashing Footfalls"
-        ],
+          "Guide of Souls"
+        ]
         [
-          "Violent Outburst",
-          "Shardless Agent",
-          "Ardent Plea"
+          "Ocelot Pride"
+        ]
+        [
+          "Voice of Victory",
+	  "Seasoned Pyromancer",
+	  "Goblin Bombardment"
         ]
       ],
-      "Amulet Titan": [
-        [
-          "Amulet of Vigor"
-        ],
-        [
-          "Primeval Titan"
-        ]
-      ],
-      "Yawgmoth": [
-        [
-          "Yawgmoth, Thran Physician"
-        ],
-        [
-          "Young Wolf",
-          "Strangleroot Geist"
-        ],
-        [
-          "Chord of Calling",
-          "Green Sun's Zenith",
-          "Grist, the Hunger Tide"
-        ]
-      ],
-      "Hardened Scales": [
-        [
-          "Hardened Scales"
-        ],
-        [
-          "Arcbound Ravager",
-          "Zabaz, the Glimmerwasp"
-        ],
-        [
-          "Walking Ballista",
-          "Hangarback Walker"
-        ]
-      ],
-      "Living End": [
-        [
-          "Living End"
-        ],
-        [
-          "Violent Outburst",
-          "Ardent Plea",
-          "Shardless Agent"
-        ]
-      ],
-      "Dredge": [
-        [
-          "Golgari Thug",
-          "Stinkweed Imp"
-        ],
-        [
-          "Conflagrate",
-          "Creeping Chill"
-        ],
-        [
-          "Narcomoeba",
-          "Faithless Looting"
-        ]
-      ],
-      "Tron": [
-        [
-          "Urza's Tower"
-        ],
-        [
-          "Chromatic Star",
-          "Chromatic Sphere"
-        ],
-        [
-          "Karn, the Great Creator"
-        ]
-      ],
-      "Eldrazi Tron": [
-        [
-          "Eldrazi Temple"
-        ],
-        [
-          "Urza's Tower",
-          "Urza's Mine"
-        ],
-        [
-          "Devourer of Destiny",
-          "Kozilek's Command"
-        ]
-      ],
-      "Eldrazi Ramp": [
-        [
-          "Eldrazi Temple",
-          "Ugin's Labyrinth"
-        ],
-        [
-          "Emrakul, the Promised End",
-          "Sire of Seven Deaths",
-        ],
-        [
-          "Malevolent Rumble",
-          "Sowing Mycospawn",
-          "Utopia Sprawl"
-        ]
-      ],
-      "Infect": [
-        [
-          "Glistener Elf",
-          "Blighted Agent"
-        ],
-        [
-          "Inkmoth Nexus"
-        ],
-        [
-          "Vines of Vastwood",
-          "Might of Old Krosa",
-          "Scale Up"
-        ]
-      ],
-      "Merfolk": [
-        [
-          "Lord of Atlantis",
-        ],
-        [
-          "Master of the Pearl Trident"
-        ],
-        [
-          "Spreading Seas",
-          "Tideshaper"
-        ]
-      ],
-      "Death and Taxes": [
-        [
-          "Thalia, Guardian of Thraben"
-        ],
-        [
-          "Leonin Arbiter",
-          "Ethersworn Canonist"
-        ],
-        [
-          "Aether Vial"
-        ]
-      ],
-      "Death and Taxes Yorion": [
-        [
-          "Thalia, Guardian of Thraben"
-        ],
-        [
-          "Skyclave Apparition"
-        ],
-        [
-          "Yorion, Sky Nomad"
-        ]
-      ],
-      "Ruby Storm": [
-        [
-          "Ruby Medallion"
-        ],
-        [
-          "Reckless Impulse",
-          "Wrenn's Resolve"
-        ],
-        [
-          "Manamorphose",
-          "Grapeshot"
-        ]
-      ],
-      "Devoted Combo": [
-        [
-          "Devoted Druid"
-        ],
-        [
-          "Vizier of Remedies"
-        ],
-        [
-          "Chord of Calling",
-          "Collected Company",
-          "Green Sun's Zenith"
-        ]
-      ],
-      "Martyr Proc": [
-        [
-          "Martyr of Sands"
-        ],
+      "Esper Blink": [
         [
           "Solitude"
-        ],
+        ]
         [
-          "Proclamation of Rebirth",
-          "Squadron Hawk",
-          "White Orchid Phantom"
+          "Phelia, Exuberant Shephard"
+        ]
+        [
+	  "Psychic Frog"
         ]
       ],
-      "Neobrand": [
+      "Jeskai Blink": [
         [
-          "Neoform"
-        ],
+          "Solitude"
+        ]
         [
-          "Griselbrand"
-        ],
+          "Phelia, Exuberant Shephard"
+        ]
         [
-          "Chancellor of the Tangle",
-          "Allosaurus Rider"
+	  "Phlage, Titan of Fire's Fury",
+	  "Ragavan, Nimble Pilferer"
+        ]
+        [
+	  "Quantum Riddler"
         ]
       ],
-      "Goryo's Vengeance": [
+      "Affinity": [
         [
-          "Goryo's Vengeance"
-        ],
+          "Pinnacle Emissary",
+	  "Arcbound Ravager"
+        ]
         [
-          "Griselbrand",
-          "Atraxa, Grand Unifier"
+          "Kappa Cannoneer",
+	  "Memnite"
+        ]
+        [
+	  "Urza's Saga",
+	  "Cranial Plating"
         ]
       ],
-      "Indomitable Creativity": [
+      "Prowess": [
         [
-          "Indomitable Creativity"
-        ],
+          "Dragon's Rage Channeler"
+        ]
         [
-          "Archon of Cruelty",
-          "Atraxa, Grand Unifier"
-        ],
+          "Monastery Swiftspear"
+        ]
         [
-          "Dwarven Mine",
-          "Treasure token"
+	  "Slickshot Show-Off"
+        ]
+        [
+	  "Lava Dart"
+        ]
+        [
+	  "Mutagenic Growth"
         ]
       ],
       "Domain Zoo": [
         [
           "Leyline of the Guildpact"
-        ],
+        ]
         [
-          "Scion of Draco",
-          "Territorial Kavu"
+          "Scion of Draco"
+        ]
+        [
+	  "Territorial Kavu"
+        ]
+        [
+	  "Leyline Binding"
         ]
       ],
-      "Boros Tokens": [
+      "Birthing Ritual": [
+        [
+          "Coiling Oracle"
+        ]
+        [
+          "Abhorrent Oculus"
+        ]
+        [
+	  "Ice-Fang Coatl"
+        ]
+        [
+	  "Birthing Ritual"
+        ]
+      ],
+      "Hollow One": [
+        [
+          "Hollow One"
+        ]
+        [
+          "Street Wraith"
+        ]
+        [
+	  "Detective's Phoenix"
+        ]
+        [
+	  "Burning Inquiry"
+        ]
+      ],
+      "Burn": [
+        [
+          "Lava Spikie"
+        ]
+        [
+          "Skewer the Critics"
+        ]
+        [
+	  "Boltwave"
+        ]
+        [
+	  "Skullcrack",
+	  "Searing Blaze"
+        ]
+      ],
+      "Necrodominance": [
+        [
+          "Necrodominance"
+        ]
+        [
+          "Orcish Bowmasters"
+        ]
+        [
+	  "Soul Spike"
+        ]
+      ],
+      "Eldrazi Aggro": [
+        [
+          "Eldrazi Temple"
+        ]
+        [
+          "Eldrazi Linebreaker"
+        ]
+        [
+	  "Glaring Fleshraker"
+        ]
+        [
+	  "It That Heralds the End",
+	  "Thought-Knot Seer"
+        ]
+      ],
+      "Death's Shadow": [
+        [
+          "Death's Shadow"
+        ]
+        [
+          "Street Wraith"
+        ]
+        [
+	  "Psychic Frog",
+	  "Ragavan, Nimble Pilferer"
+        ]
+      ],
+      "Crashing Footfalls": [
+        [
+          "Crashing Footfalls"
+        ]
+        [
+          "Violent Outburst",
+	  "Shardless Agent"
+        ]
+        [
+	  "Force of Negation",
+	  "Subtlety"
+        ]
+      ],
+      "Merfolk": [
+        [
+          "Merfolk of the Pearl Trident"
+        ]
+        [
+          "Lord of Atlantis"
+        ]
+        [
+	  "Vodalian Hexcatcher",
+	  "Silvergill Adept"
+        ]
+      ],
+      "Selesnya Energy": [
+        [
+          "Brightglass Gearhulk",
+	  "Leonardo, Cutting Edge"
+        ]
+        [
+          "Walking Ballista",
+	  "Enduring Innocence"
+        ]
+        [
+	  "Ocelot Pride"
+        ]
+	[
+	  "Guide of Souls"
+	]
+      ],
+      "Eldrazi Tron": [
+        [
+          "Urza's Tower"
+        ]
+        [
+          "Devourer of Destiny",
+	  "Thought-Knot Seer"
+        ]
+        [
+	  "Mind Stone",
+	  "Sowing Mycospawn"
+        ]
+      ],
+      "Eldrazi Ramp": [
+        [
+          "Eldrazi Temple"
+        ]
+        [
+          "Ugin's Labyrinth"
+        ]
+        [
+	  "Utopia Sprawl"
+        ]
+	[
+	  "Malevolent Rumble"
+	]
+	[
+	  "Sowing Mycospawn"
+	]
+      ],
+      "Dimir Control": [
+        [
+          "Psychic Frog"
+        ]
+        [
+          "Orcish Bowmasters"
+        ]
+        [
+	  "Quantum Riddler",
+	  "Subtlety"
+        ]
+	[
+	  "Counterspell"
+	]
+      ],
+      "Azorius Control": [
+        [
+          "Solitude",
+	  "Snapcaster Mage"
+        ]
+        [
+          "Counterspell"
+        ]
+        [
+	  "Supreme Verdict",
+	  "Terminus"
+        ]
+      ],
+      "Ponza": [
+        [
+          "Cleansing Wildfire"
+        ]
+        [
+          "Field of Ruin"
+        ]
+        [
+	  "Price of Freedom"
+        ]
+	[
+	  "Solitude"
+	]
+      ],
+      "Jeskai Control": [
+        [
+          "Wrath of the Skies"
+        ]
+        [
+          "Phlage, Titan of Fire's Fury",
+	  "Galvanic Discharge"
+        ]
+        [
+	  "Quantum Riddler"
+        ]
+	[
+	  "March of Otherworldly Light",
+	  "Narset, Parter of Veils"
+      ],
+      "4/5 Color Control": [
+        [
+          "Omnath, Locus of Creation",
+	  "Wrenn and Six"
+        ]
+        [
+          "Counterspell",
+	  "Prismatic Ending",
+	  "Leyline Binding"
+        ]
+        [
+	  "Teferi, Time Raveler",
+	  "Force of Negation"
+        ]
+      ],
+      "Wizards": [
+        [
+          "Snapcaster Mage"
+        ]
+        [
+          "Tamiyo, Inquisitive Student",
+	  "Tishana's Tidebinder"
+        ]
+        [
+	  "Flame of Anor"
+        ]
+      ],
+      "Grixis Control": [
+        [
+          "Counterspell",
+	  "Force of Negation"
+        ]
+        [
+          "Psychic Frog",
+	  "Orcish Bowmasters"
+        ]
+        [
+	  "Ragavan, Nimble Pilferer",
+	  "Lightning Bolt",
+	  "Unholy Heat",
+	  "Galvanic Discharge"
+        ]
+      ],
+      "Esper Control": [
+        [
+          "Counterspell",
+	  "Force of Negation"
+        ]
+        [
+          "Psychic Frog",
+	  "Orchish Bowmasters"
+        ]
+        [
+	  "Teferi, Time Raveler",
+	  "Prismatic Ending",
+	  "Pest Control"
+        ]
+      ],
+      "Lantern Control": [
+        [
+          "Lantern of Insight"
+        ]
+        [
+          "Codex Shredder"
+        ]
+        [
+	  "Ensnaring Bridge"
+        ]
+      ],
+      "Ruby Storm": [
+        [
+          "Ral, Monsoon Mage"
+        ]
+        [
+          "Ruby Medallion"
+        ]
+        [
+	  "Wrenn's Resolve",
+	  "Desperate Ritual"
+        ]
+      ],
+      "Amulet Titan": [
+        [
+          "Amulet of Vigor"
+        ]
+        [
+          "Primeval Titan"
+        ]
+        [
+	  "Arboreal Grazer"
+        ]
+      ],
+      "Goryo's Vengeance": [
+        [
+          "Goryo's Vengeance"
+        ]
+        [
+          "Atraxa, Grand Unifier"
+        ]
+        [
+	  "Psychic Frog"
+        ]
+	  "Griselbrand"
+	]
+      ],
+      "Yawgmoth": [
+        [
+          "Yawgmoth, Thran Physician"
+        ]
+        [
+          "Young Wolf"
+        ]
+        [
+	  "Grist, the Hunger Tide"
+        ]
+      ],
+      "Sam Combo": [
+        [
+          "Samwise Gamgee"
+        ]
+        [
+          "Cauldron Familiar"
+        ]
+        [
+	  "Carrion Feeder"
+        ]
+      ],
+      "Blue Belcher": [
+        [
+          "Goblin Charbelcher"
+        ]
+        [
+          "Suppression Ray"
+        ]
+        [
+	  "Whir of Invention"
+        ]
+      ],
+      "Red Belcher": [
+        [
+          "Goblin Charbelcher"
+        ]
+        [
+          "Sundering Eruption"
+        ]
+        [
+	  "Shatterskull Smashing"
+        ]
+      ],
+      "Living End": [
+        [
+          "Living End"
+        ]
+        [
+          "Curator of Mysteries"
+        ]
+        [
+	  "Generous Ent"
+        ]
+	[
+	  "Violent Outburst",
+	  "Shardless Agent"
+      ],
+      "Reanimator": [
+        [
+          "Archon of Cruelty"
+        ]
+        [
+          "Persist"
+        ]
+        [
+	  "Unearth"
+        ]
+	[
+	  "Abhorrent Oculus"
+	]
+      ],
+
+      "Neobrand": [
+        [
+          "Neoform"
+        ]
+        [
+          "Allosaurus Rider"
+        ]
+        [
+	  "Eldritch Evolution"
+        ]
+      ],
+      "Broodscale Combo": [
+        [
+          "Basking Broodscale"
+        ]
+        [
+          "Blade of the Bloodchief"
+        ]
+        [
+	  "Glaring Fleshraker"
+        ]
+      ],
+      "Mill": [
+        [
+          "Archive Trap"
+        ]
+        [
+          "Fractured Sanity"
+        ]
+        [
+	  "Ruin Crab",
+	  "Hedron Crab",
+	  "Exhibition Tidecaller"
+        ]
+      ],
+      "Creativity": [
+        [
+          "Indomitable Creativity"
+        ]
+        [
+          "Fable of the Mirro-Breaker"
+        ]
+        [
+	  "Archon of Cruelty",
+	  "Atraxa, Grand Unifier"
+        ]
+      ],
+      "Hammertime": [
+        [
+          "Colossus Hammer"
+        ]
+        [
+          "Stoneforge Mystic"
+        ]
+        [
+	  "Puresteel Paladin"
+        ]
+      ],
+      "Dredge": [
+        [
+          "Creeping Chill"
+        ]
+        [
+          "Stinkweed Imp"
+        ]
+        [
+	  "Golgari Thug"
+        ]
+      ],
+      "Song of Creation": [
+        [
+          "Song of Creation"
+        ]
+        [
+          "Mox Amber"
+        ]
+        [
+	  "Mishra's Bauble"
+        ]
+      ],
+      "Jeskai Ascendancy": [
+        [
+          "Jeskai Ascendancy"
+        ]
+        [
+          "Emry, Lurker of the Loch"
+        ]
+        [
+	  "Mishra's Bauble"
+        ]
+      ],
+      "Infect": [
+        [
+          "Glistener Elf",
+	  "Blighted Agent"
+        ]
+        [
+          "Might of Old Krosa"
+        ]
+        [
+	  "Scale Up"
+        ]
+      ],
+      "Splinter Twin": [
+        [
+          "Splinter Twin"
+        ]
+        [
+          "Deceiver Exarch",
+	  "Deepway Navigator
+        ]
+      ],
+      "Valakut": [
+        [
+          "Valakut, the Molten Pinnacle"
+        ]
+        [
+          "Wrenn and Six"
+        ]
+        [
+	  "Dryad of the Ilysian Grove"
+        ]
+      ],
+      "Heliod Life": [
+        [
+          "Heliod, Sun-Crowned"
+        ]
+        [
+          "Spike Feeder"
+        ]
+      ],
+      "Elves": [
+        [
+          "Priest of Titania"
+        ]
+        [
+          "Heritage Druid"
+        ]
+        [
+	  "Quirion Ranger"
+        ]
+      ],
+      "Balance": [
+        [
+          "Restore Balance"
+        ]
+        [
+          "Electrodominance"
+        ]
+        [
+	  "Greater Gargadon"
+        ]
+      ],
+      "Mardu Energy": [
+        [
+          "Guide of Souls"
+        ]
+        [
+          "Orcish Bowmasters",
+	  "Sephiroth, Fabled SOLDIER"
+        ]
+        [
+	  "Ocelot Pride"
+        ]
+	[
+	  "Ragavan, Nimble Pilferer"
+	]
+      ],
+      "Jeskai Energy": [
+        [
+          "Guide of Souls"
+        ]
+        [
+          "Ocelot Pride"
+        ]
+        [
+	  "Ragavan, Nimble Pilferer"
+        ]
+	[
+	  "Quantum Riddler"
+      ],
+      "Rakdos Aggro": [
+        [
+          "Dragon's Rage Channeler"
+        ]
+        [
+          "Nethergoyf"
+        ]
+        [
+	  "Moonshadow"
+        ]
+      ],
+      "Asmo Food": [
+        [
+          "Asmoranomardicadaistinaculdacar"
+        ]
+        [
+          "The Underworld Cookbook"
+        ]
+        [
+	  "Ovalchase Daredevil"
+        ]
+      ],
+      "Hardened Scales": [
+        [
+          "Hardened Scales"
+        ]
+        [
+          "Walking Ballista"
+        ]
+        [
+	  "Zabaz, the Glimmerwasp"
+        ]
+      ],
+      "Green Aggro": [
+        [
+          "Badgermole Cub"
+        ]
+        [
+          "Aspect of Hydra"
+        ]
+      ],
+      "Spirits": [
+        [
+          "Rattlechains"
+        ]
+        [
+          "Mausoleum Wanderer"
+        ]
+        [
+	  "Drogskol Captain"
+        ]
+      ],
+      "Phoenix": [
+        [
+          "Arclight Phoenix"
+        ]
+        [
+          "Dragon's Rage Channeler",
+	  "Exhibition Tidecaller",
+	  "Demilich"
+        ]
+      ],
+      "Humans": [
+        [
+          "Thalia's Lieutenant"
+        ]
+        [
+          "Champion of the Parish"
+        ]
+      ],
+      "Jund Midrange": [
+        [
+          "Wrenn and Six"
+        ]
+        [
+          "Ragavan, Nimble Pilferer"
+        ]
+        [
+	  "Orcish Bowmasters"
+        ]
+      ],
+      "Bogles": [
+        [
+          "Slipper Bogle"
+        ]
+        [
+          "Gladecover Scout"
+        ]
+        [
+	  "Daybreak Coronet",
+	  "Etheral Armor"
+        ]
+      ],
+      "Goblins": [
+        [
+          "Conspicuous Snoop"
+        ]
+        [
+          "Boggart Harbinger"
+        ]
+      ],
+      "Rack": [
+        [
+          "The Rack"
+        ]
+        [
+          "Smallpox",
+	  "Wrench Mind"
+        ]
+      ],
+      "Kuldotha Rebirth": [
         [
           "Gleeful Demolition",
           "Kuldotha Rebirth"
@@ -249,79 +771,6 @@
         [
           "Goblin Bushwhacker",
           "Reckless Bushwhacker"
-        ]
-      ],
-      "Humans": [
-        [
-          "Champion of the Parish"
-        ],
-        [
-          "Thalia's Lieutenant"
-        ],
-        [
-          "Aether Vial"
-        ]
-      ],
-      "Affinity": [
-        [
-          "Cranial Plating"
-        ],
-        [
-          "Arcbound Ravager"
-        ],
-        [
-          "Mox Opal",
-          "Springleaf Drum",
-          "Ornithopter"
-        ]
-      ],
-      "Bogles": [
-        [
-          "Gladecover Scout",
-          "Slippery Bogle"
-        ],
-        [
-          "Daybreak Coronet"
-        ],
-        [
-          "Ethereal Armor",
-          "Rancor"
-        ]
-      ],
-      "Izzet Murktide": [
-        [
-          "Murktide Regent"
-        ],
-        [
-          "Dragon's Rage Channeler",
-          "Ledger Shredder"
-        ]
-      ],
-      "Grixis Shadow": [
-        [
-          "Death's Shadow"
-        ],
-        [
-          "Dragon's Rage Channeler",
-          "Expressive Iteration",
-          "Lightning Bolt",
-          "Kolaghan's Command",
-          "Ragavan, Nimble Pilferer"
-        ]
-      ],
-      "Dimir Shadow": [
-        [
-          "Death's Shadow"
-        ],
-        [
-          "Cling to Dust",
-          "Drown in the Loch",
-          "Snapcaster Mage",
-          "Grief"
-        ],
-        [
-          "Thoughtseize",
-          "Inquisition of Kozilek"
         ]
       ],
       "Rakdos Scam": [
@@ -337,245 +786,6 @@
           "Dauthi Voidwalker"
         ]
       ],
-      "Rakdos Midrange": [
-        [
-          "Fable of the Mirror-Breaker"
-        ],
-        [
-          "Thoughtseize",
-          "Inquisition of Kozilek"
-        ],
-        [
-          "Seasoned Pyromancer",
-          "Liliana of the Veil"
-        ]
-      ],
-      "Dimir Midrange": [
-        [
-          "Psychic Frog"
-        ],
-        [
-          "Orcish Bowmasters"
-        ],
-        [
-          "Tourach, Dread Cantor",
-          "Grief"
-        ]
-      ],
-      "Esper Blink": [
-        [
-          "Solitude"
-        ],
-        [
-          "Ephemerate"
-        ],
-        [
-          "Grief"
-        ],
-        [
-          "Snapcaster Mage",
-          "Skyclave Apparition"
-        ]
-      ],
-      "Azorius Blink": [
-        [
-          "Solitude"
-        ],
-        [
-          "Ephemerate"
-        ],
-        [
-          "Skyclave Apparition",
-          "Spreading Seas"
-        ]
-      ],
-      "Jeskai Blink": [
-        [
-          "Solitude"
-        ],
-        [
-          "Ephemerate"
-        ],
-        [
-          "Phelia, Exuberant Shepherd",
-          "Teferi, Time Raveler"
-        ]
-      ],
-      "Jeskai Control": [
-        [
-          "Teferi, Hero of Dominaria"
-        ],
-        [
-          "Prismatic Ending",
-          "Supreme Verdict"
-        ],
-        [
-          "Lightning Bolt",
-          "Wear // Tear"
-        ]
-      ],
-      "Grixis Control": [
-        [
-          "Snapcaster Mage"
-        ],
-        [
-          "Counterspell",
-          "Mana Leak"
-        ],
-        [
-          "Kolaghan's Command",
-          "Orcish Bowmasters"
-        ]
-      ],
-      "Dimir Control": [
-        [
-          "Counterspell",
-          "Force of Negation"
-        ],
-        [
-          "Snapcaster Mage",
-          "Grief"
-        ],
-        [
-          "Fatal Push",
-          "Drown in the Loch"
-        ]
-      ],
-      "Sultai Midrange": [
-        [
-          "Uro, Titan of Nature's Wrath"
-        ],
-        [
-          "Wrenn and Six",
-          "Thoughtseize"
-        ],
-        [
-          "Omnath, Locus of Creation",
-          "Unholy Heat"
-        ]
-      ],
-      "Sam Combo": [
-        [
-          "The One Ring"
-        ],
-        [
-          "Urza, Lord High Artificer"
-        ],
-        [
-          "Emry, Lurker of the Loch",
-          "Mox Opal"
-        ]
-      ],
-      "Broodscale Combo": [
-        [
-          "Basking Broodscale"
-        ],
-        [
-          "Blade of the Bloodchief",
-          "Agatha's Soul Cauldron"
-        ],
-        [
-          "Devourer of Destiny",
-          "Yawgmoth, Thran Physician"
-        ]
-      ],
-      "Boros Energy": [
-        [
-          "Guide of Souls",
-          "Amped Raptor"
-        ],
-        [
-          "Ocelot Pride",
-          "Ajani, Nacatl Pariah"
-        ],
-        [
-          "Ragavan, Nimble Pilferer",
-        ]
-      ],
-      "Black Eldrazi": [
-        [
-          "Phyrexian Obliterator"
-        ],
-        [
-          "Eldrazi Temple"
-        ],
-        [
-          "Dismember",
-          "Blinkmoth Nexus"
-        ]
-      ],
-      "Calibrated Blast": [
-        [
-          "Calibrated Blast"
-        ],
-        [
-          "Electrodominance",
-          "As Foretold"
-        ],
-        [
-          "Manamorphose",
-          "Violent Outburst"
-        ]
-      ],
-      "Necrodominance": [
-        [
-          "Necrodominance"
-        ],
-        [
-          "Thoughtseize",
-          "Fatal Push",
-          "Inquisition of Kozilek",
-          "Surgical Extraction"
-        ]
-      ],
-      "Eyetwitch Persist": [
-        [
-          "Eyetwitch"
-        ],
-        [
-          "Persist"
-        ],
-        [
-          "Cauldron Familiar",
-          "Witch's Oven"
-        ]
-      ],
-      "Grixis Persist": [
-        [
-          "Persist"
-        ],
-        [
-          "Cauldron Familiar"
-        ],
-        [
-          "Greasefang, Okiba Boss"
-        ]
-      ],
-      "Blue Belcher": [
-        [
-          "Goblin Charbelcher"
-        ],
-        [
-          "Disrupting Shoal",
-          "Force of Will"
-        ],
-        [
-          "Hydroelectric Specimen",
-          "Lotus Petal"
-        ]
-      ],
-      "Birthing Ritual": [
-        [
-          "Birthing Ritual"
-        ],
-        [
-          "Abhorrent Oculus"
-        ],
-        [
-          "Coiling Oracle",
-          "Intruder Alarm"
-        ]
-      ],
       "Zombies": [
         [
           "Gravecrawler"
@@ -587,18 +797,6 @@
         [
           "Cryptbreaker",
           "Zombie Infestation"
-        ]
-      ],
-      "Jeskai Tempo": [
-        [
-          "Ragavan, Nimble Pilferer"
-        ],
-        [
-          "Phelia, Exuberant Shepherd"
-        ],
-        [
-          "Quantum Riddler",
-          "Ledger Shredder"
         ]
       ],
       "Grinding Station Combo": [
@@ -614,208 +812,7 @@
           "Urza's Saga"
         ]
       ],
-      "Dimir Oculus": [
-        [
-          "Abhorrent Oculus"
-        ],
-        [
-          "Thought Scour",
-          "Brainsurge",
-          "Consider",
-          "Ledger Shredder"
-        ],
-        [
-          "Fatal Push",
-          "Drown in the Loch",
-          "Grief"
-        ]
-      ],
-      "Izzet Cutter": [
-        [
-          "Cori-Steel Cutter"
-        ],
-        [
-          "Dragon's Rage Channeler",
-          "Ledger Shredder",
-          "Murktide Regent"
-        ],
-        [
-          "Lightning Bolt",
-          "Unholy Heat"
-        ]
-      ],
-      "Mill": [
-        [
-          "Hedron Crab",
-          "Ruin Crab"
-        ],
-        [
-          "Archive Trap",
-          "Fractured Sanity"
-        ],
-        [
-          "Glimpse the Unthinkable",
-          "Tasha's Hideous Laughter",
-          "Surgical Extraction"
-        ]
-      ],
-      "Omnath Control": [
-        [
-          "Omnath, Locus of Creation"
-        ],
-        [
-          "Uro, Titan of Nature's Wrath",
-          "Wrenn and Six"
-        ],
-        [
-          "Solitude",
-          "Fury",
-          "Ice-Fang Coatl"
-        ]
-      ],
-      "Boros Ponza": [
-        [
-          "Blood Moon"
-        ],
-        [
-          "Seasoned Pyromancer",
-          "Bonecrusher Giant"
-        ],
-        [
-          "Sunbaked Canyon",
-          "Sacred Foundry",
-          "Inspiring Vantage"
-        ]
-      ],
-      "Eldrazi Post": [
-        [
-          "Eldrazi Temple"
-        ],
-        [
-          "All Is Dust"
-        ],
-        [
-          "Ulamog, the Ceaseless Hunger",
-          "Emrakul, the Promised End"
-        ]
-      ],
-      "Azorius Control": [
-        [
-          "Teferi, Hero of Dominaria",
-          "Teferi, Temporal Pilgrim"
-        ],
-        [
-          "Supreme Verdict",
-          "Wrath of God"
-        ],
-        [
-          "Solitude",
-          "Prismatic Ending"
-        ]
-      ],
-      "Hammertime": [
-        [
-          "Colossus Hammer"
-        ],
-        [
-          "Puresteel Paladin",
-          "Sigarda's Aid"
-        ]
-      ],
-      "Burn": [
-        [
-          "Goblin Guide",
-          "Monastery Swiftspear"
-        ],
-        [
-          "Eidolon of the Great Revel"
-        ],
-        [
-          "Lava Spike",
-          "Rift Bolt",
-          "Shard Volley"
-        ]
-      ],
-      "Red Belcher": [
-        [
-          "Goblin Charbelcher"
-        ],
-        [
-          "Irencrag Feat",
-          "Desperate Ritual"
-        ],
-        [
-          "Empty the Warrens",
-          "Goblin Ringleader"
-        ]
-      ],
-      "Hollow One": [
-        [
-          "Hollow One"
-        ],
-        [
-          "Burning Inquiry",
-          "Goblin Lore"
-        ],
-        [
-          "Vengevine",
-          "Blazing Rootwalla",
-          "Detective's Phoenix"
-        ]
-      ],
-      "Lantern Control": [
-        [
-          "Lantern of Insight"
-        ],
-        [
-          "Ensnaring Bridge"
-        ],
-        [
-          "Inquisition of Kozilek",
-          "Thoughtseize",
-          "Abrupt Decay"
-        ]
-      ],
-      "Prowess": [
-        [
-          "Monastery Swiftspear"
-        ],
-        [
-          "Soul-Scar Mage"
-        ],
-        [
-          "Mutagenic Growth",
-          "Manamorphose"
-        ]
-      ],
-      "Eldrazi Aggro": [
-        [
-          "Eldrazi Mimic",
-          "Endless One"
-        ],
-        [
-          "Eldrazi Temple"
-        ],
-        [
-          "Matter Reshaper",
-          "Thought-Knot Seer",
-          "Reality Smasher"
-        ]
-      ],
-      "Jund Midrange": [
-        [
-          "Tarmogoyf"
-        ],
-        [
-          "Liliana of the Veil",
-          "Bloodbraid Elf"
-        ],
-        [
-          "Thoughtseize",
-          "Inquisition of Kozilek"
-        ]
-      ]
-    },
+   },
     "Legacy": {
       "Turbo Depths": [
         [
@@ -3025,72 +3022,72 @@
   "Modern": {
     "archetypes": [
       "Affinity",
+      "4/5 Color Control",
+      "Affinity",
       "Amulet Titan",
-      "Azorius Blink",
+      "Asmo Food",
       "Azorius Control",
+      "Balance",
       "Birthing Ritual",
-      "Black Eldrazi",
       "Blue Belcher",
       "Bogles",
       "Boros Energy",
-      "Boros Ponza",
-      "Boros Tokens",
       "Broodscale Combo",
       "Burn",
-      "Calibrated Blast",
       "Crashing Footfalls",
-      "Death and Taxes",
-      "Death and Taxes Yorion",
-      "Devoted Combo",
+      "Creativity",
+      "Death's Shadow",
       "Dimir Control",
-      "Dimir Midrange",
-      "Dimir Oculus",
-      "Dimir Shadow",
       "Domain Zoo",
       "Dredge",
       "Eldrazi Aggro",
-      "Eldrazi Post",
       "Eldrazi Ramp",
       "Eldrazi Tron",
+      "Elves",
       "Esper Blink",
-      "Eyetwitch Persist",
+      "Esper Control",
+      "Goblins",
       "Goryo's Vengeance",
+      "Green Aggro",
       "Grinding Station Combo",
       "Grixis Control",
-      "Grixis Persist",
-      "Grixis Shadow",
       "Hammertime",
       "Hardened Scales",
+      "Heliod Life",
       "Hollow One",
       "Humans",
-      "Indomitable Creativity",
       "Infect",
-      "Izzet Cutter",
-      "Izzet Murktide",
+      "Jeskai Ascendancy",
       "Jeskai Blink",
       "Jeskai Control",
-      "Jeskai Tempo",
+      "Jeskai Energy",
       "Jund Midrange",
+      "Kulotha Rebirth",
       "Lantern Control",
       "Living End",
-      "Martyr Proc",
+      "Mardu Energy",
       "Merfolk",
       "Mill",
       "Necrodominance",
       "Neobrand",
-      "Omnath Control",
-      "Oops All Spells",
+      "Phoenix",
+      "Ponza",
       "Prowess",
-      "Rakdos Midrange",
+      "Rack",
+      "Rakdos Aggro",
       "Rakdos Scam",
+      "Reanimator",
       "Red Belcher",
       "Ruby Storm",
       "Sam Combo",
-      "Sultai Midrange",
-      "Temur Rhinos",
-      "Tron",
+      "Selesnya Energy",
+      "Song of Creation",
+      "Spirits",
+      "Splinter Twin",
+      "Valakut",
+      "Wizards",
       "Yawgmoth",
-      "Zombies"
+      "Zombies",
     ]
   },
   "Legacy": {
