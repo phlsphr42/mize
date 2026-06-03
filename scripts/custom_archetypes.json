@@ -1,6 +1,55 @@
 {
   "key_cards": {
     "Modern": {
+      "Vengevine": [
+        [
+          "Vengevine"
+        ],
+        [
+          "Prized Amalgam"
+        ],
+        [
+          "Creeping Chill"
+        ]
+      ],
+      "Kethis": [
+        [
+          "Kethis, the Hidden Hand"
+        ],
+        [
+          "Delighted Halfling"
+        ]
+      ],
+      "Twiddle": [
+        [
+          "Twiddle"
+        ],
+        [
+          "Lotus Field"
+        ]
+      ],
+      "Coffers": [
+        [
+          "Cabal Coffers"
+        ],
+        [
+          "Karn, the Great Creator"
+        ],
+        [
+          "Urborg, Tomb of Yawgmoth"
+        ]
+      ],
+      "Soultrader": [
+        [
+          "Warren Soultrader"
+        ],
+        [
+          "Marionette Apprentice"
+        ],
+        [
+          "Stitcher's Supplier"
+        ]
+      ],
       "Boros Energy": [
         [
           "Guide of Souls"
@@ -43,7 +92,8 @@
       "Affinity": [
         [
           "Pinnacle Emissary",
-          "Arcbound Ravager"
+          "Arcbound Ravager",
+          "Thought Monitor"
         ],
         [
           "Kappa Cannoneer",
@@ -207,6 +257,17 @@
           "Guide of Souls"
         ]
       ],
+      "Eldrazi Saga": [
+        [
+          "Eldazi Temple"
+        ],
+        [
+          "Urza's Saga"
+        ],
+        [
+          "Karn, the Great Creator"
+        ]
+      ],
       "Eldrazi Tron": [
         [
           "Urza's Tower"
@@ -288,11 +349,65 @@
           "Galvanic Discharge"
         ],
         [
-          "Quantum Riddler"
+          "Quantum Riddler",
+          "Thundertrap Trainer"
         ],
         [
           "March of Otherworldly Light",
-          "Narset, Parter of Veils"
+          "Narset, Parter of Veils",
+          "Supreme Verdict"
+        ]
+      ],
+      "Portent Breach": [
+        [
+          "Through the Breach"
+        ],
+        [
+          "Portent of Calamity"
+        ]
+      ],
+      "Artifacts Control": [
+        [
+          "Emry, Lurker of the Loch"
+        ],
+        [
+          "Metallic Rebuke"
+        ],
+        [
+          "Portable Hole"
+        ]
+      ],
+      "Golgari Midrange": [
+        [
+          "Overlord of the Balemurk"
+        ],
+        [
+          "Grist, the Hunger Tide"
+        ],
+        [
+          "Urza's Saga"
+        ]
+      ],
+      "Phyrexian Unlife": [
+        [
+          "Solemnity"
+        ],
+        [
+          "Nine Lives"
+        ],
+        [
+          "Phyrexian Unlife"
+        ]
+      ],
+      "Omnath ETBs": [
+        [
+          "Omnath, Locus of Creation"
+        ],
+        [
+          "Birthing Ritual"
+        ],
+        [
+          "Shardless Agent"
         ]
       ],
       "4/5 Color Control": [
@@ -316,7 +431,8 @@
         ],
         [
           "Tamiyo, Inquisitive Student",
-          "Tishana's Tidebinder"
+          "Tishana's Tidebinder",
+          "Thundertrap Trainer"
         ],
         [
           "Flame of Anor"
@@ -420,7 +536,33 @@
           "Cauldron Familiar"
         ],
         [
-          "Carrion Feeder"
+          "Carrion Feeder",
+          "Viscera Seer"
+        ]
+      ],
+      "Green Eldrazi": [
+        [
+          "Eldrazi Temple"
+        ],
+        [
+          "Thought-Knot Seer"
+        ],
+        [
+          "Badgermole Cub"
+        ],
+        [
+          "Ouroboroid"
+        ]
+      ],
+      "Nadu Combo": [
+        [
+          "Nadu, Winged Wisdom"
+        ],
+        [
+          "Shuko"
+        ],
+        [
+          "Springheart Nantuko"
         ]
       ],
       "Blue Belcher": [
@@ -590,7 +732,8 @@
           "Valakut, the Molten Pinnacle"
         ],
         [
-          "Wrenn and Six"
+          "Wrenn and Six",
+          "Scapeshift"
         ],
         [
           "Dryad of the Ilysian Grove"
