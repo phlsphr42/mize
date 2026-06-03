@@ -587,12 +587,12 @@ def main():
     all_key_cards = load_key_cards()
 
     FORMAT_PATTERNS = {
+        'Premodern': ['premodern-challenge'],           # must come before Modern — 'modern-challenge' is a substring of 'premodern-challenge'
         'Modern':    ['modern-challenge', 'modern-showcase-challenge'],
         'Legacy':    ['legacy-challenge', 'legacy-showcase-challenge'],
         'Pauper':    ['pauper-challenge'],
         'Pioneer':   ['pioneer-challenge', 'pioneer-showcase-challenge'],
         'Vintage':   ['vintage-challenge'],
-        'Premodern': ['premodern-challenge'],
     }
 
     # Discover events — only scan years within the lookback window
