@@ -1,6 +1,64 @@
 {
   "key_cards": {
     "Modern": {
+      "Mardu Blink": [
+        [
+          "Phelia, Exuberant Shephard"
+        ],
+        [
+          "Overlord of the Balemurk"
+        ],
+        [
+          "Phlage, Titan of Fire's Fury"
+        ]
+      ],
+      "Cragganwick Goryo's": [
+        [
+          "Cragganwick Cremator"
+        ],
+        [
+          "Goryo's Vengeance"
+        ]
+      ],
+      "Orzhov Blink": [
+        [
+          "Phelia, Exuberant Shephard"
+        ],
+        [
+          "Overlord of the Balemurk"
+        ],
+        [
+          "Ketramose, the New Dawn",
+          "Flickerwisp"
+        ]
+      ],
+      "Omniscience Woodland": [
+        [
+          "Omniscience"
+        ],
+        [
+          "Shifting Woodland"
+        ]
+      ],
+      "Assault Loam": [
+        [
+          "Seismic Assault"
+        ],
+        [
+          "Life from the Loam"
+        ]
+      ],
+      "Bant ETBs": [
+        [
+          "Renegade Rallier"
+        ],
+        [
+          "Recruiter of the Guard"
+        ],
+        [
+          "Shardless Agent"
+        ]
+      ],
       "Cosmogoyf": [
         [
           "Cosmogoyf"
@@ -311,14 +369,17 @@
           "Psychic Frog"
         ],
         [
-          "Orcish Bowmasters"
+          "Orcish Bowmasters",
+          "Tamiyo, Inquisitive Student"
         ],
         [
           "Quantum Riddler",
-          "Subtlety"
+          "Subtlety",
+          "Kaito, Bane of Nightmares"
         ],
         [
-          "Counterspell"
+          "Counterspell",
+          "Force of Negation"
         ]
       ],
       "Azorius Control": [
@@ -3191,8 +3252,10 @@
       "Amulet Titan",
       "Artifacts Control",
       "Asmo Food",
+      "Assault Loam",
       "Azorius Control",
       "Balance",
+      "Bant ETBs",
       "Birthing Ritual",
       "Blue Belcher",
       "Bogles",
@@ -3201,6 +3264,7 @@
       "Burn",
       "Coffers",
       "Cosmogoyf",
+      "Cragganwick Goryo's",
       "Crashing Footfalls",
       "Creativity",
       "Death's Shadow",
@@ -3237,6 +3301,7 @@
       "Kulotha Rebirth",
       "Lantern Control",
       "Living End",
+      "Mardu Blink",
       "Mardu Energy",
       "Merfolk",
       "Mill",
@@ -3244,6 +3309,8 @@
       "Necrodominance",
       "Neobrand",
       "Omnath ETBs",
+      "Omniscience Woodland",
+      "Orzhov Blink",
       "Phoenix",
       "Phyrexian Unlife",
       "Ponza",
