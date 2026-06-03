@@ -7,7 +7,8 @@
         ],
         [
           "Violent Outburst",
-          "Shardless Agent"
+          "Shardless Agent",
+          "Ardent Plea"
         ]
       ],
       "Amulet Titan": [
@@ -158,27 +159,13 @@
           "Yorion, Sky Nomad"
         ]
       ],
-      "Oops All Spells": [
-        [
-          "Balustrade Spy",
-          "Undercity Informer"
-        ],
-        [
-          "Thassa's Oracle",
-          "Thassa's Oracle"
-        ],
-        [
-          "Mana Violation",
-          "Nourishing Shoal"
-        ]
-      ],
       "Ruby Storm": [
         [
           "Ruby Medallion"
         ],
         [
-          "Past in Flames",
-          "Aria of Flame"
+          "Reckless Impulse",
+          "Wrenn's Resolve"
         ],
         [
           "Manamorphose",
@@ -194,7 +181,8 @@
         ],
         [
           "Chord of Calling",
-          "Collected Company"
+          "Collected Company",
+          "Green Sun's Zenith"
         ]
       ],
       "Martyr Proc": [
@@ -202,11 +190,12 @@
           "Martyr of Sands"
         ],
         [
-          "Serra Ascendant"
+          "Solitude"
         ],
         [
           "Proclamation of Rebirth",
-          "Squadron Hawk"
+          "Squadron Hawk",
+          "White Orchid Phantom"
         ]
       ],
       "Neobrand": [
@@ -218,7 +207,7 @@
         ],
         [
           "Chancellor of the Tangle",
-          "Simian Spirit Guide"
+          "Allosaurus Rider"
         ]
       ],
       "Goryo's Vengeance": [
@@ -500,8 +489,7 @@
           "Ajani, Nacatl Pariah"
         ],
         [
-          "Slickshot Show-Off",
-          "Questing Druid"
+          "Ragavan, Nimble Pilferer",
         ]
       ],
       "Black Eldrazi": [
