@@ -4,601 +4,602 @@
       "Boros Energy": [
         [
           "Guide of Souls"
-        ]
+        ],
         [
           "Ocelot Pride"
-        ]
+        ],
         [
           "Voice of Victory",
-	  "Seasoned Pyromancer",
-	  "Goblin Bombardment"
+          "Seasoned Pyromancer",
+          "Goblin Bombardment"
         ]
       ],
       "Esper Blink": [
         [
           "Solitude"
-        ]
+        ],
         [
           "Phelia, Exuberant Shephard"
-        ]
+        ],
         [
-	  "Psychic Frog"
+          "Psychic Frog"
         ]
       ],
       "Jeskai Blink": [
         [
           "Solitude"
-        ]
+        ],
         [
           "Phelia, Exuberant Shephard"
-        ]
+        ],
         [
-	  "Phlage, Titan of Fire's Fury",
-	  "Ragavan, Nimble Pilferer"
-        ]
+          "Phlage, Titan of Fire's Fury",
+          "Ragavan, Nimble Pilferer"
+        ],
         [
-	  "Quantum Riddler"
+          "Quantum Riddler"
         ]
       ],
       "Affinity": [
         [
           "Pinnacle Emissary",
-	  "Arcbound Ravager"
-        ]
+          "Arcbound Ravager"
+        ],
         [
           "Kappa Cannoneer",
-	  "Memnite"
-        ]
+          "Memnite"
+        ],
         [
-	  "Urza's Saga",
-	  "Cranial Plating"
+          "Urza's Saga",
+          "Cranial Plating"
         ]
       ],
       "Prowess": [
         [
           "Dragon's Rage Channeler"
-        ]
+        ],
         [
           "Monastery Swiftspear"
-        ]
+        ],
         [
-	  "Slickshot Show-Off"
-        ]
+          "Slickshot Show-Off"
+        ],
         [
-	  "Lava Dart"
-        ]
+          "Lava Dart"
+        ],
         [
-	  "Mutagenic Growth"
+          "Mutagenic Growth"
         ]
       ],
       "Domain Zoo": [
         [
           "Leyline of the Guildpact"
-        ]
+        ],
         [
           "Scion of Draco"
-        ]
+        ],
         [
-	  "Territorial Kavu"
-        ]
+          "Territorial Kavu"
+        ],
         [
-	  "Leyline Binding"
+          "Leyline Binding"
         ]
       ],
       "Birthing Ritual": [
         [
           "Coiling Oracle"
-        ]
+        ],
         [
           "Abhorrent Oculus"
-        ]
+        ],
         [
-	  "Ice-Fang Coatl"
-        ]
+          "Ice-Fang Coatl"
+        ],
         [
-	  "Birthing Ritual"
+          "Birthing Ritual"
         ]
       ],
       "Hollow One": [
         [
           "Hollow One"
-        ]
+        ],
         [
           "Street Wraith"
-        ]
+        ],
         [
-	  "Detective's Phoenix"
-        ]
+          "Detective's Phoenix"
+        ],
         [
-	  "Burning Inquiry"
+          "Burning Inquiry"
         ]
       ],
       "Burn": [
         [
           "Lava Spikie"
-        ]
+        ],
         [
           "Skewer the Critics"
-        ]
+        ],
         [
-	  "Boltwave"
-        ]
+          "Boltwave"
+        ],
         [
-	  "Skullcrack",
-	  "Searing Blaze"
+          "Skullcrack",
+          "Searing Blaze"
         ]
       ],
       "Necrodominance": [
         [
           "Necrodominance"
-        ]
+        ],
         [
           "Orcish Bowmasters"
-        ]
+        ],
         [
-	  "Soul Spike"
+          "Soul Spike"
         ]
       ],
       "Eldrazi Aggro": [
         [
           "Eldrazi Temple"
-        ]
+        ],
         [
           "Eldrazi Linebreaker"
-        ]
+        ],
         [
-	  "Glaring Fleshraker"
-        ]
+          "Glaring Fleshraker"
+        ],
         [
-	  "It That Heralds the End",
-	  "Thought-Knot Seer"
+          "It That Heralds the End",
+          "Thought-Knot Seer"
         ]
       ],
       "Death's Shadow": [
         [
           "Death's Shadow"
-        ]
+        ],
         [
           "Street Wraith"
-        ]
+        ],
         [
-	  "Psychic Frog",
-	  "Ragavan, Nimble Pilferer"
+          "Psychic Frog",
+          "Ragavan, Nimble Pilferer"
         ]
       ],
       "Crashing Footfalls": [
         [
           "Crashing Footfalls"
-        ]
+        ],
         [
           "Violent Outburst",
-	  "Shardless Agent"
-        ]
+          "Shardless Agent"
+        ],
         [
-	  "Force of Negation",
-	  "Subtlety"
+          "Force of Negation",
+          "Subtlety"
         ]
       ],
       "Merfolk": [
         [
           "Merfolk of the Pearl Trident"
-        ]
+        ],
         [
           "Lord of Atlantis"
-        ]
+        ],
         [
-	  "Vodalian Hexcatcher",
-	  "Silvergill Adept"
+          "Vodalian Hexcatcher",
+          "Silvergill Adept"
         ]
       ],
       "Selesnya Energy": [
         [
           "Brightglass Gearhulk",
-	  "Leonardo, Cutting Edge"
-        ]
+          "Leonardo, Cutting Edge"
+        ],
         [
           "Walking Ballista",
-	  "Enduring Innocence"
-        ]
+          "Enduring Innocence"
+        ],
         [
-	  "Ocelot Pride"
+          "Ocelot Pride"
+        ],
+        [
+          "Guide of Souls"
         ]
-	[
-	  "Guide of Souls"
-	]
       ],
       "Eldrazi Tron": [
         [
           "Urza's Tower"
-        ]
+        ],
         [
           "Devourer of Destiny",
-	  "Thought-Knot Seer"
-        ]
+          "Thought-Knot Seer"
+        ],
         [
-	  "Mind Stone",
-	  "Sowing Mycospawn"
+          "Mind Stone",
+          "Sowing Mycospawn"
         ]
       ],
       "Eldrazi Ramp": [
         [
           "Eldrazi Temple"
-        ]
+        ],
         [
           "Ugin's Labyrinth"
-        ]
+        ],
         [
-	  "Utopia Sprawl"
+          "Utopia Sprawl"
+        ],
+        [
+          "Malevolent Rumble"
+        ],
+        [
+          "Sowing Mycospawn"
         ]
-	[
-	  "Malevolent Rumble"
-	]
-	[
-	  "Sowing Mycospawn"
-	]
       ],
       "Dimir Control": [
         [
           "Psychic Frog"
-        ]
+        ],
         [
           "Orcish Bowmasters"
-        ]
+        ],
         [
-	  "Quantum Riddler",
-	  "Subtlety"
+          "Quantum Riddler",
+          "Subtlety"
+        ],
+        [
+          "Counterspell"
         ]
-	[
-	  "Counterspell"
-	]
       ],
       "Azorius Control": [
         [
           "Solitude",
-	  "Snapcaster Mage"
-        ]
+          "Snapcaster Mage"
+        ],
         [
           "Counterspell"
-        ]
+        ],
         [
-	  "Supreme Verdict",
-	  "Terminus"
+          "Supreme Verdict",
+          "Terminus"
         ]
       ],
       "Ponza": [
         [
           "Cleansing Wildfire"
-        ]
+        ],
         [
           "Field of Ruin"
-        ]
+        ],
         [
-	  "Price of Freedom"
+          "Price of Freedom"
+        ],
+        [
+          "Solitude"
         ]
-	[
-	  "Solitude"
-	]
       ],
       "Jeskai Control": [
         [
           "Wrath of the Skies"
-        ]
+        ],
         [
           "Phlage, Titan of Fire's Fury",
-	  "Galvanic Discharge"
-        ]
+          "Galvanic Discharge"
+        ],
         [
-	  "Quantum Riddler"
+          "Quantum Riddler"
+        ],
+        [
+          "March of Otherworldly Light",
+          "Narset, Parter of Veils"
         ]
-	[
-	  "March of Otherworldly Light",
-	  "Narset, Parter of Veils"
       ],
       "4/5 Color Control": [
         [
           "Omnath, Locus of Creation",
-	  "Wrenn and Six"
-        ]
+          "Wrenn and Six"
+        ],
         [
           "Counterspell",
-	  "Prismatic Ending",
-	  "Leyline Binding"
-        ]
+          "Prismatic Ending",
+          "Leyline Binding"
+        ],
         [
-	  "Teferi, Time Raveler",
-	  "Force of Negation"
+          "Teferi, Time Raveler",
+          "Force of Negation"
         ]
       ],
       "Wizards": [
         [
           "Snapcaster Mage"
-        ]
+        ],
         [
           "Tamiyo, Inquisitive Student",
-	  "Tishana's Tidebinder"
-        ]
+          "Tishana's Tidebinder"
+        ],
         [
-	  "Flame of Anor"
+          "Flame of Anor"
         ]
       ],
       "Grixis Control": [
         [
           "Counterspell",
-	  "Force of Negation"
-        ]
+          "Force of Negation"
+        ],
         [
           "Psychic Frog",
-	  "Orcish Bowmasters"
-        ]
+          "Orcish Bowmasters"
+        ],
         [
-	  "Ragavan, Nimble Pilferer",
-	  "Lightning Bolt",
-	  "Unholy Heat",
-	  "Galvanic Discharge"
+          "Ragavan, Nimble Pilferer",
+          "Lightning Bolt",
+          "Unholy Heat",
+          "Galvanic Discharge"
         ]
       ],
       "Esper Control": [
         [
           "Counterspell",
-	  "Force of Negation"
-        ]
+          "Force of Negation"
+        ],
         [
           "Psychic Frog",
-	  "Orchish Bowmasters"
-        ]
+          "Orchish Bowmasters"
+        ],
         [
-	  "Teferi, Time Raveler",
-	  "Prismatic Ending",
-	  "Pest Control"
+          "Teferi, Time Raveler",
+          "Prismatic Ending",
+          "Pest Control"
         ]
       ],
       "Lantern Control": [
         [
           "Lantern of Insight"
-        ]
+        ],
         [
           "Codex Shredder"
-        ]
+        ],
         [
-	  "Ensnaring Bridge"
+          "Ensnaring Bridge"
         ]
       ],
       "Ruby Storm": [
         [
           "Ral, Monsoon Mage"
-        ]
+        ],
         [
           "Ruby Medallion"
-        ]
+        ],
         [
-	  "Wrenn's Resolve",
-	  "Desperate Ritual"
+          "Wrenn's Resolve",
+          "Desperate Ritual"
         ]
       ],
       "Amulet Titan": [
         [
           "Amulet of Vigor"
-        ]
+        ],
         [
           "Primeval Titan"
-        ]
+        ],
         [
-	  "Arboreal Grazer"
+          "Arboreal Grazer"
         ]
       ],
       "Goryo's Vengeance": [
         [
           "Goryo's Vengeance"
-        ]
+        ],
         [
           "Atraxa, Grand Unifier"
-        ]
+        ],
         [
-	  "Psychic Frog"
+          "Psychic Frog"
+        ],
+        [
+          "Griselbrand"
         ]
-	  "Griselbrand"
-	]
       ],
       "Yawgmoth": [
         [
           "Yawgmoth, Thran Physician"
-        ]
+        ],
         [
           "Young Wolf"
-        ]
+        ],
         [
-	  "Grist, the Hunger Tide"
+          "Grist, the Hunger Tide"
         ]
       ],
       "Sam Combo": [
         [
           "Samwise Gamgee"
-        ]
+        ],
         [
           "Cauldron Familiar"
-        ]
+        ],
         [
-	  "Carrion Feeder"
+          "Carrion Feeder"
         ]
       ],
       "Blue Belcher": [
         [
           "Goblin Charbelcher"
-        ]
+        ],
         [
           "Suppression Ray"
-        ]
+        ],
         [
-	  "Whir of Invention"
+          "Whir of Invention"
         ]
       ],
       "Red Belcher": [
         [
           "Goblin Charbelcher"
-        ]
+        ],
         [
           "Sundering Eruption"
-        ]
+        ],
         [
-	  "Shatterskull Smashing"
+          "Shatterskull Smashing"
         ]
       ],
       "Living End": [
         [
           "Living End"
-        ]
+        ],
         [
           "Curator of Mysteries"
-        ]
+        ],
         [
-	  "Generous Ent"
+          "Generous Ent"
+        ],
+        [
+          "Shardless Agent"
         ]
-	[
-	  "Violent Outburst",
-	  "Shardless Agent"
       ],
       "Reanimator": [
         [
           "Archon of Cruelty"
-        ]
+        ],
         [
           "Persist"
-        ]
+        ],
         [
-	  "Unearth"
+          "Unearth"
+        ],
+        [
+          "Abhorrent Oculus"
         ]
-	[
-	  "Abhorrent Oculus"
-	]
       ],
-
       "Neobrand": [
         [
           "Neoform"
-        ]
+        ],
         [
           "Allosaurus Rider"
-        ]
+        ],
         [
-	  "Eldritch Evolution"
+          "Eldritch Evolution"
         ]
       ],
       "Broodscale Combo": [
         [
           "Basking Broodscale"
-        ]
+        ],
         [
           "Blade of the Bloodchief"
-        ]
+        ],
         [
-	  "Glaring Fleshraker"
+          "Glaring Fleshraker"
         ]
       ],
       "Mill": [
         [
           "Archive Trap"
-        ]
+        ],
         [
           "Fractured Sanity"
-        ]
+        ],
         [
-	  "Ruin Crab",
-	  "Hedron Crab",
-	  "Exhibition Tidecaller"
+          "Ruin Crab",
+          "Hedron Crab",
+          "Exhibition Tidecaller"
         ]
       ],
       "Creativity": [
         [
           "Indomitable Creativity"
-        ]
+        ],
         [
           "Fable of the Mirro-Breaker"
-        ]
+        ],
         [
-	  "Archon of Cruelty",
-	  "Atraxa, Grand Unifier"
+          "Archon of Cruelty",
+          "Atraxa, Grand Unifier"
         ]
       ],
       "Hammertime": [
         [
           "Colossus Hammer"
-        ]
+        ],
         [
           "Stoneforge Mystic"
-        ]
+        ],
         [
-	  "Puresteel Paladin"
+          "Puresteel Paladin"
         ]
       ],
       "Dredge": [
         [
           "Creeping Chill"
-        ]
+        ],
         [
           "Stinkweed Imp"
-        ]
+        ],
         [
-	  "Golgari Thug"
+          "Golgari Thug"
         ]
       ],
       "Song of Creation": [
         [
           "Song of Creation"
-        ]
+        ],
         [
           "Mox Amber"
-        ]
+        ],
         [
-	  "Mishra's Bauble"
+          "Mishra's Bauble"
         ]
       ],
       "Jeskai Ascendancy": [
         [
           "Jeskai Ascendancy"
-        ]
+        ],
         [
           "Emry, Lurker of the Loch"
-        ]
+        ],
         [
-	  "Mishra's Bauble"
+          "Mishra's Bauble"
         ]
       ],
       "Infect": [
         [
           "Glistener Elf",
-	  "Blighted Agent"
-        ]
+          "Blighted Agent"
+        ],
         [
           "Might of Old Krosa"
-        ]
+        ],
         [
-	  "Scale Up"
+          "Scale Up"
         ]
       ],
       "Splinter Twin": [
         [
           "Splinter Twin"
-        ]
+        ],
         [
           "Deceiver Exarch",
-	  "Deepway Navigator
+          "Deepway Navigator"
         ]
       ],
       "Valakut": [
         [
           "Valakut, the Molten Pinnacle"
-        ]
+        ],
         [
           "Wrenn and Six"
-        ]
+        ],
         [
-	  "Dryad of the Ilysian Grove"
+          "Dryad of the Ilysian Grove"
         ]
       ],
       "Heliod Life": [
         [
           "Heliod, Sun-Crowned"
-        ]
+        ],
         [
           "Spike Feeder"
         ]
@@ -606,90 +607,91 @@
       "Elves": [
         [
           "Priest of Titania"
-        ]
+        ],
         [
           "Heritage Druid"
-        ]
+        ],
         [
-	  "Quirion Ranger"
+          "Quirion Ranger"
         ]
       ],
       "Balance": [
         [
           "Restore Balance"
-        ]
+        ],
         [
           "Electrodominance"
-        ]
+        ],
         [
-	  "Greater Gargadon"
+          "Greater Gargadon"
         ]
       ],
       "Mardu Energy": [
         [
           "Guide of Souls"
-        ]
+        ],
         [
           "Orcish Bowmasters",
-	  "Sephiroth, Fabled SOLDIER"
-        ]
+          "Sephiroth, Fabled SOLDIER"
+        ],
         [
-	  "Ocelot Pride"
+          "Ocelot Pride"
+        ],
+        [
+          "Ragavan, Nimble Pilferer"
         ]
-	[
-	  "Ragavan, Nimble Pilferer"
-	]
       ],
       "Jeskai Energy": [
         [
           "Guide of Souls"
-        ]
+        ],
         [
           "Ocelot Pride"
-        ]
+        ],
         [
-	  "Ragavan, Nimble Pilferer"
+          "Ragavan, Nimble Pilferer"
+        ],
+        [
+          "Quantum Riddler"
         ]
-	[
-	  "Quantum Riddler"
       ],
       "Rakdos Aggro": [
         [
           "Dragon's Rage Channeler"
-        ]
+        ],
         [
           "Nethergoyf"
-        ]
+        ],
         [
-	  "Moonshadow"
+          "Moonshadow"
         ]
       ],
       "Asmo Food": [
         [
           "Asmoranomardicadaistinaculdacar"
-        ]
+        ],
         [
           "The Underworld Cookbook"
-        ]
+        ],
         [
-	  "Ovalchase Daredevil"
+          "Ovalchase Daredevil"
         ]
       ],
       "Hardened Scales": [
         [
           "Hardened Scales"
-        ]
+        ],
         [
           "Walking Ballista"
-        ]
+        ],
         [
-	  "Zabaz, the Glimmerwasp"
+          "Zabaz, the Glimmerwasp"
         ]
       ],
       "Green Aggro": [
         [
           "Badgermole Cub"
-        ]
+        ],
         [
           "Aspect of Hydra"
         ]
@@ -697,28 +699,28 @@
       "Spirits": [
         [
           "Rattlechains"
-        ]
+        ],
         [
           "Mausoleum Wanderer"
-        ]
+        ],
         [
-	  "Drogskol Captain"
+          "Drogskol Captain"
         ]
       ],
       "Phoenix": [
         [
           "Arclight Phoenix"
-        ]
+        ],
         [
           "Dragon's Rage Channeler",
-	  "Exhibition Tidecaller",
-	  "Demilich"
+          "Exhibition Tidecaller",
+          "Demilich"
         ]
       ],
       "Humans": [
         [
           "Thalia's Lieutenant"
-        ]
+        ],
         [
           "Champion of the Parish"
         ]
@@ -726,30 +728,30 @@
       "Jund Midrange": [
         [
           "Wrenn and Six"
-        ]
+        ],
         [
           "Ragavan, Nimble Pilferer"
-        ]
+        ],
         [
-	  "Orcish Bowmasters"
+          "Orcish Bowmasters"
         ]
       ],
       "Bogles": [
         [
           "Slipper Bogle"
-        ]
+        ],
         [
           "Gladecover Scout"
-        ]
+        ],
         [
-	  "Daybreak Coronet",
-	  "Etheral Armor"
+          "Daybreak Coronet",
+          "Etheral Armor"
         ]
       ],
       "Goblins": [
         [
           "Conspicuous Snoop"
-        ]
+        ],
         [
           "Boggart Harbinger"
         ]
@@ -757,10 +759,10 @@
       "Rack": [
         [
           "The Rack"
-        ]
+        ],
         [
           "Smallpox",
-	  "Wrench Mind"
+          "Wrench Mind"
         ]
       ],
       "Kuldotha Rebirth": [
@@ -811,8 +813,8 @@
           "Mox Opal",
           "Urza's Saga"
         ]
-      ],
-   },
+      ]
+    },
     "Legacy": {
       "Turbo Depths": [
         [
@@ -3021,7 +3023,6 @@
   },
   "Modern": {
     "archetypes": [
-      "Affinity",
       "4/5 Color Control",
       "Affinity",
       "Amulet Titan",
@@ -3087,7 +3088,7 @@
       "Valakut",
       "Wizards",
       "Yawgmoth",
-      "Zombies",
+      "Zombies"
     ]
   },
   "Legacy": {
