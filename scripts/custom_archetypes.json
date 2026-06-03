@@ -1,14 +1,6 @@
 {
   "key_cards": {
     "Modern": {
-      "Temur Rhinos": [
-        [
-          "Crashing Footfalls"
-        ],
-        [
-          "Fury"
-        ]
-      ],
       "Crashing Footfalls": [
         [
           "Crashing Footfalls"
@@ -59,12 +51,13 @@
         ],
         [
           "Violent Outburst",
-          "Ardent Plea"
+          "Ardent Plea",
+          "Shardless Agent"
         ]
       ],
       "Dredge": [
         [
-          "Golgari Grave-Troll",
+          "Golgari Thug",
           "Stinkweed Imp"
         ],
         [
@@ -73,7 +66,7 @@
         ],
         [
           "Narcomoeba",
-          "Prized Amalgam"
+          "Faithless Looting"
         ]
       ],
       "Tron": [
@@ -81,10 +74,11 @@
           "Urza's Tower"
         ],
         [
-          "Urza's Mine"
+          "Chromatic Star",
+          "Chromatic Sphere"
         ],
         [
-          "Urza's Power Plant"
+          "Karn, the Great Creator"
         ]
       ],
       "Eldrazi Tron": [
@@ -96,8 +90,8 @@
           "Urza's Mine"
         ],
         [
-          "Thought-Knot Seer",
-          "Reality Smasher"
+          "Devourer of Destiny",
+          "Kozilek's Command"
         ]
       ],
       "Eldrazi Ramp": [
@@ -107,12 +101,9 @@
         ],
         [
           "Emrakul, the Promised End",
-          "Ulamog, the Ceaseless Hunger",
-          "Breaker of Creation",
-          "Kozilek, Butcher of Truth"
+          "Sire of Seven Deaths",
         ],
         [
-          "Ancient Stirrings",
           "Malevolent Rumble",
           "Sowing Mycospawn",
           "Utopia Sprawl"
@@ -128,21 +119,20 @@
         ],
         [
           "Vines of Vastwood",
-          "Groundswell",
+          "Might of Old Krosa",
           "Scale Up"
         ]
       ],
       "Merfolk": [
         [
           "Lord of Atlantis",
+        ],
+        [
           "Master of the Pearl Trident"
         ],
         [
-          "Aether Vial"
-        ],
-        [
           "Spreading Seas",
-          "Cursecatcher"
+          "Tideshaper"
         ]
       ],
       "Death and Taxes": [
