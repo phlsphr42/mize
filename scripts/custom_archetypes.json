@@ -1,6 +1,14 @@
 {
   "key_cards": {
     "Modern": {
+      "Cosmogoyf": [
+        [
+          "Cosmogoyf"
+        ],
+        [
+          "Spoils of the Vault"
+        ]
+      ],
       "Vengevine": [
         [
           "Vengevine"
@@ -165,7 +173,7 @@
       ],
       "Burn": [
         [
-          "Lava Spikie"
+          "Lava Spike"
         ],
         [
           "Skewer the Critics"
@@ -415,7 +423,8 @@
       "4/5 Color Control": [
         [
           "Omnath, Locus of Creation",
-          "Wrenn and Six"
+          "Wrenn and Six",
+          "Wargate"
         ],
         [
           "Counterspell",
@@ -425,6 +434,14 @@
         [
           "Teferi, Time Raveler",
           "Force of Negation"
+        ]
+      ],
+      "Hatebears": [
+        [
+          "Drannith Magistrate"
+        ],
+        [
+          "Harsh Mentor"
         ]
       ],
       "Wizards": [
@@ -594,7 +611,8 @@
           "Living End"
         ],
         [
-          "Curator of Mysteries"
+          "Curator of Mysteries",
+          "Overlord of the Balemurk"
         ],
         [
           "Generous Ent"
@@ -3182,6 +3200,7 @@
       "Broodscale Combo",
       "Burn",
       "Coffers",
+      "Cosmogoyf",
       "Crashing Footfalls",
       "Creativity",
       "Death's Shadow",
@@ -3204,6 +3223,7 @@
       "Grixis Control",
       "Hammertime",
       "Hardened Scales",
+      "Hatebears",
       "Heliod Life",
       "Hollow One",
       "Humans",
