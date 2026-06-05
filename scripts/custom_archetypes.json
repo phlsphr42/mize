@@ -22,7 +22,8 @@
       ],
       "Orzhov Blink": [
         [
-          "Phelia, Exuberant Shephard"
+          "Phelia, Exuberant Shephard",
+          "Ephemerate"
         ],
         [
           "Overlord of the Balemurk"
@@ -690,10 +691,12 @@
           "Persist"
         ],
         [
-          "Unearth"
+          "Unearth",
+          "Tainted Indulgence"
         ],
         [
-          "Abhorrent Oculus"
+          "Abhorrent Oculus",
+          "Psychic Frog"
         ]
       ],
       "Neobrand": [
@@ -859,7 +862,8 @@
           "Sephiroth, Fabled SOLDIER"
         ],
         [
-          "Ocelot Pride"
+          "Ocelot Pride",
+          "Amped Raptor"
         ],
         [
           "Ragavan, Nimble Pilferer"
