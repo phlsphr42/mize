@@ -1,6 +1,17 @@
 {
   "key_cards": {
     "Modern": {
+      "Azorius Stoneforge": [
+        [
+          "Stoneforge Mystic"
+        ],
+        [
+          "Cryptic Coat",
+        ],
+        [
+          "Reprieve"
+        ]
+      ],
       "Mardu Blink": [
         [
           "Phelia, Exuberant Shephard"
