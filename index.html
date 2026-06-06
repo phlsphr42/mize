@@ -3981,10 +3981,8 @@ if (adminBtn) adminBtn.style.display = state.pilot.pilot_name === 'thnkr' ? '' :
     }
     await loadAllDecks();
     populateAnalysisFilters();
-    await loadAllDecks();
-    populateAnalysisFilters();
+    await loadCustomTaxonomy(); // populate _definedArchetypeNames before rendering names
     await loadRecentMatches();
-    loadCustomTaxonomy(); // eager load so _definedArchetypeNames is ready for matrix
     showScreen('screen-home');
     logEvent('sign_in');
   } catch(e) {
@@ -4067,6 +4065,7 @@ async function saveGooglePilotName() {
   }
   await loadAllDecks();
   populateAnalysisFilters();
+  await loadCustomTaxonomy(); // populate _definedArchetypeNames before rendering names
   await loadRecentMatches();
   showScreen('screen-home');
 }
@@ -4451,8 +4450,12 @@ function resolveBadaroName(name, refNames) {
   if (!name) return 'Unknown';
   if (name === 'Unknown') return 'Unknown';
 
+  const defined = window._definedArchetypeNames;
+
+  // If the taxonomy hasn't loaded yet, don't destroy a valid name
+  if (!defined || defined.size === 0) return name;
+
   // Check against the loaded defined archetype names (from custom_archetypes.json)
-  const defined = window._definedArchetypeNames || new Set();
   if (defined.has(name)) return name;
 
   // Case-insensitive exact match
@@ -4461,7 +4464,8 @@ function resolveBadaroName(name, refNames) {
     if (n.toLowerCase() === lower) return n;
   }
 
-  return 'Unknown';
+  // Unmapped but real name — keep it rather than blanking it to "Unknown"
+  return name;
 }
 
   async function suggestArchetypesForDeck(cards) {
