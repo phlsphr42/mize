@@ -1801,7 +1801,7 @@ async function loadMyData() {
     const totalWins    = rows.filter(r => r.game_result === 'Win').length;
     const totalWinPct  = totalGames ? (totalWins / totalGames * 100).toFixed(1) : '—';
 
-    const matchRows    = rows.filter(r => r.match_result && r.pre_post !== 'Post');
+    const matchRows    = rows.filter(r => r.match_result);
     const matchWins    = matchRows.filter(r => r.match_result === 'Win').length;
     const matchLosses  = matchRows.filter(r => r.match_result === 'Loss').length;
     const matchTotal   = matchWins + matchLosses;
@@ -6784,7 +6784,9 @@ async function submitGame() {
 if (!state.gameResult && !state.gameresult) { showToast('Please select a game result', 'error'); return; }
 const gameResultValue = state.gameResult || state.gameresult;
   if (!state.playdraw) { showToast('Please select play or draw', 'error'); return; }
-  const matchResult = state.matchEnd === 'Yes' ? state.matchResult : null;
+  const matchResult = (state.matchEnd === 'Yes' || state.matchend === 'Yes')
+  ? (state.matchResult || state.matchresult)
+  : null;
   const { error } = await db.from('raw_game_log').insert({
     match_id: state.matchId, timestamp: new Date().toISOString(),
     pilot_name: state.pilot.pilot_name, pilot_email: state.pilot.pilot_email || '',
