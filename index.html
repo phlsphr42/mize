@@ -3070,11 +3070,13 @@ async function loadUnknownDecks() {
     .eq('reviewed', false);
   statsEl.textContent = `${unreviewedCount} unreviewed of ${totalCount} total unknown ${format} decks`;
 
-  // Fetch decks
+  // Fetch decks — pre-sort by import recency at the DB level so that if the
+  // queue exceeds the row cap, we keep the newest arrivals rather than an
+  // arbitrary slice.
   let q = db.from('mtgo_unknown_decks')
     .select('id,event_id,player_name,format,finish,mainboard,sideboard,assigned_name,reviewed,created_at')
     .eq('format', format)
-    .order('finish', { ascending: true });
+    .order('created_at', { ascending: false });
   if (show === 'unreviewed') q = q.eq('reviewed', false);
   const { data, error } = await q.limit(200);
 
@@ -3082,6 +3084,31 @@ async function loadUnknownDecks() {
     el.innerHTML = '<div class="card" style="color:var(--text2);font-size:13px;">No unknown decks found for this format.</div>';
     return;
   }
+
+  // Join in the actual tournament date (mtgo_events.event_date) so decks are
+  // prioritized by when the event happened, not just when they were imported —
+  // a backfilled queue can otherwise hide recent events behind old ones.
+  let eventDateMap = new Map();
+  try {
+    const eventIds = [...new Set(data.map(d => d.event_id))];
+    const { data: events } = await db.from('mtgo_events')
+      .select('event_id,event_date')
+      .eq('format', format)
+      .in('event_id', eventIds);
+    (events || []).forEach(e => eventDateMap.set(e.event_id, e.event_date));
+  } catch (e) { /* fall back to created_at below if this fails */ }
+
+  data.forEach(d => {
+    d._sortDate = eventDateMap.get(d.event_id) || (d.created_at || '').slice(0, 10);
+  });
+
+  // Most recent event first; within the same event, preserve the original
+  // best-finish-first ordering (top finishers reviewed before the rest).
+  data.sort((a, b) => {
+    if (a._sortDate !== b._sortDate) return a._sortDate < b._sortDate ? 1 : -1;
+    const fa = a.finish ?? Infinity, fb = b.finish ?? Infinity;
+    return fa - fb;
+  });
 
   udDecks     = data;
   udDeckIndex = 0;
@@ -3137,7 +3164,7 @@ async function renderUnknownDeck() {
       <div style="margin-bottom:8px;">
         <div style="font-size:14px;font-weight:600;">${deck.player_name}</div>
         <div style="font-size:12px;color:var(--text2);">
-          ${deck.event_id} · Finish: ${deck.finish ?? '—'} · ${deck.format}
+          ${deck.event_id} · ${deck._sortDate || ''} · Finish: ${deck.finish ?? '—'} · ${deck.format}
         </div>
       </div>
 
@@ -3613,6 +3640,7 @@ async function udAssign() {
     const fours  = Object.entries(mb).filter(([c,n]) => n >= 4 && c).map(([c]) => c).sort();
     const threes = Object.entries(mb).filter(([c,n]) => n === 3 && c).map(([c]) => c).sort();
     const badaroName = mizeName.replace(/[^a-zA-Z0-9]/g, '');
+    const supertype = null;
     const conditions = [];
     fours.slice(0, 3).forEach(card => conditions.push({ Type: 'InMainboard', Cards: [card] }));
     if (threes.length >= 2) conditions.push({ Type: 'OneOrMoreInMainboard', Cards: threes.slice(0, 4) });
