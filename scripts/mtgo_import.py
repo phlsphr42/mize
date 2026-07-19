@@ -10,6 +10,7 @@ import json
 import time
 import re
 import os
+import sys
 import math
 from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
@@ -968,6 +969,22 @@ def main():
 
     # Drop rows missing format (should be zero after schema fix)
     all_results = [r for r in all_results if r.get('format')]
+
+    # sb_get() never raises on a failed/timed-out fetch — it just returns
+    # whatever it has so far, which can be an empty list. The summary rebuild
+    # below unconditionally WIPES mtgo_archetype_summary / mtgo_pilot_summary
+    # before reinserting, so if all_results came back empty due to a transient
+    # fetch problem (rather than there genuinely being zero results in the
+    # database), we'd delete all existing summary data and replace it with
+    # nothing — which is exactly what produces "No data found" on every
+    # filter in the MTGO Deck Rankings screen. Bail out before the wipe
+    # instead, and fail the run loudly so it shows up in the Actions log.
+    if not all_results:
+        print('\n⚠ ERROR: Fetched zero rows from mtgo_results — this almost certainly')
+        print('means the Supabase fetch failed or timed out, not that there is truly')
+        print('no data. Skipping the summary rebuild to avoid wiping existing good')
+        print('data with an empty result set. Re-run the import to retry.')
+        sys.exit(1)
 
     now     = datetime.now(timezone.utc).date()
     windows = [
