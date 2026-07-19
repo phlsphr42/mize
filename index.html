@@ -452,6 +452,86 @@
   </div>
 </div>
 
+<!-- EDIT GAME -->
+<div id="screen-edit-game" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-match-history')">←</button>
+    <h2>Edit game</h2>
+  </div>
+  <div id="eg-source" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
+
+  <div class="card">
+    <label class="label">Format</label>
+    <select id="eg-format" onchange="egOnFormatChange()" style="margin-bottom:0;">
+      <option value="Modern">Modern</option>
+      <option value="Legacy">Legacy</option>
+      <option value="Pioneer">Pioneer</option>
+      <option value="Pauper">Pauper</option>
+      <option value="Vintage">Vintage</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <label class="label">Your deck (archetype)</label>
+    <input type="text" id="eg-deck" placeholder="Search your decks…" autocomplete="off"
+      oninput="egFilterDeck()" onfocus="egFilterDeck()"
+      onblur="setTimeout(()=>{const l=document.getElementById('eg-deck-list'); if(l) l.style.display='none';},150)">
+    <div id="eg-deck-list" style="display:none;max-height:160px;overflow-y:auto;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:5px;margin-bottom:10px;"></div>
+
+    <label class="label">Opponent's deck (archetype)</label>
+    <input type="text" id="eg-opponent" placeholder="Search archetypes…" autocomplete="off" style="margin-bottom:0;"
+      oninput="egFilterOpp()" onfocus="egFilterOpp()"
+      onblur="setTimeout(()=>{const l=document.getElementById('eg-opp-list'); if(l) l.style.display='none';},150)">
+    <div id="eg-opp-list" style="display:none;max-height:160px;overflow-y:auto;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:5px;margin-top:8px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Game result</div>
+    <div class="toggle-group" id="eg-result-group">
+      <div class="toggle-btn" onclick="editToggle(this,'gameResult','Win')" style="color:var(--success)">Win</div>
+      <div class="toggle-btn" onclick="editToggle(this,'gameResult','Loss')" style="color:var(--danger)">Loss</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Match result</div>
+    <div class="toggle-group" id="eg-match-group">
+      <div class="toggle-btn" onclick="editToggle(this,'matchResult','')">N/A</div>
+      <div class="toggle-btn" onclick="editToggle(this,'matchResult','Win')" style="color:var(--success)">Win</div>
+      <div class="toggle-btn" onclick="editToggle(this,'matchResult','Loss')" style="color:var(--danger)">Loss</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Game number</div>
+    <div class="toggle-group" id="eg-prepost-group">
+      <div class="toggle-btn" onclick="editToggle(this,'prePost','Pre')">G1</div>
+      <div class="toggle-btn" onclick="editToggle(this,'prePost','Post')">G2/3</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Play or draw</div>
+    <div class="toggle-group" id="eg-playdraw-group">
+      <div class="toggle-btn" onclick="editToggle(this,'playDraw','Play')">Play</div>
+      <div class="toggle-btn" onclick="editToggle(this,'playDraw','Draw')">Draw</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <label class="label">Mulligans</label>
+    <input type="number" id="eg-mulligans" min="0" max="7" style="margin-bottom:0;">
+  </div>
+
+  <div class="card">
+    <label class="label">Notes</label>
+    <input type="text" id="eg-notes" placeholder="Any unusual circumstances?" style="margin-bottom:0;">
+  </div>
+
+  <button class="btn btn-primary" onclick="saveEditedGame()">Save changes</button>
+  <button class="btn btn-danger" onclick="confirmDeleteGame()">Delete this game</button>
+</div>
+
   <!-- INSIGHTS -->
 <div id="screen-insights" class="screen">
   <div class="header">
@@ -1701,7 +1781,7 @@ async function mhLoad(reset) {
       : '';
     const meta = [gameLabel, pdLabel, mulls, g.format].filter(Boolean).join(' · ');
 
-    return `<div style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);gap:10px;">
+    return `<div onclick="openEditGame('${g.id}')" style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);gap:10px;cursor:pointer;">
       <div style="width:32px;height:32px;border-radius:50%;background:${winColor};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">
         ${g.game_result === 'Win' ? 'W' : 'L'}
       </div>
@@ -1716,6 +1796,7 @@ async function mhLoad(reset) {
       <div style="font-size:11px;color:var(--text2);text-align:right;flex-shrink:0;">
         ${date}<br>${time}
       </div>
+      <div style="font-size:14px;color:var(--text2);flex-shrink:0;">›</div>
     </div>`;
   }).join('');
 
@@ -1723,6 +1804,183 @@ async function mhLoad(reset) {
   else       listEl.innerHTML += rows;
 
   moreEl.style.display = mhOffset < mhTotal ? '' : 'none';
+}
+
+// ── EDIT / DELETE A LOGGED GAME ─────────────────────────────────────
+
+async function openEditGame(id) {
+  const { data, error } = await db.from('raw_game_log')
+    .select('id,format,deck_archetype,opponent_archetype,game_result,match_result,pre_post,play_draw,mulligan_count,notes,external_id,migration_flag')
+    .eq('id', id)
+    .eq('pilot_name', state.pilot.pilot_name)
+    .limit(1);
+  if (error || !data || !data.length) { showToast('Could not load that game', 'error'); return; }
+  const g = data[0];
+
+  state.editingGameId = g.id;
+  state.editGame = {
+    gameResult:  g.game_result  || 'Win',
+    matchResult: g.match_result || '',
+    prePost:     g.pre_post     || 'Pre',
+    playDraw:    g.play_draw    || 'Play'
+  };
+
+  document.getElementById('eg-source').textContent = g.external_id
+    ? 'Source: mymtgo import (ID ' + g.external_id + ')'
+    : g.migration_flag === 'SHEET_IMPORT'
+      ? 'Source: Sheet import'
+      : 'Source: Manual entry';
+
+  document.getElementById('eg-format').value    = g.format || 'Modern';
+  document.getElementById('eg-deck').value      = g.deck_archetype || '';
+  document.getElementById('eg-opponent').value  = g.opponent_archetype || '';
+  document.getElementById('eg-mulligans').value = g.mulligan_count ?? 0;
+  document.getElementById('eg-notes').value     = g.notes || '';
+
+  egBuildDeckOptions();
+  await egBuildOppOptions();
+  document.getElementById('eg-deck-list').style.display = 'none';
+  document.getElementById('eg-opp-list').style.display  = 'none';
+
+  const setGroup = (groupId, group, value) => {
+    document.querySelectorAll('#' + groupId + ' .toggle-btn').forEach(b => {
+      const match = b.getAttribute('onclick') === `editToggle(this,'${group}','${value}')`;
+      b.classList.toggle('selected', match);
+    });
+  };
+  setGroup('eg-result-group',   'gameResult',  state.editGame.gameResult);
+  setGroup('eg-match-group',    'matchResult', state.editGame.matchResult);
+  setGroup('eg-prepost-group',  'prePost',     state.editGame.prePost);
+  setGroup('eg-playdraw-group', 'playDraw',    state.editGame.playDraw);
+
+  showScreen('screen-edit-game');
+}
+
+function editToggle(el, group, value) {
+  el.closest('.toggle-group').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  if (!state.editGame) state.editGame = {};
+  state.editGame[group] = value;
+}
+
+// ── Searchable dropdowns for the deck / opponent fields ─────────────
+
+let egDeckNames = []; // pulled from the pilot's own decks
+let egOppNames  = []; // pulled from the archetype taxonomy for the selected format
+
+function egBuildDeckOptions() {
+  const seen = new Set();
+  const names = [];
+  (state.allDecks || []).forEach(d => {
+    if (d.archetype_name && !seen.has(d.archetype_name)) { seen.add(d.archetype_name); names.push(d.archetype_name); }
+  });
+  egDeckNames = names.sort();
+}
+
+async function egBuildOppOptions() {
+  const format = document.getElementById('eg-format')?.value || 'Modern';
+  if (!state.oppTaxonomy) {
+    try {
+      const r = await fetch('https://raw.githubusercontent.com/phlsphr42/mize/main/scripts/custom_archetypes.json?t=' + Date.now());
+      state.oppTaxonomy = await r.json();
+    } catch (e) { state.oppTaxonomy = null; }
+  }
+  const taxonomy = state.oppTaxonomy?.[format];
+  const seen = new Set();
+  const names = [];
+  if (taxonomy?.archetypes?.length) {
+    taxonomy.archetypes.forEach(a => {
+      const name = typeof a === 'string' ? a : a.MizeName;
+      if (name && !seen.has(name)) { seen.add(name); names.push(name); }
+    });
+  } else {
+    (state.archetypes || []).forEach(n => { if (n && !seen.has(n)) { seen.add(n); names.push(n); } });
+  }
+  egOppNames = names.sort();
+}
+
+async function egOnFormatChange() {
+  await egBuildOppOptions();
+  egFilterOpp();
+}
+
+function egRenderList(listEl, names, onSelectFn) {
+  if (!names.length) { listEl.style.display = 'none'; listEl.innerHTML = ''; return; }
+  listEl.style.display = 'grid';
+  listEl.innerHTML = names.slice(0, 40).map(name =>
+    `<button type="button" class="btn btn-secondary"
+      onmousedown="event.preventDefault();${onSelectFn}('${name.replace(/'/g, "\\'")}')"
+      style="margin-bottom:0;font-size:12px;text-align:left;padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+      title="${name}">${name}</button>`
+  ).join('');
+}
+
+function egFilterDeck() {
+  const q = document.getElementById('eg-deck').value.trim().toLowerCase();
+  const filtered = q ? egDeckNames.filter(n => n.toLowerCase().includes(q)) : egDeckNames;
+  egRenderList(document.getElementById('eg-deck-list'), filtered, 'egSelectDeck');
+}
+
+function egSelectDeck(name) {
+  document.getElementById('eg-deck').value = name;
+  document.getElementById('eg-deck-list').style.display = 'none';
+}
+
+function egFilterOpp() {
+  const q = document.getElementById('eg-opponent').value.trim().toLowerCase();
+  const filtered = q ? egOppNames.filter(n => n.toLowerCase().includes(q)) : egOppNames;
+  egRenderList(document.getElementById('eg-opp-list'), filtered, 'egSelectOpp');
+}
+
+function egSelectOpp(name) {
+  document.getElementById('eg-opponent').value = name;
+  document.getElementById('eg-opp-list').style.display = 'none';
+}
+
+async function saveEditedGame() {
+  if (!state.editingGameId) return;
+  const eg = state.editGame || {};
+  if (!eg.gameResult) { showToast('Please select a game result', 'error'); return; }
+  if (!eg.playDraw)   { showToast('Please select play or draw', 'error'); return; }
+
+  const payload = {
+    format:             document.getElementById('eg-format').value,
+    deck_archetype:     document.getElementById('eg-deck').value.trim() || null,
+    opponent_archetype: document.getElementById('eg-opponent').value.trim() || null,
+    game_result:        eg.gameResult,
+    match_result:       eg.matchResult || null,
+    pre_post:           eg.prePost,
+    play_draw:          eg.playDraw,
+    mulligan_count:     parseInt(document.getElementById('eg-mulligans').value, 10) || 0,
+    notes:              document.getElementById('eg-notes').value.trim() || null
+  };
+
+  const { error } = await db.from('raw_game_log')
+    .update(payload)
+    .eq('id', state.editingGameId)
+    .eq('pilot_name', state.pilot.pilot_name);
+
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast('Game updated');
+  logEvent('game_edited', { id: state.editingGameId });
+  state.editingGameId = null;
+  showScreen('screen-match-history');
+}
+
+async function confirmDeleteGame() {
+  if (!state.editingGameId) return;
+  if (!confirm('Delete this game? This cannot be undone.')) return;
+
+  const { error } = await db.from('raw_game_log')
+    .delete()
+    .eq('id', state.editingGameId)
+    .eq('pilot_name', state.pilot.pilot_name);
+
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast('Game deleted');
+  logEvent('game_deleted', { id: state.editingGameId });
+  state.editingGameId = null;
+  showScreen('screen-match-history');
 }
 
 async function loadMyData() {
@@ -4103,7 +4361,7 @@ async function loadRecentMatches() {
           (g.match_result === 'Win' ? '#1a3a1a;color:#4caf50' : '#3a1a1a;color:#f44336') +
           ';">Match ' + g.match_result + '</span>'
         : '';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      return '<div onclick="openEditGame(\'' + g.id + '\')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;">' +
         '<div style="flex:1;">' +
         '<div style="font-size:13px;font-weight:600;">' + (resolveBadaroName(g.deck_archetype || 'Unknown', [])) + ' vs ' + (resolveBadaroName(g.opponent_archetype || 'Unknown', [])) + '</div>' +
         '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + (g.pre_post === 'Post' ? 'G2/3' : 'G1') + ' · ' + date + '</div>' +
