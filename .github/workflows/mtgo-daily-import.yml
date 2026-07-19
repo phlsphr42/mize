@@ -43,6 +43,7 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GITHUB_TOKEN: ${{ secrets.MTGO_GITHUB_TOKEN }}
         run: |
+          set -o pipefail
           if [ "${{ github.event.inputs.full_import }}" = "true" ]; then
             echo "Running full historical import..."
             python scripts/mtgo_import.py --full 2>&1 | tee import_output.txt
