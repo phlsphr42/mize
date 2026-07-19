@@ -6538,7 +6538,7 @@ function onMatrixFormatChange() {
 function renderMtgoArchetypes(rows) {
   const el = document.getElementById('mtgo-results');
   if (!rows.length) {
-    el.innerHTML = '<div class="card" style="color:var(--text2);">No data found for this date range. Try a wider range or run the Colab notebook to import data.</div>';
+    el.innerHTML = '<div class="card" style="color:var(--text2);">No data found for this filter. Try a wider date range or a lower minimum appearances — if every range comes up empty, the "MTGO Daily Import" GitHub Action may need to be re-run.</div>';
     return;
   }
 
@@ -6667,7 +6667,7 @@ function setMtgoRanking(ranking) {
 function renderMtgoPilots(rows) {
   const el = document.getElementById('mtgo-results');
   if (!rows.length) {
-    el.innerHTML = '<div class="card" style="color:var(--text2);">No data found for this date range.</div>';
+    el.innerHTML = '<div class="card" style="color:var(--text2);">No data found for this filter. Try a wider date range or a lower minimum appearances — if every range comes up empty, the "MTGO Daily Import" GitHub Action may need to be re-run.</div>';
     return;
   }
 
