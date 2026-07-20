@@ -312,28 +312,43 @@ def rescan_format(fmt, fingerprints, deck_counts, identifiers, key_cards_fmt):
                       'reviewed': True, 'reviewed_at': now,
                       'reviewed_by': 'rescan_script'})
 
-        # 2. Bulk update mtgo_results — group by event_id to avoid huge URLs
-        event_player = {}
-        for m in items:
-            event_player.setdefault(m['event_id'], []).append(m['player_name'])
-
-        event_ids = list(event_player.keys())
-        for chunk_start in range(0, len(event_ids), CHUNK):
-            chunk_eids = event_ids[chunk_start:chunk_start + CHUNK]
-            eid_list = ','.join(urllib.parse.quote(e) for e in chunk_eids)
+        # 2. Bulk update mtgo_results — scoped to (event_id, player_name) pairs,
+        #    not just event_id. Multiple different players in the same event can
+        #    still be Unknown and get resolved to *different* archetypes within
+        #    this same rescan pass; an event_id-only filter would blanket-stamp
+        #    every still-Unknown row in that event with whichever archetype's
+        #    batch happens to run first, silently mis-tagging the others.
+        PAIR_CHUNK = 25  # each pair adds ~100+ chars to the URL; keep it small
+        for chunk_start in range(0, len(items), PAIR_CHUNK):
+            chunk = items[chunk_start:chunk_start + PAIR_CHUNK]
+            or_clause = ','.join(
+                f'and(event_id.eq.{urllib.parse.quote(m["event_id"])},'
+                f'player_name.eq.{urllib.parse.quote(m["player_name"])})'
+                for m in chunk
+            )
             sb_patch('mtgo_results',
-                f'?event_id=in.({eid_list})&archetype_canonical=eq.Unknown',
+                f'?or=({or_clause})&archetype_canonical=eq.Unknown',
                 {'archetype_canonical': arch, 'archetype_raw': arch})
 
-        # 3. Bulk update mtgo_matches player arches for those events
-        for chunk_start in range(0, len(event_ids), CHUNK):
-            chunk_eids = event_ids[chunk_start:chunk_start + CHUNK]
-            eid_list = ','.join(urllib.parse.quote(e) for e in chunk_eids)
+        # 3. Bulk update mtgo_matches player arches — same per-player pairing,
+        #    done separately for the player1/player2 columns.
+        for chunk_start in range(0, len(items), PAIR_CHUNK):
+            chunk = items[chunk_start:chunk_start + PAIR_CHUNK]
+            or_clause_p1 = ','.join(
+                f'and(event_id.eq.{urllib.parse.quote(m["event_id"])},'
+                f'player1.eq.{urllib.parse.quote(m["player_name"])})'
+                for m in chunk
+            )
             sb_patch('mtgo_matches',
-                f'?event_id=in.({eid_list})&player1_arch=eq.Unknown',
+                f'?or=({or_clause_p1})&player1_arch=eq.Unknown',
                 {'player1_arch': arch})
+            or_clause_p2 = ','.join(
+                f'and(event_id.eq.{urllib.parse.quote(m["event_id"])},'
+                f'player2.eq.{urllib.parse.quote(m["player_name"])})'
+                for m in chunk
+            )
             sb_patch('mtgo_matches',
-                f'?event_id=in.({eid_list})&player2_arch=eq.Unknown',
+                f'?or=({or_clause_p2})&player2_arch=eq.Unknown',
                 {'player2_arch': arch})
 
         total_written += len(items)
