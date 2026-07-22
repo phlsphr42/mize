@@ -1955,12 +1955,14 @@ async function saveEditedGame() {
     notes:              document.getElementById('eg-notes').value.trim() || null
   };
 
-  const { error } = await db.from('raw_game_log')
+  const { data, error } = await db.from('raw_game_log')
     .update(payload)
     .eq('id', state.editingGameId)
-    .eq('pilot_name', state.pilot.pilot_name);
+    .eq('pilot_name', state.pilot.pilot_name)
+    .select();
 
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  if (!data || !data.length) { showToast('Save failed — no permission to update this game', 'error'); return; }
   showToast('Game updated');
   logEvent('game_edited', { id: state.editingGameId });
   state.editingGameId = null;
@@ -1971,12 +1973,14 @@ async function confirmDeleteGame() {
   if (!state.editingGameId) return;
   if (!confirm('Delete this game? This cannot be undone.')) return;
 
-  const { error } = await db.from('raw_game_log')
+  const { data, error } = await db.from('raw_game_log')
     .delete()
     .eq('id', state.editingGameId)
-    .eq('pilot_name', state.pilot.pilot_name);
+    .eq('pilot_name', state.pilot.pilot_name)
+    .select();
 
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  if (!data || !data.length) { showToast('Delete failed — no permission to delete this game', 'error'); return; }
   showToast('Game deleted');
   logEvent('game_deleted', { id: state.editingGameId });
   state.editingGameId = null;
