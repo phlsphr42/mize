@@ -2437,7 +2437,7 @@ function showScreen(id) {
     }
   }
   if (id === 'screen-admin') {
-    if (state.pilot && state.pilot.pilot_name === 'thnkr') loadAdminData();
+    if (state.pilot && state.pilot.pilot_name === 'phlsphr') loadAdminData();
     else showScreen('screen-home');
   }
 if (id === 'screen-mtgo') {
@@ -4257,7 +4257,7 @@ if (!pilots || !pilots.length) {
     state.pilot = pilots[0];
     document.getElementById('home-pilot-name').textContent = state.pilot.pilot_name;
     const adminBtn = document.getElementById('btn-admin');
-if (adminBtn) adminBtn.style.display = state.pilot.pilot_name === 'thnkr' ? '' : 'none';
+if (adminBtn) adminBtn.style.display = state.pilot.pilot_name === 'phlsphr' ? '' : 'none';
     try {
       const [arcRes, refRes] = await Promise.all([
         db.from('opponent_archetypes').select('canonical_name').order('canonical_name'),
@@ -5124,8 +5124,27 @@ function selectSuggestedArchetype(name) {
   // ── ADMIN SCREEN ──────────────────────────────────────────────────
 
 async function loadAdminData() {
-  if (state.pilot.pilot_name !== 'thnkr') return;
+  if (state.pilot.pilot_name !== 'phlsphr') return;
   setProgress('admin', 10);
+
+  // Supabase/PostgREST caps any query without an explicit range at 1000 rows.
+  // mymtgo import volume regularly exceeds that in a 30-day window, so
+  // queries that need the FULL set (not just a sorted-and-truncated view)
+  // must page through with .range() like the rest of the app already does.
+  async function fetchAllPaged(builderFn) {
+    const rows = [];
+    const pageSize = 1000;
+    let offset = 0;
+    while (true) {
+      const { data, error } = await builderFn().range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      rows.push(...data);
+      if (data.length < pageSize) break;
+      offset += pageSize;
+    }
+    return { data: rows };
+  }
 
   try {
     const now = new Date();
@@ -5163,10 +5182,10 @@ eventsRes,
         .not('external_id', 'is', null).not('game_result', 'is', null),
       db.from('raw_game_log').select('id', { count: 'exact', head: true })
         .is('external_id', null).not('game_result', 'is', null),
-      db.from('raw_game_log').select('pilot_name,deck_archetype,timestamp,format')
-        .not('external_id', 'is', null).order('timestamp', { ascending: false }),
-      db.from('raw_game_log').select('timestamp,format')
-        .not('external_id', 'is', null).gte('timestamp', day30)
+      fetchAllPaged(() => db.from('raw_game_log').select('pilot_name,deck_archetype,timestamp,format')
+        .not('external_id', 'is', null).order('timestamp', { ascending: false })),
+      fetchAllPaged(() => db.from('raw_game_log').select('timestamp,format')
+        .not('external_id', 'is', null).gte('timestamp', day30))
     ]);
 
     setProgress('admin', 70);
